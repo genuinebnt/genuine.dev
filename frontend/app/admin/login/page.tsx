@@ -20,10 +20,10 @@ export default function Login() {
   }
 
   return (
-    <>
-      <p className="eyebrow">Admin</p>
-      <h1>
-        Log <span>in</span>
+    <div className="auth-card">
+      <div className="eyebrow">Admin</div>
+      <h1 className="ph-title">
+        Log <span style={{ color: "var(--acc)" }}>in</span>
       </h1>
       <form className="admin-form" onSubmit={onSubmit}>
         <input name="username" placeholder="username" autoComplete="username" />
@@ -35,7 +35,7 @@ export default function Login() {
         />
         <button type="submit">Log in</button>
       </form>
-      {err && <p className="muted">{err}</p>}
-    </>
+      {err && <p className="form-error">{err}</p>}
+    </div>
   );
 }

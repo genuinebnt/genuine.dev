@@ -1,14 +1,16 @@
-//! Public content endpoints (posts, projects, pages, search).
+//! Public content endpoints (posts, projects, pages, search, comments).
 
 use axum::Json;
 use axum::extract::{Path, Query, State};
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::api::ApiError;
 use crate::app::ports::ContentRepository;
 use crate::domain::Document;
-use crate::infra::repo::PgContentRepository;
+use crate::infra::repo::{self, PgContentRepository};
 
 #[derive(Serialize)]
 pub struct PostItem {
@@ -17,6 +19,7 @@ pub struct PostItem {
     summary: Option<String>,
     reading_min: i32,
     date: Option<String>,
+    metadata: JsonValue,
 }
 
 #[derive(Serialize)]
@@ -28,6 +31,8 @@ pub struct PostDetail {
     reading_min: i32,
     date: Option<String>,
     kind: String,
+    cover_image: Option<String>,
+    metadata: JsonValue,
 }
 
 fn item(d: Document) -> PostItem {
@@ -37,18 +42,21 @@ fn item(d: Document) -> PostItem {
         summary: d.summary,
         reading_min: d.reading_min,
         date: d.published_at.map(|t| t.date().to_string()),
+        metadata: d.metadata,
     }
 }
 
 fn detail(d: Document) -> PostDetail {
     PostDetail {
-        slug: d.slug,
+        slug: d.slug.clone(),
         title: d.title,
         summary: d.summary,
         body_html: d.body_html,
         reading_min: d.reading_min,
         date: d.published_at.map(|t| t.date().to_string()),
         kind: d.kind.as_str().to_owned(),
+        cover_image: d.cover_image,
+        metadata: d.metadata,
     }
 }
 
@@ -66,7 +74,7 @@ pub async fn list_projects(State(pool): State<PgPool>) -> Result<Json<Vec<PostIt
     Ok(Json(docs.into_iter().map(item).collect()))
 }
 
-/// Detail for any published doc by slug (used for posts, projects, pages).
+/// Detail for any published doc by slug (posts, projects, pages).
 pub async fn get_doc(
     State(pool): State<PgPool>,
     Path(slug): Path<String>,
@@ -90,4 +98,70 @@ pub async fn search(
         .search_published(&query.q)
         .await?;
     Ok(Json(docs.into_iter().map(item).collect()))
+}
+
+// ── Comments ──────────────────────────────────────────────────────────────────
+
+#[derive(Serialize)]
+pub struct CommentOut {
+    id: Uuid,
+    name: String,
+    body: String,
+    date: String,
+}
+
+#[derive(Deserialize)]
+pub struct CommentIn {
+    name: String,
+    body: String,
+}
+
+pub async fn list_comments(
+    State(pool): State<PgPool>,
+    Path(slug): Path<String>,
+) -> Result<Json<Vec<CommentOut>>, ApiError> {
+    // Resolve the document_id by slug first.
+    let doc = PgContentRepository::new(pool.clone())
+        .get_published_by_slug(&slug)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    let comments = repo::list_comments(&pool, doc.id).await?;
+    let out = comments
+        .into_iter()
+        .map(|c| CommentOut {
+            id: c.id,
+            name: c.name,
+            body: c.body,
+            date: c.created_at.date().to_string(),
+        })
+        .collect();
+    Ok(Json(out))
+}
+
+pub async fn create_comment(
+    State(pool): State<PgPool>,
+    Path(slug): Path<String>,
+    Json(body): Json<CommentIn>,
+) -> Result<Json<CommentOut>, ApiError> {
+    // Basic validation — keep it simple, no auth required.
+    if body.name.trim().is_empty() || body.body.trim().is_empty() {
+        return Err(ApiError::BadRequest("name and body are required".into()));
+    }
+    if body.name.len() > 80 || body.body.len() > 4000 {
+        return Err(ApiError::BadRequest("name or body too long".into()));
+    }
+
+    let doc = PgContentRepository::new(pool.clone())
+        .get_published_by_slug(&slug)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    let comment = repo::insert_comment(&pool, doc.id, body.name.trim(), body.body.trim()).await?;
+    Ok(Json(CommentOut {
+        id: comment.id,
+        name: comment.name,
+        body: comment.body,
+        date: comment.created_at.date().to_string(),
+    }))
 }

@@ -61,6 +61,7 @@ flowchart LR
         render[Renderer → comrak + syntect]
         auth[auth → argon2 + JWT]
         mailer[Mailer → email provider]
+        storage[StorageBackend → local disk]
     end
     spa -->|/api| web
     web --> app
@@ -69,8 +70,10 @@ flowchart LR
     app -. ports .-> render
     app -. ports .-> auth
     app -. ports .-> mailer
+    app -. ports .-> storage
     repo --> pg[(Postgres)]
     mailer --> provider[Email provider API]
+    storage --> uploads[(uploads dir · /uploads)]
 ```
 
 The **web adapter is the axum JSON API** (`src/api/`); handlers stay thin and
@@ -79,8 +82,9 @@ React frontend (separate app) consumes it — SSR fetches server-side, the brows
 calls it same-origin via Caddy.
 
 **Ports (traits) defined at known seams** — one impl now, a planned second later:
-`ContentRepository`, `Renderer`, `AuthProvider`, `Mailer` (+ post-MVP:
-`StorageBackend`, `SearchBackend`, `ThemeProvider`). `domain` must not import `infra`.
+`ContentRepository`, `Renderer`, `AuthProvider`, `Mailer`, `StorageBackend`
+(local disk → object storage later) (+ post-MVP: `SearchBackend`, `ThemeProvider`).
+`domain` must not import `infra`.
 
 ---
 
@@ -123,6 +127,7 @@ Rendering happens **on save**, not on read — the public path just serves store
 erDiagram
     documents ||--o{ document_tags : "tagged"
     tags ||--o{ document_tags : "labels"
+    documents ||--o{ comments : "receives"
 
     documents {
         uuid id PK
@@ -165,12 +170,21 @@ erDiagram
         timestamptz created_at
         timestamptz confirmed_at
     }
+    comments {
+        uuid id PK
+        uuid document_id FK
+        text name "display-only; no auth"
+        text body
+        timestamptz created_at
+    }
 ```
 
 `users` is the single-owner admin (Phase 2.5). `subscribers` powers the MVP
-newsletter (double opt-in + email-on-publish, Phase 2.7). Sessions are handled by
-`tower-sessions` (its own store). Post-MVP tables (`media`, `link_previews`,
-`comments`, `themes`, …) attach without reshaping the above — see ROADMAP §4/§11.
+newsletter (double opt-in + email-on-publish, Phase 2.7). `comments` are
+unauthenticated, flat (no threading), and cascade-deleted with their document
+(Phase 4, migration `0004`). Sessions are handled by `tower-sessions` (its own
+store). Further post-MVP tables (`media`, `link_previews`, `themes`, …) attach
+without reshaping the above — see ROADMAP §4/§11.
 
 ---
 
@@ -180,6 +194,9 @@ Newest first. Status: ✅ accepted · ⏳ proposed · ⛔ superseded.
 
 | # | Date | Decision | Status | Rationale |
 |---|---|---|---|---|
+| 016 | 2026-06-28 | **TipTap WYSIWYG editor serializing to Markdown** + **`StorageBackend` port** (local-disk image uploads via `POST /api/admin/upload`, served at `/uploads/*`) | ✅ | Keeps `body_markdown` + the `:::`/syntect render pipeline as source of truth; `:::` directives are custom editor nodes storing raw source losslessly (structured forms layered on top). Storage is a port so object storage can swap in later (rule of three deferred — one impl now). |
+| 015 | 2026-06-28 | **Self-hosted, DB-backed comments** (`comments` table + `/api/posts/{slug}/comments`), not Giscus | ✅ | Keeps the CMS fully self-contained — no GitHub dependency. Flat + unauthenticated for now; moderation/threading are additive. |
+| 014 | 2026-06-28 | **`:::` block directives + attributed code fences rendered server-side** (syntect line numbers/highlight); `featured`/`series` live in `documents.metadata` | ✅ | Reuses NotiQ's component library across posts/projects (ADR-007) with zero schema churn; directive HTML is themed via CSS variables. Interactivity is attached client-side by `DocInteractive`. |
 | 013 | 2026-06-28 | **Split architecture: Rust axum JSON API (`backend/`) + React/Next.js/TS SPA (`frontend/`)**, JWT auth. ⛔ supersedes ADR-009 + ADR-012 | ✅ | Leptos is pre-1.0 (breaking churn); React+TS gives stability + huge ecosystem (incl. TipTap for WYSIWYG) + clean front/back separation. Rust domain/infra/repo/render/auth/mailer/subscribers/migrations all reused behind the API. |
 | 012 | 2026-06-28 | UI stays Leptos + SCSS; no React/Tailwind/UI-kit | ⛔ superseded by 013 | Reversed — owner chose React+TS (Leptos pre-1.0 stability concern). |
 | 011 | 2026-06-28 | sqlx **runtime-checked** queries (`query`/`query_as`), not compile-time `query!` macros | ✅ | Compile-time macros couple every build to a live DB and slow iteration. Correctness via integration tests instead. |

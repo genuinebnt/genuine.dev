@@ -11,9 +11,14 @@ export type PostItem = {
   summary: string | null;
   reading_min: number;
   date: string | null;
+  metadata?: any;
 };
 
-export type PostDetail = PostItem & { body_html: string; kind: string };
+export type PostDetail = PostItem & { 
+  body_html: string; 
+  kind: string; 
+  cover_image: string | null; 
+};
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${API}${path}`, { cache: "no-store" });
@@ -34,4 +39,24 @@ export async function getDoc(
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`GET /api/${kind}/${slug} → ${res.status}`);
   return res.json() as Promise<PostDetail>;
+}
+
+export type CommentOut = {
+  id: string;
+  name: string;
+  body: string;
+  date: string;
+};
+
+export const getComments = (slug: string) => 
+  get<CommentOut[]>(`/api/posts/${slug}/comments`);
+
+export async function submitComment(slug: string, name: string, body: string): Promise<CommentOut> {
+  const res = await fetch(`${API}/api/posts/${slug}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, body })
+  });
+  if (!res.ok) throw new Error(`POST /api/posts/${slug}/comments → ${res.status}`);
+  return res.json();
 }

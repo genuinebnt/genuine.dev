@@ -6,6 +6,85 @@ code changes both go here so the history is complete.
 
 ---
 
+## 2026-06-28 — Rich seed content + directive renderer fixes
+
+- **Seed content** (`infra/seed.rs`): 4 blog posts (a 2-part lock-free series, an
+  SSRF bug-bounty walkthrough, a `SKIP LOCKED` explainer), 2 projects (the full
+  **NotiQ** case study recreating `docs/notiq_portfolio.html` — 8 service cards,
+  comm matrix, 5 build-narrative accordions, 5 concept-tab panels, 12 infra grid
+  items, 8 design signals — plus genuine-folio), and the About page. All carry
+  real metadata (featured / series / tags / tech) and staggered publish dates so
+  the homepage, blog index, and project list render naturally.
+- **Bugfix — nested directives never rendered:** the renderer's directive scanner
+  wasn't depth-aware, so container directives (`cards`, `grid`, `signals`,
+  `accordion`, `tabs`) stopped at the *first* inner `:::` — only the first child
+  rendered and the rest leaked as raw text. Made `preprocess_directives` +
+  `collect_blocks` depth-aware. This is why only single-level directives
+  (callout/aside/timeline) had worked.
+- **Bugfix — grammar made uniform:** `:::tab` was a bare marker with no closer,
+  which broke depth counting and over-consumed following blocks. Tabs are now
+  closed `:::tab "label" … :::` blocks (backend `render_tabs`, frontend
+  `directives.ts`, seed, insert template all updated) — every directive is now a
+  closed block, no special cases.
+- **Bugfix — `:::matrix` rendered the table as literal `| … |` text** (comrak
+  treated the wrapping `<div>` as a raw HTML block). `render_matrix` now renders
+  the markdown table to HTML before wrapping.
+- Tests: nested-container, matrix, and code-fence-attr render tests (15 total).
+
+## 2026-06-28 — WYSIWYG editor, image uploads, wider layout
+
+- **Wider layout:** the shared container is now `--shell-w: 1080px` (matches the
+  design mockups; was 880px). No-TOC articles (e.g. About) use a centered 760px
+  measure via `.article-solo` — fixes a latent bug where they were squished into
+  the 200px TOC track.
+- **WYSIWYG editor (TipTap → Markdown):** replaced the raw `<textarea>` with a
+  rich editor (`components/editor/*`). StarterKit + Image + tables + an attributed
+  code block (`filename=`/`highlight=` preserved through the round-trip) + a
+  `Directive` node. Content stays **Markdown** so the backend render pipeline is
+  unchanged. SSR-safe via `immediatelyRender: false`.
+- **Directive blocks as custom nodes (ADR-014 follow-through):** a single
+  `Directive` node stores raw `:::` source verbatim (lossless), parsed by a
+  depth-aware markdown-it rule. Its React NodeView renders **structured forms** for
+  8 families — callout, aside, timeline, cards, grid, signals, accordion, tabs —
+  and a raw-source editor for matrix. Idempotent round-trip verified for all.
+- **Image upload (new `StorageBackend` port):** `LocalDiskStorage` adapter +
+  `POST /api/admin/upload` (JWT-guarded, magic-byte image sniff, 5MB cap) +
+  `/uploads/*` static serving + a Next rewrite so paths resolve in dev. Drag/click
+  upload in the editor; cover-image upload in the settings panel.
+- **Post settings panel:** title, slug, summary, kind, status, **featured**,
+  **series** (name + part), **tags**, **tech**, **cover image** — all persisted.
+- **Bug fix:** admin `save` previously hardcoded `metadata: {}` / `cover_image:
+  None`, **silently wiping** featured/series/tech and cover on every edit. Now
+  round-tripped (`EditDoc`/`SaveReq` carry both). Verified end-to-end against PG.
+- **UI consistency:** shared `PageHeader`, restyled admin list + login (auth card),
+  and an admin-only floating **Edit** button on article pages → the editor.
+- **Docs:** `StorageBackend` port added to the hexagonal diagram; ADR-016.
+
+## 2026-06-28 — Phase 4: UI parity, directives, comments & series
+
+- **Block directives (server-rendered):** `:::aside / callout / cards / matrix /
+  accordion / grid / signals / tabs / timeline` (+ sub-directives) preprocessed in
+  `infra/render.rs` into themed HTML, recreating the NotiQ component library across
+  posts and projects. Unknown directives degrade to a blockquote.
+- **Attributed code fences:** ```` ```lang filename="…" highlight="1,3-5" ```` now
+  highlighted line-by-line with **syntect** directly (added as a direct dep) — line
+  numbers (`.ln`), highlighted lines (`.hl`), filename header, and a copy button
+  whose raw payload rides in `data-copy` (so line numbers aren't copied). Replaced
+  the old post-hoc `wrap_code_blocks` pass.
+- **Heading anchors:** comrak `header_id_prefix` enabled so the frontend can build
+  an anchored, scroll-spy TOC (`DocArticle` extracts ids from comrak's inner `<a>`).
+- **Comments:** migration `0004_comments.sql` (flat, unauthenticated, cascade on
+  document delete) + `GET/POST /api/posts/{slug}/comments` + `Comments` client
+  component. Chosen over Giscus to stay self-contained (ADR-015).
+- **Series & featured:** stored in `documents.metadata` (`featured`, `series`);
+  homepage featured grids + `SeriesBanner` on post detail. No schema change (ADR-014).
+- **Interactivity:** `DocInteractive` client component owns copy / tabs / accordion
+  toggles / scroll-spy; the renderer no longer emits inline `onclick` handlers
+  (which previously double-toggled accordions and called an undefined `showTab`).
+- **Frontend pages:** homepage hero pills + `.divider5` + `.pcard`/`.proj` grids;
+  blog index; project cards; article layout with sticky TOC; about page.
+- **Docs:** ER diagram gains `comments`; ADR-014/015 added.
+
 ## 2026-06-28 — Cleanup + polish
 
 - **Removed dead Leptos code:** `reference/leptos-ui/` (6 files) + orphaned root

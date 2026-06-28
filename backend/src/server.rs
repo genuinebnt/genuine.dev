@@ -4,6 +4,7 @@
 use axum::Router;
 use sqlx::PgPool;
 use tower_http::cors::CorsLayer;
+use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 
 use crate::config::Config;
@@ -21,7 +22,11 @@ pub async fn run() -> Result<(), BoxError> {
     seed_dev_content(&pool).await?;
     seed_admin(&pool).await?;
 
-    let app = build_router(pool);
+    // Ensure the uploads dir exists so `ServeDir` and the upload handler agree.
+    let upload_dir = crate::config::upload_dir();
+    tokio::fs::create_dir_all(&upload_dir).await?;
+
+    let app = build_router(pool, upload_dir);
     let addr = std::env::var("BIND_ADDR").unwrap_or_else(|_| "127.0.0.1:3001".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!("listening on http://{addr}");
@@ -31,8 +36,9 @@ pub async fn run() -> Result<(), BoxError> {
     Ok(())
 }
 
-fn build_router(pool: PgPool) -> Router {
+fn build_router(pool: PgPool, upload_dir: String) -> Router {
     crate::api::router()
+        .nest_service("/uploads", ServeDir::new(upload_dir))
         .layer(TraceLayer::new_for_http())
         // Dev: allow the frontend dev server. Tighten for production.
         .layer(CorsLayer::permissive())

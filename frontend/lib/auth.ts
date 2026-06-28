@@ -33,6 +33,7 @@ async function authed(path: string, opts: RequestInit = {}): Promise<Response> {
 }
 
 export type AdminItem = { slug: string; title: string; kind: string; status: string };
+export type DocMetadata = Record<string, unknown>;
 export type EditDoc = {
   slug: string;
   kind: string;
@@ -40,6 +41,8 @@ export type EditDoc = {
   summary: string | null;
   status: string;
   body_markdown: string;
+  cover_image: string | null;
+  metadata: DocMetadata;
 };
 export type SaveReq = {
   slug: string;
@@ -48,6 +51,8 @@ export type SaveReq = {
   summary: string;
   status: string;
   body: string;
+  cover_image: string | null;
+  metadata: DocMetadata;
 };
 
 export const adminList = async (): Promise<AdminItem[]> =>
@@ -58,3 +63,21 @@ export const adminSave = (req: SaveReq) =>
   authed("/api/admin/docs", { method: "POST", body: JSON.stringify(req) });
 export const adminDelete = (slug: string) =>
   authed(`/api/admin/docs/${slug}`, { method: "DELETE" });
+
+/**
+ * Upload an image to the storage backend; returns a site-relative `/uploads/*`
+ * path (portable across environments — proxied to the API in dev by next.config).
+ */
+export async function uploadImage(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${API}/api/admin/upload`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${getToken() ?? ""}` },
+    body: form,
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`upload → ${res.status}`);
+  const { url } = (await res.json()) as { url: string };
+  return url;
+}

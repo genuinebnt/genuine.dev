@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { adminDelete, adminList, type AdminItem } from "../../lib/auth";
+import { PageHeader } from "../../components/ui/PageHeader";
 
 export default function Admin() {
   const [rows, setRows] = useState<AdminItem[] | null>(null);
@@ -34,12 +35,15 @@ export default function Admin() {
 
   return (
     <>
-      <div className="admin-head">
-        <h1>Content</h1>
-        <Link className="btn" href="/admin/new">
-          + New
-        </Link>
-      </div>
+      <PageHeader
+        eyebrow="Admin"
+        title="Content"
+        action={
+          <Link className="btn" href="/admin/new">
+            + New
+          </Link>
+        }
+      />
       {rows === null ? (
         <p className="muted">Loading…</p>
       ) : (

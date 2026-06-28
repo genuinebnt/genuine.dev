@@ -19,3 +19,8 @@ impl Config {
 pub fn site_url() -> String {
     std::env::var("SITE_URL").unwrap_or_else(|_| "http://localhost:3000".to_owned())
 }
+
+/// Filesystem root for uploaded assets, served back at `/uploads/*`.
+pub fn upload_dir() -> String {
+    std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "./uploads".to_owned())
+}

@@ -1,3 +1,4 @@
+use serde_json::Value as JsonValue;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -62,5 +63,9 @@ pub struct Document {
     pub body_html: String,
     pub reading_min: i32,
     pub status: Status,
+    pub cover_image: Option<String>,
+    /// Freeform JSON bag for series membership (`{series:{name,part}}`),
+    /// featured flag (`{featured:true}`), tech stack, links, etc.
+    pub metadata: JsonValue,
     pub published_at: Option<OffsetDateTime>,
 }

@@ -1,5 +1,6 @@
-//! Postgres-backed `ContentRepository`.
+//! Postgres-backed `ContentRepository` plus comment persistence helpers.
 
+use serde_json::Value as JsonValue;
 use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -9,7 +10,7 @@ use crate::domain::{Document, Kind, Status};
 use crate::error::AppError;
 
 const SELECT_COLS: &str = "id, slug, kind, title, summary, body_markdown, \
-     body_html, reading_min, status, published_at";
+     body_html, reading_min, status, cover_image, metadata, published_at";
 
 #[derive(sqlx::FromRow)]
 struct DocumentRow {
@@ -22,6 +23,8 @@ struct DocumentRow {
     body_html: String,
     reading_min: i32,
     status: String,
+    cover_image: Option<String>,
+    metadata: JsonValue,
     published_at: Option<OffsetDateTime>,
 }
 
@@ -37,6 +40,8 @@ impl From<DocumentRow> for Document {
             body_html: r.body_html,
             reading_min: r.reading_min,
             status: Status::parse(&r.status).unwrap_or(Status::Draft),
+            cover_image: r.cover_image,
+            metadata: r.metadata,
             published_at: r.published_at,
         }
     }
@@ -56,8 +61,9 @@ impl ContentRepository for PgContentRepository {
     async fn create(&self, doc: &Document) -> Result<(), AppError> {
         sqlx::query(
             "insert into documents \
-             (id, slug, kind, title, summary, body_markdown, body_html, reading_min, status, published_at) \
-             values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+             (id, slug, kind, title, summary, body_markdown, body_html, reading_min, \
+              status, cover_image, metadata, published_at) \
+             values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
         )
         .bind(doc.id)
         .bind(&doc.slug)
@@ -68,6 +74,8 @@ impl ContentRepository for PgContentRepository {
         .bind(&doc.body_html)
         .bind(doc.reading_min)
         .bind(doc.status.as_str())
+        .bind(&doc.cover_image)
+        .bind(&doc.metadata)
         .bind(doc.published_at)
         .execute(&self.pool)
         .await?;
@@ -77,12 +85,14 @@ impl ContentRepository for PgContentRepository {
     async fn upsert(&self, doc: &Document) -> Result<(), AppError> {
         sqlx::query(
             "insert into documents \
-             (id, slug, kind, title, summary, body_markdown, body_html, reading_min, status, published_at, updated_at) \
-             values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now()) \
+             (id, slug, kind, title, summary, body_markdown, body_html, reading_min, \
+              status, cover_image, metadata, published_at, updated_at) \
+             values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now()) \
              on conflict (slug) do update set \
                kind = excluded.kind, title = excluded.title, summary = excluded.summary, \
                body_markdown = excluded.body_markdown, body_html = excluded.body_html, \
                reading_min = excluded.reading_min, status = excluded.status, \
+               cover_image = excluded.cover_image, metadata = excluded.metadata, \
                published_at = coalesce(documents.published_at, excluded.published_at), \
                updated_at = now()",
         )
@@ -95,6 +105,8 @@ impl ContentRepository for PgContentRepository {
         .bind(&doc.body_html)
         .bind(doc.reading_min)
         .bind(doc.status.as_str())
+        .bind(&doc.cover_image)
+        .bind(&doc.metadata)
         .bind(doc.published_at)
         .execute(&self.pool)
         .await?;
@@ -181,4 +193,70 @@ impl ContentRepository for PgContentRepository {
             .await?;
         Ok(n)
     }
+}
+
+// ── Comment helpers (not on the port trait — simple CRUD, no abstraction needed yet) ──
+
+pub struct Comment {
+    pub id: Uuid,
+    pub name: String,
+    pub body: String,
+    pub created_at: OffsetDateTime,
+}
+
+#[derive(sqlx::FromRow)]
+struct CommentRow {
+    id: Uuid,
+    name: String,
+    body: String,
+    created_at: OffsetDateTime,
+}
+
+impl From<CommentRow> for Comment {
+    fn from(r: CommentRow) -> Self {
+        Comment {
+            id: r.id,
+            name: r.name,
+            body: r.body,
+            created_at: r.created_at,
+        }
+    }
+}
+
+pub async fn list_comments(pool: &PgPool, document_id: Uuid) -> Result<Vec<Comment>, AppError> {
+    let rows = sqlx::query_as::<_, CommentRow>(
+        "select id, name, body, created_at from comments \
+         where document_id = $1 order by created_at asc",
+    )
+    .bind(document_id)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows.into_iter().map(Comment::from).collect())
+}
+
+pub async fn insert_comment(
+    pool: &PgPool,
+    document_id: Uuid,
+    name: &str,
+    body: &str,
+) -> Result<Comment, AppError> {
+    let id = Uuid::now_v7();
+    let now = OffsetDateTime::now_utc();
+    sqlx::query(
+        "insert into comments (id, document_id, name, body, created_at) \
+         values ($1, $2, $3, $4, $5)",
+    )
+    .bind(id)
+    .bind(document_id)
+    .bind(name)
+    .bind(body)
+    .bind(now)
+    .execute(pool)
+    .await?;
+    Ok(Comment {
+        id,
+        name: name.to_owned(),
+        body: body.to_owned(),
+        created_at: now,
+    })
 }

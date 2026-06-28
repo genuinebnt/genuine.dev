@@ -54,7 +54,10 @@ cargo leptos watch          # build + hot-reload → http://127.0.0.1:3000
    push to `main`. Set the `app.image` in `docker-compose.prod.yml` to your GHCR path.
 2. **On the VPS:** copy `docker-compose.prod.yml` + `Caddyfile` + a host `.env` with:
    `POSTGRES_PASSWORD`, `SITE_URL=https://yourdomain`, `DOMAIN=yourdomain`,
-   `ADMIN_USERNAME`, `ADMIN_PASSWORD` (required — no prod default).
+   `ADMIN_USERNAME`, `ADMIN_PASSWORD` (required — no prod default). Optional
+   `UPLOAD_DIR` (default `./uploads`) — **mount it as a persistent volume** and
+   route `/uploads/*` to the backend in the `Caddyfile` (alongside `/api`) so
+   uploaded images survive redeploys.
 3. **DNS:** point an A record at the VPS. Caddy auto-provisions TLS for `$DOMAIN`.
 4. **Launch:** `docker compose -f docker-compose.prod.yml up -d`. Migrations run on
    startup; the admin user is seeded from `ADMIN_PASSWORD`.

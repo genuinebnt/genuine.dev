@@ -10,6 +10,7 @@ mod newsletter;
 pub use error::ApiError;
 
 use axum::Router;
+use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
 use sqlx::PgPool;
 
@@ -31,6 +32,10 @@ fn api_routes() -> Router<PgPool> {
     Router::new()
         .route("/posts", get(content::list_posts))
         .route("/posts/{slug}", get(content::get_doc))
+        .route(
+            "/posts/{slug}/comments",
+            get(content::list_comments).post(content::create_comment),
+        )
         .route("/projects", get(content::list_projects))
         .route("/projects/{slug}", get(content::get_doc))
         .route("/pages/{slug}", get(content::get_doc))
@@ -39,5 +44,11 @@ fn api_routes() -> Router<PgPool> {
         .route("/auth/me", get(auth::me))
         .route("/admin/docs", get(admin::list).post(admin::save))
         .route("/admin/docs/{slug}", get(admin::get).delete(admin::delete))
+        .route(
+            "/admin/upload",
+            // Body limit slightly above the handler's 5MB cap to leave room for
+            // multipart framing; the handler enforces the real per-file limit.
+            post(admin::upload).layer(DefaultBodyLimit::max(6 * 1024 * 1024)),
+        )
         .route("/newsletter/subscribe", post(newsletter::subscribe))
 }

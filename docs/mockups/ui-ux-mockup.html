@@ -1,0 +1,2083 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>genuine-folio — Editor UI Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── THEME TOKENS (mirrors ui_mockups.html exactly) ─── */
+:root, [data-theme="dark"] {
+  --bg: #0d0f12; --surface: #13161b; --surface2: #1a1e25;
+  --border: #232830; --border2: #2e3540;
+  --text: #e2e6ee; --muted: #6b7280; --faint: #3a4050;
+  --acc: #00d4a4; --acc-bg: rgba(0,212,164,0.07); --acc-border: rgba(0,212,164,0.18);
+  --warn: #f59e0b; --warn-bg: rgba(245,158,11,0.08); --warn-border: rgba(245,158,11,0.22);
+  --blue: #60a5fa; --blue-bg: rgba(96,165,250,0.08);
+  --purple: #a78bfa; --purple-bg: rgba(167,139,250,0.08);
+  --green: #34d399; --green-bg: rgba(52,211,153,0.07);
+  --red: #ef4444; --red-bg: rgba(239,68,68,0.06);
+  --shadow: 0 1px 2px rgba(0,0,0,0.4);
+  --c-kw: #a78bfa; --c-fn: #60a5fa; --c-str: #34d399; --c-num: #f59e0b;
+  --c-com: #3a4050; --c-punct: #6b7280;
+}
+[data-theme="light"] {
+  --bg: #f6f7f9; --surface: #ffffff; --surface2: #f0f2f5;
+  --border: #e4e8ee; --border2: #d3dae3;
+  --text: #1a1e25; --muted: #5b6573; --faint: #9aa4b2;
+  --acc: #008f6f; --acc-bg: rgba(0,143,111,0.07); --acc-border: rgba(0,143,111,0.22);
+  --warn: #c2740a; --warn-bg: rgba(194,116,10,0.08); --warn-border: rgba(194,116,10,0.25);
+  --blue: #2563eb; --blue-bg: rgba(37,99,235,0.07);
+  --purple: #7c3aed; --purple-bg: rgba(124,58,237,0.07);
+  --green: #059669; --green-bg: rgba(5,150,105,0.07);
+  --red: #dc2626; --red-bg: rgba(220,38,38,0.06);
+  --shadow: 0 1px 2px rgba(16,24,40,0.06);
+  --c-kw: #7c3aed; --c-fn: #2563eb; --c-str: #059669; --c-num: #c2740a;
+  --c-com: #9aa4b2; --c-punct: #5b6573;
+}
+
+:root {
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Inter', sans-serif;
+  --radius: 6px;
+}
+
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.6; min-height: 100vh; transition: background 0.2s, color 0.2s; }
+a { color: inherit; text-decoration: none; }
+code, .mono { font-family: var(--mono); }
+
+/* ─── DOC BAR ─── */
+.docbar { position: sticky; top: 0; z-index: 50; background: var(--surface); border-bottom: 1px solid var(--border); padding: 11px 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.docbar .brand { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+.docbar .brand span { color: var(--acc); }
+.docbar .docsub { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.docbar .spacer { flex: 1; }
+.theme-toggle { font-family: var(--mono); font-size: 11px; padding: 5px 12px; border-radius: 100px; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 7px; }
+.theme-toggle:hover { border-color: var(--acc-border); color: var(--acc); }
+.grp-label { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .1em; }
+
+/* ─── SCREEN SWITCHER ─── */
+.wrap { max-width: 1200px; margin: 0 auto; padding: 24px 24px 120px; }
+.screen-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 22px; position: sticky; top: 53px; z-index: 40; background: var(--bg); padding: 10px 0; }
+.stab { font-family: var(--mono); font-size: 11px; padding: 6px 13px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; transition: all .15s; }
+.stab:hover { border-color: var(--border2); color: var(--text); }
+.stab.active { background: var(--acc-bg); border-color: var(--acc-border); color: var(--acc); }
+.screen { display: none; }
+.screen.active { display: block; animation: fade .22s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.screen-note { font-size: 12px; color: var(--muted); margin-bottom: 14px; padding-left: 12px; border-left: 2px solid var(--acc); line-height: 1.7; }
+
+/* ─── FAUX BROWSER ─── */
+.win { border: 1px solid var(--border2); border-radius: 10px; overflow: hidden; background: var(--bg); box-shadow: var(--shadow); }
+.win-bar { background: var(--surface2); border-bottom: 1px solid var(--border); padding: 9px 14px; display: flex; align-items: center; gap: 8px; }
+.dot { width: 11px; height: 11px; border-radius: 50%; }
+.dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
+.win-url { flex: 1; margin-left: 10px; font-family: var(--mono); font-size: 11px; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 100px; padding: 4px 14px; }
+
+/* ─── SHARED SITE NAV ─── */
+.snav { display: flex; align-items: center; gap: 16px; padding: 12px 22px; border-bottom: 1px solid var(--border); }
+.snav .logo { font-family: var(--mono); font-weight: 500; font-size: 14px; }
+.snav .logo span { color: var(--acc); }
+.snav .nlinks { display: flex; gap: 4px; }
+.npill { font-family: var(--mono); font-size: 11px; padding: 5px 12px; border-radius: var(--radius); border: 1px solid transparent; color: var(--muted); cursor: pointer; }
+.npill:hover { color: var(--text); border-color: var(--border2); }
+.npill.active { background: var(--acc-bg); border-color: var(--acc-border); color: var(--acc); }
+.npill.admin { background: var(--warn-bg); border-color: var(--warn-border); color: var(--warn); }
+.nspacer { flex: 1; }
+.kbd { font-family: var(--mono); font-size: 10px; color: var(--muted); border: 1px solid var(--border2); border-radius: 5px; padding: 3px 8px; background: var(--surface2); }
+
+/* ─── EDITOR SHELL ─── */
+.editor-shell { display: grid; grid-template-columns: 220px 1fr 260px; height: 680px; }
+
+/* ── File tree ── */
+.file-tree { border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; overflow: hidden; }
+.ft-header { padding: 11px 14px 7px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.ft-title { font-family: var(--mono); font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: .12em; }
+.ft-actions { display: flex; gap: 5px; }
+.ft-btn { width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--border2); background: var(--surface2); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); font-size: 12px; }
+.ft-btn:hover { color: var(--acc); border-color: var(--acc-border); }
+.ft-search { margin: 7px 10px; display: flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px 10px; }
+.ft-search input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-family: var(--mono); font-size: 11px; }
+.ft-search input::placeholder { color: var(--faint); }
+.file-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+.dir-row { display: flex; align-items: center; gap: 6px; padding: 4px 12px; cursor: pointer; user-select: none; }
+.dir-row:hover { background: var(--surface2); }
+.dir-row .dicon { color: var(--warn); font-size: 11px; }
+.dir-row .dname { font-family: var(--mono); font-size: 11px; color: var(--text); }
+.dir-row .dcount { color: var(--faint); font-family: var(--mono); font-size: 10px; margin-left: auto; }
+.file-row { display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 24px; cursor: pointer; }
+.file-row:hover { background: var(--surface2); }
+.file-row.active { background: var(--acc-bg); }
+.file-row .ficon { font-size: 10px; color: var(--faint); }
+.file-row.active .ficon { color: var(--acc); }
+.file-row .fname { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.file-row.active .fname { color: var(--acc); }
+.file-row .fbadge { margin-left: auto; font-family: var(--mono); font-size: 9px; padding: 1px 5px; border-radius: 100px; background: var(--warn-bg); color: var(--warn); border: 1px solid rgba(245,158,11,0.2); }
+.file-row .fbadge.new { background: var(--acc-bg); color: var(--acc); border-color: var(--acc-border); }
+
+/* ── Tab bar ── */
+.editor-main { display: flex; flex-direction: column; overflow: hidden; }
+.tab-bar { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); background: var(--surface); overflow-x: auto; }
+.etab { display: flex; align-items: center; gap: 7px; padding: 0 14px; border-right: 1px solid var(--border); cursor: pointer; min-height: 36px; white-space: nowrap; }
+.etab:hover { background: var(--surface2); }
+.etab.active { background: var(--bg); border-bottom: 2px solid var(--acc); margin-bottom: -1px; }
+.etab .tname { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.etab.active .tname { color: var(--text); }
+.etab .tdot { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); flex-shrink: 0; }
+.etab .tdot.saved { background: transparent; border: 1px solid var(--faint); }
+.etab .tclose { color: var(--faint); font-size: 12px; margin-left: 2px; }
+.tab-spacer { flex: 1; }
+
+/* ── Toolbar ── */
+.toolbar { display: flex; align-items: center; gap: 2px; padding: 6px 12px; border-bottom: 1px solid var(--border); background: var(--surface2); flex-wrap: wrap; }
+.tb-group { display: flex; gap: 1px; align-items: center; }
+.tb-sep { width: 1px; height: 18px; background: var(--border2); margin: 0 6px; }
+.tb-btn { font-family: var(--mono); font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid transparent; background: none; color: var(--muted); cursor: pointer; }
+.tb-btn:hover { background: var(--surface); border-color: var(--border2); color: var(--text); }
+.tb-btn.active { background: var(--acc-bg); border-color: var(--acc-border); color: var(--acc); }
+.tb-btn.action { color: var(--blue); }
+.tb-btn.action:hover { background: var(--blue-bg); border-color: rgba(96,165,250,0.28); }
+.tb-right { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+.save-btn { font-family: var(--mono); font-size: 11px; padding: 4px 12px; border-radius: var(--radius); border: 1px solid var(--acc-border); background: var(--acc-bg); color: var(--acc); cursor: pointer; }
+.save-btn:hover { background: var(--acc); color: #04130f; font-weight: 500; }
+.preview-btn { font-family: var(--mono); font-size: 11px; padding: 4px 12px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--surface); color: var(--muted); cursor: pointer; }
+
+/* ── Editor area (split view) ── */
+.editor-area { display: grid; grid-template-columns: 1fr 1fr; flex: 1; overflow: hidden; }
+.code-pane { border-right: 1px solid var(--border); overflow: auto; background: var(--bg); }
+.preview-pane { overflow: auto; background: var(--surface); }
+.pane-header { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-bottom: 1px solid var(--border); background: var(--surface2); position: sticky; top: 0; z-index: 5; }
+.ph-label { font-family: var(--mono); font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: .1em; }
+.ph-lang { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 100px; background: var(--purple-bg); border: 1px solid rgba(167,139,250,0.2); color: var(--purple); }
+.ph-spacer { flex: 1; }
+.ph-action { font-family: var(--mono); font-size: 10px; color: var(--faint); padding: 2px 8px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
+.ph-action:hover { color: var(--muted); border-color: var(--border2); }
+
+/* ── Code editor ── */
+pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; line-height: 1.75; overflow: visible; }
+.cl { display: flex; gap: 0; align-items: flex-start; }
+.cl:hover { background: rgba(255,255,255,0.025); }
+.cl.hl { background: var(--acc-bg); border-left: 2px solid var(--acc); }
+.cl.warn-hl { background: var(--warn-bg); border-left: 2px solid var(--warn); }
+.ln { color: var(--faint); user-select: none; width: 36px; text-align: right; padding-right: 14px; flex-shrink: 0; font-size: 11px; padding-top: 1px; }
+.lc { flex: 1; padding-right: 16px; }
+.kw { color: var(--c-kw); } .fn { color: var(--c-fn); } .str { color: var(--c-str); }
+.num { color: var(--c-num); } .cm { color: var(--c-com); } .pn { color: var(--c-punct); }
+
+/* ── Preview pane ── */
+.preview-body { padding: 16px 18px; }
+.prev-eyebrow { font-family: var(--mono); font-size: 10px; color: var(--acc); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px; }
+.prev-h1 { font-size: 20px; font-weight: 500; line-height: 1.2; margin-bottom: 8px; }
+.prev-meta { display: flex; gap: 10px; font-family: var(--mono); font-size: 10px; color: var(--faint); margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.prev-p { font-size: 13px; color: var(--text); opacity: .88; line-height: 1.75; margin-bottom: 10px; }
+.prev-aside { display: flex; gap: 12px; background: var(--purple-bg); border: 1px solid var(--purple); border-left-width: 3px; border-radius: 0; padding: 12px 14px; margin: 14px 0; }
+.prev-aside .av { width: 32px; height: 32px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.prev-aside .who { font-family: var(--mono); font-size: 10px; color: var(--purple); font-weight: 500; margin-bottom: 3px; }
+.prev-aside .say { font-size: 12px; color: var(--text); opacity: .9; line-height: 1.55; }
+.prev-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
+.prev-chip { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 100px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+.cursor-blink { display: inline-block; width: 2px; height: 13px; background: var(--acc); vertical-align: middle; margin-left: 1px; animation: blink 1s step-start infinite; }
+@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+
+/* ── Sidebar ── */
+.sidebar { border-left: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; overflow: hidden; }
+.sb-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.sbt { flex: 1; font-family: var(--mono); font-size: 10px; padding: 8px; text-align: center; cursor: pointer; color: var(--muted); border-right: 1px solid var(--border); }
+.sbt:last-child { border-right: none; }
+.sbt:hover { color: var(--text); background: var(--surface2); }
+.sbt.active { color: var(--acc); background: var(--acc-bg); border-bottom: 2px solid var(--acc); }
+.sb-body { flex: 1; overflow-y: auto; padding: 10px 12px; }
+.sb-h { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+.meta-field { margin-bottom: 8px; }
+.mf-label { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+.mf-input { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 6px 9px; font-family: var(--mono); font-size: 11px; color: var(--text); outline: none; }
+.mf-input:focus { border-color: var(--acc-border); }
+.topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.tpick { font-family: var(--mono); font-size: 10px; padding: 5px 7px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; text-align: center; }
+.tpick:hover { border-color: var(--border2); color: var(--text); }
+.tpick.sel { background: var(--acc-bg); border-color: var(--acc-border); color: var(--acc); }
+.chips-edit { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip-edit { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 100px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.chip-edit span { cursor: pointer; color: var(--faint); font-size: 9px; }
+.chip-edit span:hover { color: var(--warn); }
+.chip-add { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 100px; border: 1px dashed var(--border2); color: var(--faint); cursor: pointer; }
+.chip-add:hover { border-color: var(--acc-border); color: var(--acc); }
+.stat-row { display: flex; gap: 8px; }
+.stat { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 9px; }
+.stat .sv { font-family: var(--mono); font-size: 16px; font-weight: 500; color: var(--text); }
+.stat .sl { font-family: var(--mono); font-size: 9px; color: var(--faint); margin-top: 1px; }
+.sb-section { margin-bottom: 16px; }
+
+/* ── Status bar ── */
+.status-bar { display: flex; align-items: center; gap: 14px; padding: 4px 12px; border-top: 1px solid var(--border); background: var(--surface2); font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.sb-pill { padding: 2px 8px; border-radius: 100px; background: var(--acc-bg); border: 1px solid var(--acc-border); color: var(--acc); }
+.sb-warn { padding: 2px 8px; border-radius: 100px; background: var(--warn-bg); color: var(--warn); }
+.sb-spacer { flex: 1; }
+
+/* ─── OUTLINE / DIAG ─── */
+.outline-item { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.outline-item:last-child { border-bottom: none; }
+.outline-item:hover .oi-title { color: var(--acc); }
+.oi-mark { font-family: var(--mono); font-size: 10px; color: var(--faint); width: 20px; flex-shrink: 0; }
+.oi-title { font-size: 12px; color: var(--muted); transition: color .12s; flex: 1; }
+.oi-title.h1 { color: var(--text); font-weight: 500; }
+.oi-line { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-left: auto; }
+.oi-sub { padding-left: 14px; }
+.oi-sub2 { padding-left: 28px; }
+
+.diag-group { margin-bottom: 14px; }
+.dg-h { font-family: var(--mono); font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
+.diag-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; border-radius: var(--radius); margin-bottom: 3px; }
+.diag-item.err { background: var(--red-bg); border: 1px solid rgba(239,68,68,0.15); }
+.diag-item.warn-d { background: var(--warn-bg); border: 1px solid var(--warn-border); }
+.diag-item.ok { background: var(--green-bg); border: 1px solid rgba(52,211,153,0.15); }
+.diag-item.info { background: var(--blue-bg); border: 1px solid rgba(96,165,250,0.18); }
+.di-ic { font-size: 11px; margin-top: 1px; flex-shrink: 0; }
+.diag-item.err .di-ic { color: var(--red); }
+.diag-item.warn-d .di-ic { color: var(--warn); }
+.diag-item.ok .di-ic { color: var(--green); }
+.diag-item.info .di-ic { color: var(--blue); }
+.di-body { flex: 1; }
+.di-msg { font-family: var(--mono); font-size: 11px; color: var(--text); margin-bottom: 2px; }
+.di-sub { font-size: 11px; color: var(--muted); }
+.di-loc { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-left: auto; flex-shrink: 0; margin-top: 1px; }
+.di-fix { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border2); background: var(--surface2); color: var(--muted); cursor: pointer; display: inline-block; margin-top: 4px; }
+.di-fix:hover { color: var(--acc); border-color: var(--acc-border); }
+
+/* ─── PUBLISH MODAL ─── */
+.modal-bg { background: rgba(0,0,0,0.45); padding: 50px 60px; display: flex; align-items: center; justify-content: center; min-height: 360px; }
+.modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; width: 100%; max-width: 480px; overflow: hidden; }
+.modal-head { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-head h2 { font-size: 15px; font-weight: 500; }
+.modal-head .close { color: var(--faint); font-size: 16px; cursor: pointer; }
+.modal-body { padding: 16px 20px; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+
+.check-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.check-row:last-child { border-bottom: none; }
+.cr-ic { font-size: 13px; margin-top: 1px; flex-shrink: 0; }
+.cr-ic.ok { color: var(--green); }
+.cr-ic.warn { color: var(--warn); }
+.cr-body { flex: 1; }
+.cr-label { font-size: 13px; color: var(--text); }
+.cr-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.cr-action { font-family: var(--mono); font-size: 10px; color: var(--faint); cursor: pointer; text-decoration: underline; margin-top: 3px; display: inline-block; }
+.cr-action:hover { color: var(--acc); }
+
+.field-group { margin-bottom: 12px; }
+.fg-label { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+.fg-input { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 7px 10px; font-family: var(--mono); font-size: 12px; color: var(--text); outline: none; }
+.fg-input:focus { border-color: var(--acc-border); }
+.radio-row { display: flex; gap: 8px; }
+.radio-opt { flex: 1; border: 1px solid var(--border2); border-radius: var(--radius); padding: 8px 10px; cursor: pointer; background: var(--surface2); }
+.radio-opt.sel { background: var(--acc-bg); border-color: var(--acc-border); }
+.ro-label { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.radio-opt.sel .ro-label { color: var(--acc); }
+.ro-desc { font-size: 11px; color: var(--faint); margin-top: 2px; }
+
+.btn { font-family: var(--mono); font-size: 12px; padding: 7px 16px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--surface2); color: var(--text); cursor: pointer; }
+.btn.primary { background: var(--acc); border-color: var(--acc); color: #04130f; font-weight: 500; }
+.btn.ghost { background: none; border-color: transparent; color: var(--muted); }
+
+/* ─── ADMIN DASHBOARD ─── */
+.admin-page { padding: 22px 28px; }
+.page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.page-header h1 { font-size: 20px; font-weight: 500; }
+.ph-spacer { flex: 1; }
+.searchbar { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 8px 12px; flex: 1; max-width: 280px; }
+.searchbar input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-family: var(--mono); font-size: 12px; }
+.searchbar input::placeholder { color: var(--faint); }
+.filter-row { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.chip { font-family: var(--mono); font-size: 10px; padding: 3px 10px; border-radius: 100px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); cursor: pointer; }
+.chip.active { background: var(--acc-bg); border-color: var(--acc-border); color: var(--acc); }
+
+.stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
+.scard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; }
+.sc-val { font-family: var(--mono); font-size: 20px; font-weight: 500; color: var(--text); }
+.sc-lab { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-top: 2px; }
+.sc-val.acc { color: var(--acc); }
+.sc-val.blue { color: var(--blue); }
+.sc-val.warn { color: var(--warn); }
+
+.post-table { width: 100%; border-collapse: collapse; }
+.post-table th { font-family: var(--mono); font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: .1em; padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: left; font-weight: 400; }
+.post-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.post-table tr:last-child td { border-bottom: none; }
+.post-table tr:hover td { background: var(--surface2); }
+.pt-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+.pt-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.pt-tag { font-family: var(--mono); font-size: 10px; padding: 1px 7px; border-radius: 100px; background: var(--surface2); border: 1px solid var(--border); color: var(--faint); }
+.status-badge { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 100px; display: inline-block; }
+.status-badge.published { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+.status-badge.draft { background: var(--surface2); color: var(--muted); border: 1px solid var(--border2); }
+.status-badge.scheduled { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(96,165,250,0.2); }
+.row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.ra { font-family: var(--mono); font-size: 10px; padding: 3px 9px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; white-space: nowrap; }
+.ra:hover { color: var(--text); border-color: var(--border2); }
+.ra.del:hover { color: var(--red); border-color: rgba(239,68,68,0.25); }
+</style>
+</head>
+<body>
+
+<!-- ── DOC CHROME ── -->
+<div class="docbar">
+  <div class="brand">genuine<span>·</span>folio</div>
+  <div class="docsub">Editor UI mockups — 4 screens</div>
+  <div class="spacer"></div>
+  <span class="grp-label">theme</span>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="tt-ic">◑</span> <span id="tt-label">Dark</span></button>
+</div>
+
+<div class="wrap">
+  <div class="screen-tabs">
+    <button class="stab active" onclick="showScreen('editor', this)">Editor (split view)</button>
+    <button class="stab" onclick="showScreen('outline', this)">Sidebar — outline</button>
+    <button class="stab" onclick="showScreen('diag', this)">Sidebar — diagnostics</button>
+    <button class="stab" onclick="showScreen('publish', this)">Publish modal</button>
+    <button class="stab" onclick="showScreen('admin', this)">Admin post list</button>
+    <button class="stab" onclick="showScreen('writing', this)">Writing index</button>
+    <button class="stab" onclick="showScreen('home', this)">Home</button>
+    <button class="stab" onclick="showScreen('post', this)">Post detail</button>
+    <button class="stab" onclick="showScreen('projects', this)">Projects</button>
+    <button class="stab" onclick="showScreen('theme', this)">Admin — theme</button>
+  </div>
+
+  <!-- ════════════ EDITOR (SPLIT VIEW) ════════════ -->
+  <div class="screen active" id="s-editor">
+    <div class="screen-note">
+      Main editor — three-column shell: file tree (220px) | split editor (source + preview) | meta sidebar (260px).
+      Toolbar covers text formatting, heading levels, and custom markdown directives (::aside, ::callout).
+      Active line highlighted in acc-green; warn-highlighted line shows a diagnostic hit.
+      Status bar: draft pill · warning count · cursor position · reading time.
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev/admin/posts/lock-free-queue/edit</span>
+        <span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--warn);">● unsaved changes</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks">
+          <a class="npill">Writing</a>
+          <a class="npill">Projects</a>
+          <a class="npill">About</a>
+          <a class="npill admin">Admin ✦</a>
+        </div>
+        <div class="nspacer"></div>
+        <span class="kbd">⌘K</span>
+      </nav>
+
+      <div class="editor-shell">
+        <!-- File tree -->
+        <div class="file-tree">
+          <div class="ft-header">
+            <span class="ft-title">Posts</span>
+            <div class="ft-actions">
+              <div class="ft-btn" title="New post">+</div>
+              <div class="ft-btn" title="Collapse">−</div>
+            </div>
+          </div>
+          <div class="ft-search">
+            <span style="color:var(--faint);font-family:var(--mono);font-size:11px;">⌕</span>
+            <input placeholder="filter…">
+          </div>
+          <div class="file-list">
+            <div class="dir-row">
+              <span class="dicon">▾</span>
+              <span class="dname">rust</span>
+              <span class="dcount">3</span>
+            </div>
+            <div class="file-row active">
+              <span class="ficon">◆</span>
+              <span class="fname">lock-free-queue.md</span>
+              <span class="fbadge">M</span>
+            </div>
+            <div class="file-row">
+              <span class="ficon">◇</span>
+              <span class="fname">zero-copy-bytes.md</span>
+            </div>
+            <div class="file-row">
+              <span class="ficon">◇</span>
+              <span class="fname">atomic-ordering.md</span>
+            </div>
+            <div class="dir-row">
+              <span class="dicon">▾</span>
+              <span class="dname">infosec</span>
+              <span class="dcount">2</span>
+            </div>
+            <div class="file-row">
+              <span class="ficon">◇</span>
+              <span class="fname">blind-ssrf.md</span>
+            </div>
+            <div class="file-row">
+              <span class="ficon">◇</span>
+              <span class="fname">oob-server-setup.md</span>
+              <span class="fbadge new">N</span>
+            </div>
+            <div class="dir-row">
+              <span class="dicon">▸</span>
+              <span class="dname">distributed</span>
+              <span class="dcount">1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editor main -->
+        <div class="editor-main">
+          <div class="tab-bar">
+            <div class="etab active">
+              <span class="tdot"></span>
+              <span class="tname">lock-free-queue.md</span>
+              <span class="tclose">×</span>
+            </div>
+            <div class="etab">
+              <span class="tdot saved"></span>
+              <span class="tname">blind-ssrf.md</span>
+              <span class="tclose">×</span>
+            </div>
+            <div class="tab-spacer"></div>
+          </div>
+
+          <div class="toolbar">
+            <div class="tb-group">
+              <button class="tb-btn">B</button>
+              <button class="tb-btn" style="font-style:italic">I</button>
+              <button class="tb-btn" style="text-decoration:underline">U</button>
+              <button class="tb-btn" style="text-decoration:line-through">S</button>
+            </div>
+            <div class="tb-sep"></div>
+            <div class="tb-group">
+              <button class="tb-btn">H1</button>
+              <button class="tb-btn">H2</button>
+              <button class="tb-btn">H3</button>
+            </div>
+            <div class="tb-sep"></div>
+            <div class="tb-group">
+              <button class="tb-btn">`code`</button>
+              <button class="tb-btn">```block</button>
+              <button class="tb-btn active">::aside</button>
+              <button class="tb-btn">::callout</button>
+            </div>
+            <div class="tb-sep"></div>
+            <div class="tb-group">
+              <button class="tb-btn action">↗ link</button>
+              <button class="tb-btn action">⊞ img</button>
+            </div>
+            <div class="tb-right">
+              <button class="preview-btn">split</button>
+              <button class="save-btn">Save draft</button>
+            </div>
+          </div>
+
+          <div class="editor-area">
+            <div class="code-pane">
+              <div class="pane-header">
+                <span class="ph-label">source</span>
+                <span class="ph-lang">markdown</span>
+                <span class="ph-spacer"></span>
+                <span class="ph-action">wrap</span>
+              </div>
+              <pre class="code-editor"><div class="cl"><span class="ln">1</span><span class="lc"><span class="cm">---</span></span></div><div class="cl"><span class="ln">2</span><span class="lc"><span class="fn">title</span><span class="pn">:</span> <span class="str">Writing a lock-free queue from scratch</span></span></div><div class="cl"><span class="ln">3</span><span class="lc"><span class="fn">topic</span><span class="pn">:</span> <span class="str">rust</span></span></div><div class="cl"><span class="ln">4</span><span class="lc"><span class="fn">tags</span><span class="pn">: [</span><span class="str">rust</span><span class="pn">,</span> <span class="str">performance</span><span class="pn">,</span> <span class="str">dsa</span><span class="pn">]</span></span></div><div class="cl"><span class="ln">5</span><span class="lc"><span class="fn">published</span><span class="pn">:</span> <span class="num">false</span></span></div><div class="cl"><span class="ln">6</span><span class="lc"><span class="cm">---</span></span></div><div class="cl"><span class="ln">7</span><span class="lc"></span></div><div class="cl hl"><span class="ln">8</span><span class="lc"><span class="kw"># </span>Writing a lock-free queue from scratch<span class="cursor-blink"></span></span></div><div class="cl"><span class="ln">9</span><span class="lc"></span></div><div class="cl"><span class="ln">10</span><span class="lc">A compare-and-swap only checks that a pointer's</span></div><div class="cl"><span class="ln">11</span><span class="lc"><span class="str">*value*</span> is unchanged — not that it hasn't been</span></div><div class="cl"><span class="ln">12</span><span class="lc">changed and changed back. That gap is the ABA problem.</span></div><div class="cl"><span class="ln">13</span><span class="lc"></span></div><div class="cl warn-hl"><span class="ln">14</span><span class="lc"><span class="kw">## </span><span class="cm">The ABA problem</span></span></div><div class="cl"><span class="ln">15</span><span class="lc"></span></div><div class="cl"><span class="ln">16</span><span class="lc"><span class="pn">:::</span><span class="fn">aside</span><span class="pn">{</span><span class="fn">label</span><span class="pn">=</span><span class="str">"Ferris' hot tip"</span><span class="pn">}</span></span></div><div class="cl"><span class="ln">17</span><span class="lc">If you free that node between the <span class="str">`load`</span> and the</span></div><div class="cl"><span class="ln">18</span><span class="lc"><span class="str">`compare_exchange`</span>, another thread can reuse it.</span></div><div class="cl"><span class="ln">19</span><span class="lc"><span class="pn">:::</span></span></div><div class="cl"><span class="ln">20</span><span class="lc"></span></div><div class="cl"><span class="ln">21</span><span class="lc"><span class="pn">```</span><span class="fn">rust</span></span></div><div class="cl"><span class="ln">22</span><span class="lc"><span class="kw">loop</span> <span class="pn">{</span></span></div><div class="cl"><span class="ln">23</span><span class="lc">    <span class="kw">let</span> head <span class="pn">=</span> self<span class="pn">.</span>head<span class="pn">.</span><span class="fn">load</span><span class="pn">(</span>Ordering<span class="pn">::</span>Acquire<span class="pn">);</span></span></div><div class="cl"><span class="ln">24</span><span class="lc">    <span class="kw">let</span> next <span class="pn">=</span> <span class="kw">unsafe</span> <span class="pn">{ (*</span>head<span class="pn">).</span>next <span class="pn">};</span></span></div><div class="cl"><span class="ln">25</span><span class="lc"><span class="pn">}</span></span></div><div class="cl"><span class="ln">26</span><span class="lc"><span class="pn">```</span></span></div></pre>
+            </div>
+            <div class="preview-pane">
+              <div class="pane-header">
+                <span class="ph-label">preview</span>
+                <span class="ph-spacer"></span>
+                <span class="ph-action">full page</span>
+              </div>
+              <div class="preview-body">
+                <div class="prev-eyebrow">rust · performance</div>
+                <h1 class="prev-h1">Writing a lock-free queue from scratch</h1>
+                <div class="prev-meta"><span>draft</span><span>~12 min read</span><span>line 8 active</span></div>
+                <p class="prev-p">A compare-and-swap only checks that a pointer's <em>value</em> is unchanged — not that it hasn't been changed and changed back. That gap is the ABA problem.</p>
+                <h2 style="font-size:14px;font-weight:500;margin-bottom:8px;color:var(--warn);">⚠ h2: no body follows this heading</h2>
+                <div class="prev-aside">
+                  <div class="av">🦀</div>
+                  <div>
+                    <div class="who">Ferris' hot tip</div>
+                    <div class="say">If you free that node between the <code style="font-family:var(--mono);font-size:11px;background:var(--surface2);padding:1px 4px;border-radius:3px;">load</code> and the <code style="font-family:var(--mono);font-size:11px;background:var(--surface2);padding:1px 4px;border-radius:3px;">compare_exchange</code>, another thread can reuse it.</div>
+                  </div>
+                </div>
+                <div class="prev-chips">
+                  <span class="prev-chip">rust</span>
+                  <span class="prev-chip">performance</span>
+                  <span class="prev-chip">dsa</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="status-bar">
+            <span class="sb-pill">draft</span>
+            <span class="sb-warn">⚠ 1 warning</span>
+            <span>Ln 8, Col 42</span>
+            <span>26 lines</span>
+            <span class="sb-spacer"></span>
+            <span>~12 min read</span>
+            <span>UTF-8</span>
+            <span style="color:var(--acc);">markdown</span>
+          </div>
+        </div>
+
+        <!-- Sidebar (meta tab) -->
+        <div class="sidebar">
+          <div class="sb-tabs">
+            <div class="sbt active">meta</div>
+            <div class="sbt">outline</div>
+            <div class="sbt">diag</div>
+          </div>
+          <div class="sb-body">
+            <div class="sb-section">
+              <div class="sb-h">frontmatter</div>
+              <div class="meta-field">
+                <div class="mf-label">slug</div>
+                <input class="mf-input" style="font-size:11px;padding:5px 8px;" value="lock-free-queue">
+              </div>
+              <div class="meta-field">
+                <div class="mf-label">published at</div>
+                <input class="mf-input" style="font-size:11px;padding:5px 8px;" value="2026-06-20">
+              </div>
+              <div class="meta-field">
+                <div class="mf-label">reading time</div>
+                <input class="mf-input" style="font-size:11px;padding:5px 8px;color:var(--faint);" value="~12 min  (auto)" disabled>
+              </div>
+            </div>
+            <div class="sb-section">
+              <div class="sb-h">topic accent</div>
+              <div class="topic-grid">
+                <div class="tpick sel">rust</div>
+                <div class="tpick">infosec</div>
+                <div class="tpick">distributed</div>
+                <div class="tpick">systems</div>
+                <div class="tpick">ctf</div>
+                <div class="tpick">performance</div>
+              </div>
+            </div>
+            <div class="sb-section">
+              <div class="sb-h">tags</div>
+              <div class="chips-edit">
+                <div class="chip-edit">rust<span>×</span></div>
+                <div class="chip-edit">performance<span>×</span></div>
+                <div class="chip-edit">dsa<span>×</span></div>
+                <div class="chip-add">+ add</div>
+              </div>
+            </div>
+            <div class="sb-section">
+              <div class="sb-h">stats</div>
+              <div class="stat-row">
+                <div class="stat"><div class="sv">26</div><div class="sl">lines</div></div>
+                <div class="stat"><div class="sv">312</div><div class="sl">words</div></div>
+                <div class="stat"><div class="sv">12m</div><div class="sl">read</div></div>
+              </div>
+            </div>
+            <div class="sb-section">
+              <div class="sb-h">diagnostics</div>
+              <div class="diag-item warn-d" style="margin-bottom:4px;">
+                <span class="di-ic">▲</span>
+                <div class="di-body"><div class="di-msg">h2 with no body content</div></div>
+                <span class="di-loc">L14</span>
+              </div>
+              <div class="diag-item ok" style="margin-bottom:4px;">
+                <span class="di-ic">✓</span>
+                <div class="di-body"><div class="di-msg">frontmatter valid</div></div>
+              </div>
+              <div class="diag-item ok">
+                <span class="di-ic">✓</span>
+                <div class="di-body"><div class="di-msg">all links reachable</div></div>
+              </div>
+            </div>
+            <div>
+              <button class="btn primary" style="width:100%;padding:8px;">Publish post</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ SIDEBAR: OUTLINE ════════════ -->
+  <div class="screen" id="s-outline">
+    <div class="screen-note">
+      Sidebar — outline tab. Document heading hierarchy (H1/H2/H3) with line numbers. Jump-to-line on click.
+      Directives section lists ::aside, ::callout, and fenced code blocks below the heading tree.
+      Warn color bleeds into the heading label that has a diagnostic hit.
+    </div>
+    <div class="win" style="max-width:320px;">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">sidebar — outline</span>
+      </div>
+      <div class="sidebar" style="height:520px;border:none;">
+        <div class="sb-tabs">
+          <div class="sbt">meta</div>
+          <div class="sbt active">outline</div>
+          <div class="sbt">diag</div>
+        </div>
+        <div class="sb-body">
+          <div class="sb-h">document structure</div>
+          <div class="outline-item">
+            <span class="oi-mark">H1</span>
+            <span class="oi-title h1">Writing a lock-free queue from scratch</span>
+            <span class="oi-line">L8</span>
+          </div>
+          <div class="outline-item oi-sub">
+            <span class="oi-mark">H2</span>
+            <span class="oi-title" style="color:var(--warn);">The ABA problem ⚠</span>
+            <span class="oi-line">L14</span>
+          </div>
+          <div class="outline-item oi-sub2">
+            <span class="oi-mark">H3</span>
+            <span class="oi-title">Why tagging works</span>
+            <span class="oi-line">L28</span>
+          </div>
+          <div class="outline-item oi-sub2">
+            <span class="oi-mark">H3</span>
+            <span class="oi-title">The CAS loop</span>
+            <span class="oi-line">L41</span>
+          </div>
+          <div class="outline-item oi-sub">
+            <span class="oi-mark">H2</span>
+            <span class="oi-title">Benchmarks</span>
+            <span class="oi-line">L58</span>
+          </div>
+          <div class="outline-item oi-sub">
+            <span class="oi-mark">H2</span>
+            <span class="oi-title">Takeaways</span>
+            <span class="oi-line">L72</span>
+          </div>
+          <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">
+            <div class="sb-h">directives &amp; blocks</div>
+            <div class="outline-item">
+              <span class="oi-mark" style="color:var(--purple);">::</span>
+              <span class="oi-title" style="color:var(--purple);">aside · Ferris' hot tip</span>
+              <span class="oi-line">L16</span>
+            </div>
+            <div class="outline-item">
+              <span class="oi-mark" style="color:var(--warn);">::</span>
+              <span class="oi-title" style="color:var(--warn);">callout · Gotcha</span>
+              <span class="oi-line">L34</span>
+            </div>
+            <div class="outline-item">
+              <span class="oi-mark" style="color:var(--faint);">```</span>
+              <span class="oi-title">code · rust</span>
+              <span class="oi-line">L21</span>
+            </div>
+            <div class="outline-item">
+              <span class="oi-mark" style="color:var(--faint);">```</span>
+              <span class="oi-title">code · rust</span>
+              <span class="oi-line">L44</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ SIDEBAR: DIAGNOSTICS ════════════ -->
+  <div class="screen" id="s-diag">
+    <div class="screen-note">
+      Sidebar — diagnostics tab. Grouped into warnings / checks passed / info.
+      Each entry has message + explanatory sub-line. Warnings include a jump-to-line action.
+      Info row surfaces the resolved topic accent color.
+    </div>
+    <div class="win" style="max-width:320px;">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">sidebar — diagnostics</span>
+      </div>
+      <div class="sidebar" style="height:580px;border:none;">
+        <div class="sb-tabs">
+          <div class="sbt">meta</div>
+          <div class="sbt">outline</div>
+          <div class="sbt active">diag</div>
+        </div>
+        <div class="sb-body">
+          <div class="diag-group">
+            <div class="dg-h">warnings · 1</div>
+            <div class="diag-item warn-d">
+              <span class="di-ic">▲</span>
+              <div class="di-body">
+                <div class="di-msg">h2 with no body content</div>
+                <div class="di-sub">Heading "The ABA problem" has no paragraph before the next heading or directive.</div>
+                <span class="di-fix">jump to L14</span>
+              </div>
+              <span class="di-loc">L14</span>
+            </div>
+          </div>
+          <div class="diag-group">
+            <div class="dg-h">checks passed · 5</div>
+            <div class="diag-item ok">
+              <span class="di-ic">✓</span>
+              <div class="di-body">
+                <div class="di-msg">frontmatter valid</div>
+                <div class="di-sub">title · topic · tags · published all present and typed correctly.</div>
+              </div>
+            </div>
+            <div class="diag-item ok">
+              <span class="di-ic">✓</span>
+              <div class="di-body">
+                <div class="di-msg">slug available</div>
+                <div class="di-sub">lock-free-queue not yet published — no collision.</div>
+              </div>
+            </div>
+            <div class="diag-item ok">
+              <span class="di-ic">✓</span>
+              <div class="di-body">
+                <div class="di-msg">all internal links resolve</div>
+                <div class="di-sub">2 links checked, 0 broken.</div>
+              </div>
+            </div>
+            <div class="diag-item ok">
+              <span class="di-ic">✓</span>
+              <div class="di-body">
+                <div class="di-msg">code blocks have language tags</div>
+                <div class="di-sub">2 fenced blocks, both tagged rust.</div>
+              </div>
+            </div>
+            <div class="diag-item ok">
+              <span class="di-ic">✓</span>
+              <div class="di-body">
+                <div class="di-msg">reading time estimated</div>
+                <div class="di-sub">312 words at 250 wpm → ~12 min read.</div>
+              </div>
+            </div>
+          </div>
+          <div class="diag-group">
+            <div class="dg-h">info</div>
+            <div class="diag-item info">
+              <span class="di-ic">i</span>
+              <div class="di-body">
+                <div class="di-msg">topic accent: rust</div>
+                <div class="di-sub">Page will render with --acc: #f0703c (rust orange).</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ PUBLISH MODAL ════════════ -->
+  <div class="screen" id="s-publish">
+    <div class="screen-note">
+      Publish modal — overlays the editor. Pre-publish checklist runs inline; warnings don't block but surface with a jump-to action.
+      Publish mode toggle: "Now" vs "Schedule". Auto-filled canonical URL field (read-only).
+      Footer: ghost (Cancel) → secondary (Save draft) → primary (Publish now →).
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev/admin/posts/lock-free-queue/publish</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks">
+          <a class="npill">Writing</a><a class="npill">Projects</a><a class="npill">About</a>
+          <a class="npill admin">Admin ✦</a>
+        </div>
+      </nav>
+      <div class="modal-bg">
+        <div class="modal">
+          <div class="modal-head">
+            <h2>Publish post</h2>
+            <span class="close">×</span>
+          </div>
+          <div class="modal-body">
+            <div style="margin-bottom:14px;">
+              <div style="font-family:var(--mono);font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;">pre-publish checks</div>
+              <div class="check-row">
+                <span class="cr-ic warn">▲</span>
+                <div class="cr-body">
+                  <div class="cr-label">h2 with no body content (line 14)</div>
+                  <div class="cr-sub">The section "The ABA problem" has no paragraph before the next heading.</div>
+                  <span class="cr-action">go to editor</span>
+                </div>
+              </div>
+              <div class="check-row">
+                <span class="cr-ic ok">✓</span>
+                <div class="cr-body">
+                  <div class="cr-label">Frontmatter valid</div>
+                  <div class="cr-sub">title · topic · tags · slug all present.</div>
+                </div>
+              </div>
+              <div class="check-row">
+                <span class="cr-ic ok">✓</span>
+                <div class="cr-body">
+                  <div class="cr-label">Slug available — lock-free-queue</div>
+                </div>
+              </div>
+              <div class="check-row">
+                <span class="cr-ic ok">✓</span>
+                <div class="cr-body">
+                  <div class="cr-label">All internal links resolve</div>
+                </div>
+              </div>
+            </div>
+            <div class="field-group">
+              <div class="fg-label">publish mode</div>
+              <div class="radio-row">
+                <div class="radio-opt sel">
+                  <div class="ro-label">● Now</div>
+                  <div class="ro-desc">Goes live immediately.</div>
+                </div>
+                <div class="radio-opt">
+                  <div class="ro-label">○ Schedule</div>
+                  <div class="ro-desc">Pick a future date.</div>
+                </div>
+              </div>
+            </div>
+            <div class="field-group">
+              <div class="fg-label">canonical url (auto-filled)</div>
+              <input class="fg-input" value="https://genuine.dev/blog/lock-free-queue" readonly style="color:var(--faint);">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn ghost">Cancel</button>
+            <button class="btn">Save draft</button>
+            <button class="btn primary">Publish now →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ ADMIN POST LIST ════════════ -->
+  <div class="screen" id="s-admin">
+    <div class="screen-note">
+      Admin post list — /admin/posts. Stat cards (published · draft · scheduled · total),
+      filter chips mirroring the blog index tag pattern, full post table with topic-colored
+      labels, status badges, and context-sensitive row actions.
+      draft → edit / preview / delete · published → edit / unpublish / delete · scheduled → edit / unschedule / delete.
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev/admin/posts</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks">
+          <a class="npill">Writing</a><a class="npill">Projects</a><a class="npill">About</a>
+          <a class="npill admin">Admin ✦</a>
+        </div>
+      </nav>
+      <div class="admin-page">
+        <div class="page-header">
+          <h1>Posts</h1>
+          <div class="ph-spacer"></div>
+          <div class="searchbar">
+            <span style="color:var(--faint);font-family:var(--mono);font-size:12px;">⌕</span>
+            <input placeholder="search posts…">
+          </div>
+          <button class="btn primary" style="margin-left:8px;">+ New post</button>
+        </div>
+        <div class="stat-cards">
+          <div class="scard"><div class="sc-val acc">3</div><div class="sc-lab">published</div></div>
+          <div class="scard"><div class="sc-val warn">1</div><div class="sc-lab">draft</div></div>
+          <div class="scard"><div class="sc-val blue">1</div><div class="sc-lab">scheduled</div></div>
+          <div class="scard"><div class="sc-val">5</div><div class="sc-lab">total</div></div>
+        </div>
+        <div class="filter-row">
+          <span class="chip active">all</span>
+          <span class="chip">published</span>
+          <span class="chip">draft</span>
+          <span class="chip">scheduled</span>
+          <span class="chip">rust</span>
+          <span class="chip">infosec</span>
+          <span class="chip">distributed</span>
+        </div>
+        <table class="post-table">
+          <thead>
+            <tr>
+              <th>title / tags</th>
+              <th>topic</th>
+              <th>status</th>
+              <th>date</th>
+              <th style="text-align:right;">actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="pt-title">Writing a lock-free queue from scratch</div>
+                <div class="pt-tags"><span class="pt-tag">rust</span><span class="pt-tag">performance</span><span class="pt-tag">dsa</span></div>
+              </td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:#f0703c;">rust</span></td>
+              <td><span class="status-badge draft">draft</span></td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:var(--faint);">—</span></td>
+              <td><div class="row-actions"><span class="ra">edit</span><span class="ra">preview</span><span class="ra del">delete</span></div></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="pt-title">Blind SSRF: building your own OOB server</div>
+                <div class="pt-tags"><span class="pt-tag">infosec</span><span class="pt-tag">bug-bounty</span></div>
+              </td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:var(--acc);">infosec</span></td>
+              <td><span class="status-badge published">published</span></td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:var(--faint);">2026-05-28</span></td>
+              <td><div class="row-actions"><span class="ra">edit</span><span class="ra">unpublish</span><span class="ra del">delete</span></div></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="pt-title">SWIM gossip, explained by building it</div>
+                <div class="pt-tags"><span class="pt-tag">distributed</span><span class="pt-tag">rust</span></div>
+              </td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:#4a90e8;">distributed</span></td>
+              <td><span class="status-badge published">published</span></td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:var(--faint);">2026-04-15</span></td>
+              <td><div class="row-actions"><span class="ra">edit</span><span class="ra">unpublish</span><span class="ra del">delete</span></div></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="pt-title">Zero-copy fan-out with Bytes</div>
+                <div class="pt-tags"><span class="pt-tag">rust</span><span class="pt-tag">performance</span></div>
+              </td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:#f0703c;">rust</span></td>
+              <td><span class="status-badge scheduled">scheduled</span></td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:var(--blue);">2026-07-04</span></td>
+              <td><div class="row-actions"><span class="ra">edit</span><span class="ra">unschedule</span><span class="ra del">delete</span></div></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="pt-title">Postgres as a job queue: SKIP LOCKED in depth</div>
+                <div class="pt-tags"><span class="pt-tag">postgres</span><span class="pt-tag">systems</span></div>
+              </td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:var(--acc);">systems</span></td>
+              <td><span class="status-badge published">published</span></td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:var(--faint);">2026-03-02</span></td>
+              <td><div class="row-actions"><span class="ra">edit</span><span class="ra">unpublish</span><span class="ra del">delete</span></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+/* ─── WRITING INDEX ─── */
+.wri-shell { display: grid; grid-template-columns: 200px 1fr; height: 640px; }
+.filter-col { border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; overflow: hidden; }
+.fc-header { padding: 16px 14px 10px; border-bottom: 1px solid var(--border); }
+.fc-eyebrow { font-family: var(--mono); font-size: 10px; color: var(--acc); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 6px; }
+.fc-title { font-size: 18px; font-weight: 500; line-height: 1.2; }
+.fc-body { flex: 1; overflow-y: auto; padding: 10px 10px; }
+.fc-search { display: flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 7px 10px; margin-bottom: 12px; }
+.fc-search input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-family: var(--mono); font-size: 11px; }
+.fc-search input::placeholder { color: var(--faint); }
+.filter-section { margin-bottom: 14px; }
+.fs-h { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 7px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+.filter-item { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: var(--radius); cursor: pointer; margin-bottom: 1px; }
+.filter-item:hover { background: var(--surface2); }
+.filter-item.wri-active { background: var(--acc-bg); }
+.fi-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.fi-label { font-family: var(--mono); font-size: 11px; color: var(--muted); flex: 1; }
+.filter-item.wri-active .fi-label { color: var(--acc); }
+.fi-count { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.filter-item.wri-active .fi-count { color: var(--acc); opacity: .7; }
+.fc-footer { padding: 10px 10px; border-top: 1px solid var(--border); }
+.sort-row { display: flex; align-items: center; gap: 6px; }
+.sort-label { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.sort-opts { display: flex; gap: 3px; }
+.sort-opt { font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface2); color: var(--faint); cursor: pointer; }
+.sort-opt.sel { background: var(--acc-bg); border-color: var(--acc-border); color: var(--acc); }
+.post-col { display: flex; flex-direction: column; overflow: hidden; }
+.pc-header { display: flex; align-items: center; gap: 8px; padding: 9px 16px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.pc-count { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.pc-count span { color: var(--text); font-weight: 500; }
+.pc-sp { flex: 1; }
+.view-toggle { display: flex; gap: 2px; }
+.vt-btn { font-family: var(--mono); font-size: 11px; padding: 4px 9px; border-radius: 4px; border: 1px solid transparent; color: var(--faint); cursor: pointer; }
+.vt-btn.vt-active { background: var(--surface); border-color: var(--border2); color: var(--text); }
+.post-list { flex: 1; overflow-y: auto; }
+.year-row { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+.yr-label { font-family: var(--mono); font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: .1em; }
+.yr-line { flex: 1; height: 1px; background: var(--border); }
+.yr-count { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.wri-post-row { display: flex; gap: 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.wri-post-row:hover { background: var(--surface2); }
+.wri-post-row:hover .wpr-title { color: var(--acc); }
+.topic-bar { width: 3px; flex-shrink: 0; }
+.wpr-body { flex: 1; padding: 13px 16px; }
+.wpr-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 5px; }
+.wpr-title { font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.3; flex: 1; transition: color .12s; }
+.wpr-date { font-family: var(--mono); font-size: 10px; color: var(--faint); white-space: nowrap; padding-top: 2px; }
+.wpr-summary { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 8px; }
+.wpr-footer { display: flex; align-items: center; gap: 8px; }
+.wpr-chips { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
+.wpr-chip { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 100px; background: var(--surface2); border: 1px solid var(--border); color: var(--faint); }
+.wpr-meta { display: flex; gap: 10px; align-items: center; }
+.wpr-read { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.wpr-views { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.new-badge { font-family: var(--mono); font-size: 9px; padding: 1px 6px; border-radius: 100px; background: var(--acc-bg); border: 1px solid var(--acc-border); color: var(--acc); white-space: nowrap; }
+.t-rust { background: #f0703c; } .t-infosec { background: var(--acc); }
+.t-distributed { background: var(--blue); } .t-systems { background: var(--purple); }
+.t-performance { background: #d957d4; } .t-ctf { background: #ef5350; }
+</style>
+
+  <!-- ════════════ WRITING INDEX ════════════ -->
+  <div class="screen" id="s-writing">
+    <div class="screen-note">
+      Writing index — two-column shell: sticky filter sidebar (200px) with topic + tag filters, sort control | post list with year dividers, topic-colored 3px left bar, reading time + view count per row.
+      Mirrors the editor shell's panel pattern. Topic bar colors match the per-topic accent system (rust → #f0703c, infosec → --acc, distributed → --blue, etc.).
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev/writing</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks">
+          <a class="npill active">Writing</a>
+          <a class="npill">Projects</a>
+          <a class="npill">About</a>
+        </div>
+        <div class="nspacer"></div>
+        <span class="kbd">⌘K</span>
+      </nav>
+
+      <div class="wri-shell">
+
+        <!-- filter sidebar -->
+        <div class="filter-col">
+          <div class="fc-header">
+            <div class="fc-eyebrow">Writing</div>
+            <div class="fc-title">All posts</div>
+          </div>
+          <div class="fc-body">
+            <div class="fc-search">
+              <span style="color:var(--faint);font-family:var(--mono);font-size:11px;">⌕</span>
+              <input placeholder="search…">
+            </div>
+            <div class="filter-section">
+              <div class="fs-h">topic</div>
+              <div class="filter-item wri-active">
+                <span class="fi-dot" style="background:var(--muted);"></span>
+                <span class="fi-label">all</span>
+                <span class="fi-count">7</span>
+              </div>
+              <div class="filter-item">
+                <span class="fi-dot t-rust"></span>
+                <span class="fi-label">rust</span>
+                <span class="fi-count">3</span>
+              </div>
+              <div class="filter-item">
+                <span class="fi-dot t-infosec"></span>
+                <span class="fi-label">infosec</span>
+                <span class="fi-count">2</span>
+              </div>
+              <div class="filter-item">
+                <span class="fi-dot t-distributed"></span>
+                <span class="fi-label">distributed</span>
+                <span class="fi-count">1</span>
+              </div>
+              <div class="filter-item">
+                <span class="fi-dot t-systems"></span>
+                <span class="fi-label">systems</span>
+                <span class="fi-count">1</span>
+              </div>
+              <div class="filter-item">
+                <span class="fi-dot t-ctf"></span>
+                <span class="fi-label">ctf</span>
+                <span class="fi-count">0</span>
+              </div>
+              <div class="filter-item">
+                <span class="fi-dot t-performance"></span>
+                <span class="fi-label">performance</span>
+                <span class="fi-count">1</span>
+              </div>
+            </div>
+            <div class="filter-section">
+              <div class="fs-h">tags</div>
+              <div class="filter-item">
+                <span class="fi-dot" style="background:var(--faint);"></span>
+                <span class="fi-label">lock-free</span>
+                <span class="fi-count">1</span>
+              </div>
+              <div class="filter-item">
+                <span class="fi-dot" style="background:var(--faint);"></span>
+                <span class="fi-label">bug-bounty</span>
+                <span class="fi-count">2</span>
+              </div>
+              <div class="filter-item">
+                <span class="fi-dot" style="background:var(--faint);"></span>
+                <span class="fi-label">postgres</span>
+                <span class="fi-count">1</span>
+              </div>
+              <div class="filter-item">
+                <span class="fi-dot" style="background:var(--faint);"></span>
+                <span class="fi-label">dsa</span>
+                <span class="fi-count">1</span>
+              </div>
+            </div>
+          </div>
+          <div class="fc-footer">
+            <div class="sort-row">
+              <span class="sort-label">sort</span>
+              <div class="sort-opts">
+                <span class="sort-opt sel">newest</span>
+                <span class="sort-opt">oldest</span>
+                <span class="sort-opt">views</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- post list -->
+        <div class="post-col">
+          <div class="pc-header">
+            <span class="pc-count"><span>7</span> posts</span>
+            <span class="pc-sp"></span>
+            <div class="view-toggle">
+              <span class="vt-btn vt-active">≡ list</span>
+              <span class="vt-btn">⊞ grid</span>
+            </div>
+          </div>
+          <div class="post-list">
+
+            <div class="year-row">
+              <span class="yr-label">2026</span>
+              <span class="yr-line"></span>
+              <span class="yr-count">4 posts</span>
+            </div>
+
+            <div class="wri-post-row">
+              <div class="topic-bar t-rust"></div>
+              <div class="wpr-body">
+                <div class="wpr-top">
+                  <div class="wpr-title">Writing a lock-free queue from scratch</div>
+                  <span class="new-badge">new</span>
+                  <span class="wpr-date">2026-06-20</span>
+                </div>
+                <div class="wpr-summary">The ABA problem, why pointer tagging is necessary, and how a Michael-Scott queue stays correct without a mutex.</div>
+                <div class="wpr-footer">
+                  <div class="wpr-chips"><span class="wpr-chip">rust</span><span class="wpr-chip">performance</span><span class="wpr-chip">dsa</span></div>
+                  <div class="wpr-meta"><span class="wpr-read">12 min</span><span class="wpr-views">—</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wri-post-row">
+              <div class="topic-bar t-infosec"></div>
+              <div class="wpr-body">
+                <div class="wpr-top">
+                  <div class="wpr-title">Blind SSRF: building your own OOB server</div>
+                  <span class="wpr-date">2026-05-28</span>
+                </div>
+                <div class="wpr-summary">How out-of-band interaction servers work, and standing one up safely on isolated infrastructure for bug bounty.</div>
+                <div class="wpr-footer">
+                  <div class="wpr-chips"><span class="wpr-chip">infosec</span><span class="wpr-chip">bug-bounty</span></div>
+                  <div class="wpr-meta"><span class="wpr-read">9 min</span><span class="wpr-views">482 views</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wri-post-row">
+              <div class="topic-bar t-distributed"></div>
+              <div class="wpr-body">
+                <div class="wpr-top">
+                  <div class="wpr-title">SWIM gossip, explained by building it</div>
+                  <span class="wpr-date">2026-04-15</span>
+                </div>
+                <div class="wpr-summary">Direct ping → suspect → indirect ping → dead. Epidemic dissemination and O(log N) convergence, implemented in Rust.</div>
+                <div class="wpr-footer">
+                  <div class="wpr-chips"><span class="wpr-chip">distributed</span><span class="wpr-chip">rust</span></div>
+                  <div class="wpr-meta"><span class="wpr-read">15 min</span><span class="wpr-views">1.2k views</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wri-post-row">
+              <div class="topic-bar t-systems"></div>
+              <div class="wpr-body">
+                <div class="wpr-top">
+                  <div class="wpr-title">Postgres as a job queue: SKIP LOCKED in depth</div>
+                  <span class="wpr-date">2026-03-02</span>
+                </div>
+                <div class="wpr-summary">Lock-free dequeue, LISTEN/NOTIFY for low-latency wake, and where this approach hits its ceiling.</div>
+                <div class="wpr-footer">
+                  <div class="wpr-chips"><span class="wpr-chip">postgres</span><span class="wpr-chip">systems</span></div>
+                  <div class="wpr-meta"><span class="wpr-read">11 min</span><span class="wpr-views">2.1k views</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="year-row">
+              <span class="yr-label">2025</span>
+              <span class="yr-line"></span>
+              <span class="yr-count">3 posts</span>
+            </div>
+
+            <div class="wri-post-row">
+              <div class="topic-bar t-rust"></div>
+              <div class="wpr-body">
+                <div class="wpr-top">
+                  <div class="wpr-title">Zero-copy fan-out with Bytes</div>
+                  <span class="wpr-date">2025-11-14</span>
+                </div>
+                <div class="wpr-summary">How <code style="font-family:var(--mono);font-size:11px;background:var(--surface2);padding:1px 4px;border-radius:3px;">bytes::Bytes</code> achieves shallow clones via reference counting, and when it pays off in a fan-out pipeline.</div>
+                <div class="wpr-footer">
+                  <div class="wpr-chips"><span class="wpr-chip">rust</span><span class="wpr-chip">performance</span></div>
+                  <div class="wpr-meta"><span class="wpr-read">8 min</span><span class="wpr-views">3.4k views</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wri-post-row">
+              <div class="topic-bar t-rust"></div>
+              <div class="wpr-body">
+                <div class="wpr-top">
+                  <div class="wpr-title">Atomic memory ordering, demystified</div>
+                  <span class="wpr-date">2025-09-03</span>
+                </div>
+                <div class="wpr-summary">Acquire, Release, SeqCst — what the CPU actually does with these hints, and why you almost always want Acquire/Release pairs.</div>
+                <div class="wpr-footer">
+                  <div class="wpr-chips"><span class="wpr-chip">rust</span><span class="wpr-chip">performance</span></div>
+                  <div class="wpr-meta"><span class="wpr-read">10 min</span><span class="wpr-views">5.8k views</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wri-post-row">
+              <div class="topic-bar t-ctf"></div>
+              <div class="wpr-body">
+                <div class="wpr-top">
+                  <div class="wpr-title">First blood on a blind RCE: how the chain came together</div>
+                  <span class="wpr-date">2025-06-19</span>
+                </div>
+                <div class="wpr-summary">Walking through the recon → SSRF → internal metadata → RCE chain on a private program, and what made each step stick.</div>
+                <div class="wpr-footer">
+                  <div class="wpr-chips"><span class="wpr-chip">infosec</span><span class="wpr-chip">bug-bounty</span><span class="wpr-chip">ctf</span></div>
+                  <div class="wpr-meta"><span class="wpr-read">14 min</span><span class="wpr-views">7.2k views</span></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+<style>
+/* ── ADMIN THEME SETTINGS ── */
+.ts-admin-shell { display: grid; grid-template-columns: 200px 1fr; }
+.ts-admin-nav { border-right: 1px solid var(--border); background: var(--surface); padding: 14px 0; }
+.ts-an-section { margin-bottom: 16px; }
+.ts-an-label { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .12em; padding: 0 14px; margin-bottom: 6px; display: block; }
+.ts-an-item { display: flex; align-items: center; gap: 8px; padding: 6px 14px; cursor: pointer; font-size: 12px; color: var(--muted); }
+.ts-an-item:hover { background: var(--surface2); color: var(--text); }
+.ts-an-item.ts-active { background: var(--acc-bg); color: var(--acc); }
+.ts-main { padding: 22px 26px; overflow: auto; }
+.ts-page-title { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+.ts-page-sub { font-size: 12px; color: var(--muted); margin-bottom: 22px; }
+.ts-sec-h { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.ts-theme-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin-bottom: 22px; }
+.ts-theme-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; cursor: pointer; transition: border-color .15s; }
+.ts-theme-card:hover { border-color: var(--border2); }
+.ts-theme-card.ts-selected { border-color: var(--acc); box-shadow: 0 0 0 1px var(--acc); }
+.ts-tc-preview { height: 52px; display: flex; flex-direction: column; gap: 3px; padding: 7px 8px; }
+.ts-tc-bar { height: 4px; border-radius: 2px; width: 60%; }
+.ts-tc-bar.s { width: 40%; }
+.ts-tc-line { height: 3px; border-radius: 1px; }
+.ts-tc-dots { display: flex; gap: 3px; margin-top: 2px; }
+.ts-tc-dot { width: 5px; height: 5px; border-radius: 50%; }
+.ts-tc-footer { padding: 6px 8px; display: flex; align-items: center; justify-content: space-between; }
+.ts-tc-name { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.ts-theme-card.ts-selected .ts-tc-name { color: var(--acc); }
+.ts-tc-check { font-size: 10px; color: var(--acc); display: none; }
+.ts-theme-card.ts-selected .ts-tc-check { display: block; }
+.ts-accent-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 22px; }
+.ts-accent-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.ts-accent-row:last-child { margin-bottom: 0; }
+.ts-acc-label { font-family: var(--mono); font-size: 11px; color: var(--muted); width: 80px; flex-shrink: 0; }
+.ts-acc-swatches { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; align-items: center; }
+.ts-acc-sw { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform .12s; flex-shrink: 0; }
+.ts-acc-sw:hover { transform: scale(1.15); }
+.ts-acc-sw.ts-active { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg); }
+.ts-color-wrap { position: relative; width: 22px; height: 22px; flex-shrink: 0; }
+.ts-color-wrap input[type=color] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.ts-color-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px dashed var(--border2); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--faint); pointer-events: none; }
+.ts-color-wrap:hover .ts-color-dot { border-color: var(--muted); color: var(--muted); }
+.ts-preview-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 22px; }
+.ts-pb-label { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .12em; padding: 7px 12px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.ts-pb-body { padding: 14px 16px; }
+.ts-pb-nav { display: flex; gap: 6px; margin-bottom: 12px; }
+.ts-pb-pill { font-family: var(--mono); font-size: 10px; padding: 3px 9px; border-radius: var(--radius); border: 1px solid transparent; }
+.ts-pb-eyebrow { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 5px; }
+.ts-pb-h1 { font-size: 15px; font-weight: 500; margin-bottom: 5px; }
+.ts-pb-lead { font-size: 11px; margin-bottom: 8px; line-height: 1.5; }
+.ts-pb-chips { display: flex; gap: 4px; margin-bottom: 10px; }
+.ts-pb-chip { font-family: var(--mono); font-size: 9px; padding: 1px 7px; border-radius: 100px; border: 1px solid; }
+.ts-pb-bar { height: 3px; display: flex; gap: 2px; margin-bottom: 10px; }
+.ts-pb-bar div { flex: 1; border-radius: 1px; }
+.ts-pb-code { font-family: var(--mono); font-size: 10px; padding: 8px 10px; border-radius: var(--radius); border: 1px solid; line-height: 1.6; }
+.ts-ov-table { width: 100%; border-collapse: collapse; }
+.ts-ov-table th { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .1em; padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: left; font-weight: 400; }
+.ts-ov-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.ts-ov-table tr:last-child td { border-bottom: none; }
+.ts-ov-table tr:hover td { background: var(--surface2); }
+.ts-ot-page { font-family: var(--mono); font-size: 11px; color: var(--text); }
+.ts-ot-url { font-size: 11px; color: var(--faint); }
+.ts-theme-pill { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 100px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+.ts-theme-pill.def { background: var(--acc-bg); border-color: var(--acc-border); color: var(--acc); }
+.ts-ot-acc { display: flex; align-items: center; gap: 6px; }
+.ts-ot-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.ts-ot-acc-label { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.ts-ot-actions { display: flex; gap: 5px; justify-content: flex-end; }
+.ts-btn { font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; }
+.ts-btn:hover { color: var(--text); border-color: var(--border2); }
+.ts-btn.ts-edit { color: var(--acc); border-color: var(--acc-border); background: var(--acc-bg); }
+.ts-save-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); margin-top: 18px; }
+.ts-save-bar-txt { font-size: 12px; color: var(--muted); flex: 1; }
+.ts-save-bar-txt strong { color: var(--warn); }
+.ts-btn-lg { font-family: var(--mono); font-size: 11px; padding: 6px 14px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--surface); color: var(--text); cursor: pointer; }
+.ts-btn-lg.ts-primary { background: var(--acc); border-color: var(--acc); color: #04130f; font-weight: 500; }
+.ts-btn-lg.ts-ghost { background: none; border: none; color: var(--muted); }
+</style>
+
+  <!-- ════════════ ADMIN — THEME SETTINGS ════════════ -->
+  <div class="screen" id="s-theme">
+    <div class="screen-note">
+      Admin theme settings — /admin/settings/theme. Left admin nav (content / site sections). Main area: preset grid (5 cards with miniature surface+accent previews), accent color row (8 presets + custom color picker), live preview panel (re-renders on every change), per-page override table, save bar. All controls are interactive.
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev/admin/settings/theme</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks">
+          <a class="npill">Writing</a><a class="npill">Projects</a><a class="npill">About</a>
+          <a class="npill admin">Admin ✦</a>
+        </div>
+        <div class="nspacer"></div>
+        <span class="kbd">⌘K</span>
+      </nav>
+      <div class="ts-admin-shell">
+        <div class="ts-admin-nav">
+          <div class="ts-an-section">
+            <span class="ts-an-label">content</span>
+            <div class="ts-an-item"><span>✎</span> Posts</div>
+            <div class="ts-an-item"><span>⊞</span> Projects</div>
+            <div class="ts-an-item"><span>◷</span> Scheduled</div>
+          </div>
+          <div class="ts-an-section">
+            <span class="ts-an-label">site</span>
+            <div class="ts-an-item ts-active"><span>◑</span> Theme</div>
+            <div class="ts-an-item"><span>⚙</span> Settings</div>
+            <div class="ts-an-item"><span>↗</span> Analytics</div>
+          </div>
+        </div>
+        <div class="ts-main">
+          <div class="ts-page-title">Theme</div>
+          <div class="ts-page-sub">Controls appearance for all public-facing pages. Per-page overrides available below.</div>
+          <div class="ts-sec-h">preset</div>
+          <div class="ts-theme-grid">
+            <div class="ts-theme-card ts-selected" data-tstheme="dark" onclick="tsSelectTheme(this)">
+              <div class="ts-tc-preview" style="background:#0d0f12;">
+                <div class="ts-tc-bar" style="background:#00d4a4;"></div>
+                <div class="ts-tc-bar s" style="background:#232830;"></div>
+                <div class="ts-tc-line" style="background:#1a1e25;width:80%;"></div>
+                <div class="ts-tc-line" style="background:#1a1e25;width:55%;"></div>
+                <div class="ts-tc-dots"><div class="ts-tc-dot" style="background:#00d4a4;"></div><div class="ts-tc-dot" style="background:#60a5fa;"></div><div class="ts-tc-dot" style="background:#a78bfa;"></div></div>
+              </div>
+              <div class="ts-tc-footer" style="background:#13161b;border-top:1px solid #232830;"><span class="ts-tc-name">Dark</span><span class="ts-tc-check">✓</span></div>
+            </div>
+            <div class="ts-theme-card" data-tstheme="light" onclick="tsSelectTheme(this)">
+              <div class="ts-tc-preview" style="background:#f6f7f9;">
+                <div class="ts-tc-bar" style="background:#008f6f;"></div>
+                <div class="ts-tc-bar s" style="background:#e4e8ee;"></div>
+                <div class="ts-tc-line" style="background:#e4e8ee;width:80%;"></div>
+                <div class="ts-tc-line" style="background:#e4e8ee;width:55%;"></div>
+                <div class="ts-tc-dots"><div class="ts-tc-dot" style="background:#008f6f;"></div><div class="ts-tc-dot" style="background:#2563eb;"></div><div class="ts-tc-dot" style="background:#7c3aed;"></div></div>
+              </div>
+              <div class="ts-tc-footer" style="background:#ffffff;border-top:1px solid #e4e8ee;"><span class="ts-tc-name">Light</span><span class="ts-tc-check">✓</span></div>
+            </div>
+            <div class="ts-theme-card" data-tstheme="midnight" onclick="tsSelectTheme(this)">
+              <div class="ts-tc-preview" style="background:#0b0c1a;">
+                <div class="ts-tc-bar" style="background:#7c8cff;"></div>
+                <div class="ts-tc-bar s" style="background:#242648;"></div>
+                <div class="ts-tc-line" style="background:#1a1c3a;width:80%;"></div>
+                <div class="ts-tc-line" style="background:#1a1c3a;width:55%;"></div>
+                <div class="ts-tc-dots"><div class="ts-tc-dot" style="background:#7c8cff;"></div><div class="ts-tc-dot" style="background:#5e9bff;"></div><div class="ts-tc-dot" style="background:#b08cff;"></div></div>
+              </div>
+              <div class="ts-tc-footer" style="background:#12132a;border-top:1px solid #242648;"><span class="ts-tc-name">Midnight</span><span class="ts-tc-check">✓</span></div>
+            </div>
+            <div class="ts-theme-card" data-tstheme="sepia" onclick="tsSelectTheme(this)">
+              <div class="ts-tc-preview" style="background:#f4ecd8;">
+                <div class="ts-tc-bar" style="background:#9c6b1f;"></div>
+                <div class="ts-tc-bar s" style="background:#e0d4b4;"></div>
+                <div class="ts-tc-line" style="background:#efe5cc;width:80%;"></div>
+                <div class="ts-tc-line" style="background:#efe5cc;width:55%;"></div>
+                <div class="ts-tc-dots"><div class="ts-tc-dot" style="background:#9c6b1f;"></div><div class="ts-tc-dot" style="background:#3f6ea5;"></div><div class="ts-tc-dot" style="background:#7a5aa0;"></div></div>
+              </div>
+              <div class="ts-tc-footer" style="background:#fbf5e6;border-top:1px solid #e0d4b4;"><span class="ts-tc-name">Sepia</span><span class="ts-tc-check">✓</span></div>
+            </div>
+            <div class="ts-theme-card" data-tstheme="matrix" onclick="tsSelectTheme(this)">
+              <div class="ts-tc-preview" style="background:#040806;">
+                <div class="ts-tc-bar" style="background:#22e06a;"></div>
+                <div class="ts-tc-bar s" style="background:#16271a;"></div>
+                <div class="ts-tc-line" style="background:#0a120c;width:80%;"></div>
+                <div class="ts-tc-line" style="background:#0a120c;width:55%;"></div>
+                <div class="ts-tc-dots"><div class="ts-tc-dot" style="background:#22e06a;"></div><div class="ts-tc-dot" style="background:#22c8e0;"></div><div class="ts-tc-dot" style="background:#7ce022;"></div></div>
+              </div>
+              <div class="ts-tc-footer" style="background:#0a120c;border-top:1px solid #16271a;"><span class="ts-tc-name">Matrix</span><span class="ts-tc-check">✓</span></div>
+            </div>
+          </div>
+          <div class="ts-sec-h">accent color</div>
+          <div class="ts-accent-panel">
+            <div class="ts-accent-row">
+              <span class="ts-acc-label">presets</span>
+              <div class="ts-acc-swatches">
+                <span class="ts-acc-sw ts-active" data-color="#00d4a4" style="background:#00d4a4;" title="NotiQ green (default)" onclick="tsPickAccent(this)"></span>
+                <span class="ts-acc-sw" data-color="#f0703c" style="background:#f0703c;" title="rust orange" onclick="tsPickAccent(this)"></span>
+                <span class="ts-acc-sw" data-color="#60a5fa" style="background:#60a5fa;" title="blue" onclick="tsPickAccent(this)"></span>
+                <span class="ts-acc-sw" data-color="#a78bfa" style="background:#a78bfa;" title="purple" onclick="tsPickAccent(this)"></span>
+                <span class="ts-acc-sw" data-color="#e879f9" style="background:#e879f9;" title="pink" onclick="tsPickAccent(this)"></span>
+                <span class="ts-acc-sw" data-color="#ef5350" style="background:#ef5350;" title="red" onclick="tsPickAccent(this)"></span>
+                <span class="ts-acc-sw" data-color="#f59e0b" style="background:#f59e0b;" title="amber" onclick="tsPickAccent(this)"></span>
+                <div class="ts-color-wrap" title="Custom color">
+                  <input type="color" id="ts-custom-color" value="#00d4a4" oninput="tsCustomAccent(this.value)">
+                  <div class="ts-color-dot">+</div>
+                </div>
+              </div>
+            </div>
+            <div class="ts-accent-row">
+              <span class="ts-acc-label">current</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div id="ts-current-dot" style="width:16px;height:16px;border-radius:50%;background:#00d4a4;flex-shrink:0;"></div>
+                <span id="ts-current-hex" style="font-family:var(--mono);font-size:11px;color:var(--muted);">#00d4a4</span>
+                <button class="ts-btn-lg ts-ghost" style="font-size:10px;padding:2px 6px;" onclick="tsResetAccent()">reset to default</button>
+              </div>
+            </div>
+          </div>
+          <div class="ts-sec-h">live preview</div>
+          <div class="ts-preview-box">
+            <div class="ts-pb-label">genuine.dev — public view</div>
+            <div class="ts-pb-body" id="ts-preview-body" style="background:#0d0f12;">
+              <div class="ts-pb-nav">
+                <span class="ts-pb-pill" id="ts-pv-pill-w" style="background:rgba(0,212,164,0.09);border-color:rgba(0,212,164,0.22);color:#00d4a4;">Writing</span>
+                <span class="ts-pb-pill" style="border-color:transparent;color:#6b7280;">Projects</span>
+                <span class="ts-pb-pill" style="border-color:transparent;color:#6b7280;">About</span>
+              </div>
+              <div class="ts-pb-eyebrow" id="ts-pv-eyebrow" style="color:#00d4a4;">Rust · Systems · Infosec</div>
+              <div class="ts-pb-h1" id="ts-pv-h1" style="color:#e2e6ee;">I build <span id="ts-pv-span" style="color:#00d4a4;">systems</span> and write about how they break.</div>
+              <div class="ts-pb-lead" id="ts-pv-lead" style="color:#6b7280;">Backend and distributed systems engineer working mostly in Rust.</div>
+              <div class="ts-pb-chips">
+                <span class="ts-pb-chip" id="ts-pv-chip" style="background:rgba(0,212,164,0.09);border-color:rgba(0,212,164,0.22);color:#00d4a4;">active</span>
+                <span class="ts-pb-chip" style="background:#1a1e25;border-color:#232830;color:#6b7280;">Rust</span>
+                <span class="ts-pb-chip" style="background:#1a1e25;border-color:#232830;color:#6b7280;">Postgres</span>
+              </div>
+              <div class="ts-pb-bar">
+                <div style="background:#f59e0b;"></div><div style="background:#a78bfa;"></div>
+                <div style="background:#60a5fa;"></div><div id="ts-pv-bar4" style="background:#00d4a4;"></div>
+                <div style="background:#3a4050;"></div>
+              </div>
+              <div class="ts-pb-code" id="ts-pv-code" style="background:#13161b;border-color:#232830;color:#6b7280;">
+                <span id="ts-pv-kw" style="color:#a78bfa;">let</span> acc <span style="color:#6b7280;">=</span> <span id="ts-pv-str" style="color:#00d4a4;">"#00d4a4"</span><span style="color:#6b7280;">;</span>
+              </div>
+            </div>
+          </div>
+          <div class="ts-sec-h">per-page overrides</div>
+          <table class="ts-ov-table">
+            <thead><tr><th>page</th><th>base theme</th><th>accent</th><th style="text-align:right;">actions</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div class="ts-ot-page">Home</div><div class="ts-ot-url">genuine.dev/</div></td>
+                <td><span class="ts-theme-pill def">↳ site default</span></td>
+                <td><div class="ts-ot-acc"><div class="ts-ot-dot" style="background:#00d4a4;"></div><span class="ts-ot-acc-label">↳ site default</span></div></td>
+                <td><div class="ts-ot-actions"><span class="ts-btn ts-edit">customize</span></div></td>
+              </tr>
+              <tr>
+                <td><div class="ts-ot-page">Writing</div><div class="ts-ot-url">genuine.dev/writing</div></td>
+                <td><span class="ts-theme-pill def">↳ site default</span></td>
+                <td><div class="ts-ot-acc"><div class="ts-ot-dot" style="background:#00d4a4;"></div><span class="ts-ot-acc-label">↳ site default</span></div></td>
+                <td><div class="ts-ot-actions"><span class="ts-btn ts-edit">customize</span></div></td>
+              </tr>
+              <tr>
+                <td><div class="ts-ot-page">Projects</div><div class="ts-ot-url">genuine.dev/projects</div></td>
+                <td><span class="ts-theme-pill">Midnight</span></td>
+                <td><div class="ts-ot-acc"><div class="ts-ot-dot" style="background:#7c8cff;"></div><span class="ts-ot-acc-label">#7c8cff</span></div></td>
+                <td><div class="ts-ot-actions"><span class="ts-btn">reset</span><span class="ts-btn ts-edit">customize</span></div></td>
+              </tr>
+              <tr>
+                <td><div class="ts-ot-page">About</div><div class="ts-ot-url">genuine.dev/about</div></td>
+                <td><span class="ts-theme-pill def">↳ site default</span></td>
+                <td><div class="ts-ot-acc"><div class="ts-ot-dot" style="background:#00d4a4;"></div><span class="ts-ot-acc-label">↳ site default</span></div></td>
+                <td><div class="ts-ot-actions"><span class="ts-btn ts-edit">customize</span></div></td>
+              </tr>
+              <tr>
+                <td><div class="ts-ot-page">Post pages</div><div class="ts-ot-url">genuine.dev/writing/*</div></td>
+                <td><span class="ts-theme-pill def">↳ site default</span></td>
+                <td><div class="ts-ot-acc"><div class="ts-ot-dot" style="background:var(--purple);border:1px dashed var(--border2);"></div><span class="ts-ot-acc-label">per-topic (auto)</span></div></td>
+                <td><div class="ts-ot-actions"><span class="ts-btn ts-edit">customize</span></div></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="ts-save-bar">
+            <span class="ts-save-bar-txt" id="ts-save-bar-txt"><strong>Unsaved changes</strong> — theme: Dark · accent: #00d4a4</span>
+            <button class="ts-btn-lg ts-ghost">Discard</button>
+            <button class="ts-btn-lg ts-primary">Save site theme</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<style>
+/* ── HOME ── */
+.home-body { padding: 32px 28px 40px; }
+.hero-h1 { font-size: 28px; font-weight: 500; letter-spacing: -.025em; line-height: 1.15; margin-bottom: 14px; }
+.hero-h1 span { color: var(--acc); }
+.hero-lead { color: var(--muted); font-size: 14px; max-width: 580px; line-height: 1.75; margin-bottom: 20px; }
+.meta-row { display: flex; gap: 7px; flex-wrap: wrap; }
+.meta-pill { font-family: var(--mono); font-size: 11px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 100px; padding: 4px 12px; }
+.meta-pill strong { color: var(--text); font-weight: 500; }
+.home-divider5 { display: flex; height: 3px; overflow: hidden; margin: 28px 0; border-radius: 2px; }
+.home-divider5 div { flex: 1; }
+.home-section-label { font-family: var(--mono); font-size: 10px; color: var(--faint); letter-spacing: .15em; text-transform: uppercase; margin: 28px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.feat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; cursor: pointer; display: flex; flex-direction: column; }
+.feat-card:hover { border-color: var(--border2); }
+.feat-card:hover .fc-title { color: var(--acc); }
+.fc-bar { height: 3px; width: 100%; }
+.fc-body { padding: 13px 14px; flex: 1; display: flex; flex-direction: column; }
+.fc-tag { font-family: var(--mono); font-size: 10px; margin-bottom: 7px; }
+.fc-title { font-size: 13px; font-weight: 500; line-height: 1.35; margin-bottom: 6px; transition: color .12s; }
+.fc-summary { font-size: 11.5px; color: var(--muted); line-height: 1.6; flex: 1; margin-bottom: 10px; }
+.fc-meta { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.home-proj-list { display: flex; flex-direction: column; gap: 8px; }
+.home-proj-row { display: flex; gap: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; cursor: pointer; }
+.home-proj-row:hover { border-color: var(--border2); }
+.home-proj-row:hover .hpr-name { color: var(--acc); }
+.hpr-bar { width: 3px; flex-shrink: 0; }
+.hpr-content { flex: 1; padding: 12px 14px; display: flex; align-items: center; gap: 14px; }
+.hpr-info { flex: 1; }
+.hpr-name { font-family: var(--mono); font-size: 13px; font-weight: 500; margin-bottom: 4px; transition: color .12s; }
+.hpr-desc { font-size: 12px; color: var(--muted); line-height: 1.55; }
+.hpr-stack { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.hpr-chip { font-family: var(--mono); font-size: 10px; padding: 1px 7px; border-radius: 100px; background: var(--surface2); border: 1px solid var(--border); color: var(--faint); }
+.hpr-link { font-family: var(--mono); font-size: 11px; color: var(--faint); white-space: nowrap; }
+.hpr-link:hover { color: var(--acc); }
+
+/* ── POST DETAIL ── */
+.post-shell { display: grid; grid-template-columns: 180px 1fr; min-height: 640px; }
+.toc-col { border-right: 1px solid var(--border); background: var(--surface); padding: 18px 12px; }
+.toc-head { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.toc-link { display: block; font-size: 12px; color: var(--muted); padding: 4px 0 4px 10px; border-left: 2px solid var(--border); margin-bottom: 1px; cursor: pointer; text-decoration: none; }
+.toc-link:hover { color: var(--text); border-left-color: var(--border2); }
+.toc-link.toc-cur { color: var(--acc); border-left-color: var(--acc); }
+.toc-link.toc-sub { padding-left: 20px; font-size: 11px; }
+.toc-divider { margin: 14px 0; border: none; border-top: 1px solid var(--border); }
+.toc-kv { margin-bottom: 8px; }
+.toc-kv-label { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-bottom: 2px; }
+.toc-kv-val { font-family: var(--mono); font-size: 11px; color: var(--text); }
+.article-col { padding: 24px 28px 40px; overflow: auto; }
+.art-eyebrow { font-family: var(--mono); font-size: 11px; color: var(--acc); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px; }
+.art-h1 { font-size: 24px; font-weight: 500; letter-spacing: -.02em; line-height: 1.2; margin-bottom: 12px; }
+.art-meta { display: flex; gap: 14px; font-family: var(--mono); font-size: 11px; color: var(--faint); margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
+.art-topic-pill { padding: 2px 8px; border-radius: 100px; background: rgba(240,112,60,0.1); border: 1px solid rgba(240,112,60,0.3); color: #f0703c; }
+.art-h2 { font-size: 17px; font-weight: 500; margin: 22px 0 10px; }
+.art-p { color: var(--text); opacity: .9; margin-bottom: 14px; line-height: 1.75; font-size: 13.5px; }
+.art-p.art-dim { color: var(--muted); opacity: 1; }
+.art-code { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin: 16px 0; overflow: hidden; }
+.art-chead { display: flex; align-items: center; justify-content: space-between; padding: 6px 13px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.art-cfile { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.art-ccopy { font-family: var(--mono); font-size: 10px; color: var(--faint); border: 1px solid var(--border2); border-radius: 4px; padding: 2px 7px; cursor: pointer; }
+.art-ccopy:hover { color: var(--acc); border-color: var(--acc-border); }
+.art-cpre { padding: 12px 14px; overflow-x: auto; font-family: var(--mono); font-size: 12px; line-height: 1.7; }
+.art-ln { color: var(--faint); user-select: none; margin-right: 14px; }
+.art-hl { background: var(--acc-bg); display: block; margin: 0 -14px; padding: 0 14px; border-left: 2px solid var(--acc); }
+.art-kw { color: var(--c-kw); } .art-fn { color: var(--c-fn); } .art-str { color: var(--c-str); }
+.art-num { color: var(--c-num); } .art-com { color: var(--c-com); } .art-pn { color: var(--c-punct); }
+.art-aside { display: flex; gap: 12px; background: var(--purple-bg); border: 1px solid var(--purple); border-left-width: 3px; border-radius: 0; padding: 12px 14px; margin: 16px 0; }
+.art-av { width: 34px; height: 34px; border-radius: 7px; background: var(--surface2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.art-who { font-family: var(--mono); font-size: 10px; color: var(--purple); font-weight: 500; margin-bottom: 3px; }
+.art-say { font-size: 12.5px; color: var(--text); opacity: .9; line-height: 1.6; }
+.art-callout { border: 1px solid var(--warn); border-left-width: 3px; background: var(--warn-bg); border-radius: 0; padding: 11px 14px; margin: 16px 0; }
+.art-ct { font-family: var(--mono); font-size: 11px; color: var(--warn); font-weight: 500; margin-bottom: 5px; }
+.art-cb { font-size: 13px; color: var(--text); opacity: .88; }
+.art-prevnext { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 24px 0 20px; }
+.art-pn { border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 13px; cursor: pointer; }
+.art-pn:hover { border-color: var(--acc-border); }
+.art-pn-dir { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-bottom: 4px; }
+.art-pn-title { font-size: 13px; font-weight: 500; }
+.art-pn.art-next { text-align: right; }
+.art-comments { border-top: 1px solid var(--border); padding-top: 20px; }
+.art-cmth { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+.art-cmt { display: flex; gap: 10px; margin-bottom: 14px; }
+.art-cmt-av { width: 30px; height: 30px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border2); flex-shrink: 0; }
+.art-cmt-name { font-weight: 500; margin-right: 8px; font-size: 12.5px; }
+.art-cmt-time { color: var(--faint); font-family: var(--mono); font-size: 10px; }
+.art-cmt-body { font-size: 12.5px; color: var(--muted); margin-top: 3px; line-height: 1.55; }
+
+/* ── PROJECTS ── */
+.projects-shell { display: grid; grid-template-columns: 180px 1fr; min-height: 540px; }
+.proj-filter { border-right: 1px solid var(--border); background: var(--surface); padding: 16px 12px; }
+.pf-header { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+.pf-eyebrow { font-family: var(--mono); font-size: 10px; color: var(--acc); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 6px; }
+.pf-title { font-size: 16px; font-weight: 500; }
+.pf-h { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+.pf-item { display: flex; align-items: center; gap: 7px; padding: 5px 6px; border-radius: var(--radius); cursor: pointer; margin-bottom: 1px; }
+.pf-item:hover { background: var(--surface2); }
+.pf-item.pf-sel { background: var(--acc-bg); }
+.pf-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.pf-label { font-family: var(--mono); font-size: 11px; color: var(--muted); flex: 1; }
+.pf-item.pf-sel .pf-label { color: var(--acc); }
+.pf-count { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.pf-section { margin-bottom: 14px; }
+.projects-body { padding: 22px 24px; }
+.projects-list { display: flex; flex-direction: column; gap: 10px; }
+.project-card { display: flex; gap: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; cursor: pointer; }
+.project-card:hover { border-color: var(--border2); }
+.project-card:hover .pc-name { color: var(--acc); }
+.pc-bar { width: 3px; flex-shrink: 0; }
+.pc-inner { flex: 1; padding: 14px 16px; }
+.pc-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+.pc-name { font-family: var(--mono); font-size: 14px; font-weight: 500; flex: 1; transition: color .12s; }
+.pc-badge { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 100px; white-space: nowrap; }
+.pc-badge.complete { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+.pc-badge.wip { background: var(--warn-bg); color: var(--warn); border: 1px solid rgba(245,158,11,0.2); }
+.pc-desc { font-size: 12.5px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+.pc-footer { display: flex; align-items: center; gap: 10px; }
+.pc-chips { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
+.pc-chip { font-family: var(--mono); font-size: 10px; padding: 1px 7px; border-radius: 100px; background: var(--surface2); border: 1px solid var(--border); color: var(--faint); }
+.pc-links { display: flex; gap: 10px; font-family: var(--mono); font-size: 11px; }
+.pc-links a { color: var(--faint); text-decoration: none; }
+.pc-links a:hover { color: var(--acc); }
+</style>
+
+  <!-- ════════════ HOME ════════════ -->
+  <div class="screen" id="s-home">
+    <div class="screen-note">
+      Landing page — hero (eyebrow · acc headline · lead · meta pills), 5-color divider bar, featured writing as topic-bar cards (3-col grid), selected projects as accent-bar rows. Cards and rows both pick up topic color from the per-topic accent system.
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks"><a class="npill">Writing</a><a class="npill">Projects</a><a class="npill">About</a></div>
+        <div class="nspacer"></div>
+        <span class="kbd">⌘K</span>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:100px;padding:4px 10px;background:var(--surface);cursor:pointer;">◑ theme</span>
+      </nav>
+      <div class="home-body">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--acc);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;">Rust · Systems · Infosec</div>
+        <h1 class="hero-h1">I build <span>systems</span> and write about how they break.</h1>
+        <p class="hero-lead">Backend and distributed systems engineer working mostly in Rust. I write deep technical posts on systems programming, distributed systems, and offensive/defensive security.</p>
+        <div class="meta-row">
+          <span class="meta-pill"><strong>Focus</strong> Rust</span>
+          <span class="meta-pill"><strong>Writing</strong> coding · infosec</span>
+          <span class="meta-pill"><strong>Bug bounty</strong> active</span>
+          <span class="meta-pill"><strong>Stack</strong> axum · postgres</span>
+        </div>
+        <div class="home-divider5">
+          <div style="background:var(--warn)"></div><div style="background:var(--purple)"></div>
+          <div style="background:var(--blue)"></div><div style="background:var(--acc)"></div>
+          <div style="background:var(--faint)"></div>
+        </div>
+        <div class="home-section-label">featured writing</div>
+        <div class="feat-grid">
+          <div class="feat-card">
+            <div class="fc-bar" style="background:#f0703c;"></div>
+            <div class="fc-body">
+              <span class="fc-tag" style="color:#f0703c;">rust</span>
+              <div class="fc-title">Writing a lock-free queue from scratch</div>
+              <div class="fc-summary">What the ABA problem actually is, and why crossbeam tags its pointers.</div>
+              <div class="fc-meta"><span>Jun 2026</span><span>12 min</span></div>
+            </div>
+          </div>
+          <div class="feat-card">
+            <div class="fc-bar" style="background:var(--acc);"></div>
+            <div class="fc-body">
+              <span class="fc-tag" style="color:var(--acc);">infosec</span>
+              <div class="fc-title">Blind SSRF: building your own OOB server</div>
+              <div class="fc-summary">Catching out-of-band callbacks with a self-hosted interaction server.</div>
+              <div class="fc-meta"><span>May 2026</span><span>9 min</span></div>
+            </div>
+          </div>
+          <div class="feat-card">
+            <div class="fc-bar" style="background:var(--blue);"></div>
+            <div class="fc-body">
+              <span class="fc-tag" style="color:var(--blue);">distributed</span>
+              <div class="fc-title">SWIM gossip, explained by building it</div>
+              <div class="fc-summary">Failure detection without a coordinator, in 400 lines of Rust.</div>
+              <div class="fc-meta"><span>Apr 2026</span><span>15 min</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-section-label">selected projects</div>
+        <div class="home-proj-list">
+          <div class="home-proj-row">
+            <div class="hpr-bar" style="background:var(--acc);"></div>
+            <div class="hpr-content">
+              <div class="hpr-info">
+                <div class="hpr-name">NotiQ</div>
+                <div class="hpr-desc">Distributed notification platform — 8 Rust microservices over gRPC + a Postgres-native queue.</div>
+                <div class="hpr-stack"><span class="hpr-chip">Rust</span><span class="hpr-chip">gRPC</span><span class="hpr-chip">AWS</span></div>
+              </div>
+              <a class="hpr-link">case study →</a>
+            </div>
+          </div>
+          <div class="home-proj-row">
+            <div class="hpr-bar" style="background:var(--blue);"></div>
+            <div class="hpr-content">
+              <div class="hpr-info">
+                <div class="hpr-name">genuine-folio</div>
+                <div class="hpr-desc">This site — Rust full-stack portfolio + blog. Modular monolith, hexagonal, self-hosted.</div>
+                <div class="hpr-stack"><span class="hpr-chip">axum</span><span class="hpr-chip">maud</span><span class="hpr-chip">HTMX</span></div>
+              </div>
+              <a class="hpr-link">case study →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ POST DETAIL ════════════ -->
+  <div class="screen" id="s-post">
+    <div class="screen-note">
+      Post detail — two-column: sticky TOC sidebar (180px) with scroll-spy + meta panel (date, read time, topic pill, tags) | article body with eyebrow, h1, meta row, code blocks, ::aside (purple), ::callout (warn), prev/next, comments.
+      Win-bar shows active topic accent. TOC sidebar mirrors the filter sidebar panel pattern.
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev/writing/lock-free-queue</span>
+        <span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:#f0703c;">● rust</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks"><a class="npill active">Writing</a><a class="npill">Projects</a><a class="npill">About</a></div>
+        <div class="nspacer"></div>
+        <span class="kbd">⌘K</span>
+      </nav>
+      <div class="post-shell">
+        <div class="toc-col">
+          <div class="toc-head">On this page</div>
+          <a class="toc-link toc-cur">The ABA problem</a>
+          <a class="toc-link toc-sub">Why tagging works</a>
+          <a class="toc-link">The CAS loop</a>
+          <a class="toc-link">Benchmarks</a>
+          <a class="toc-link">Takeaways</a>
+          <hr class="toc-divider">
+          <div class="toc-kv">
+            <div class="toc-kv-label">Date</div>
+            <div class="toc-kv-val">2026-06-20</div>
+          </div>
+          <div class="toc-kv">
+            <div class="toc-kv-label">Read</div>
+            <div class="toc-kv-val">12 min</div>
+          </div>
+          <div class="toc-kv">
+            <div class="toc-kv-label">Topic</div>
+            <div class="toc-kv-val" style="color:#f0703c;">rust</div>
+          </div>
+          <div class="toc-kv">
+            <div class="toc-kv-label">Tags</div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;">
+              <span style="font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);color:var(--faint);">performance</span>
+              <span style="font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);color:var(--faint);">dsa</span>
+            </div>
+          </div>
+        </div>
+        <div class="article-col">
+          <div class="art-eyebrow">rust · performance · dsa</div>
+          <h1 class="art-h1">Writing a lock-free queue from scratch</h1>
+          <div class="art-meta">
+            <span>2026-06-20</span>
+            <span>12 min read</span>
+            <span>4 comments</span>
+            <span class="art-topic-pill">rust</span>
+          </div>
+          <h2 class="art-h2">The ABA problem</h2>
+          <p class="art-p">A compare-and-swap only checks that a pointer's <em>value</em> is unchanged — not that it hasn't been changed and changed back. That gap is the ABA problem, and it's the reason a naive lock-free stack corrupts under contention.</p>
+          <div class="art-code">
+            <div class="art-chead"><span class="art-cfile">queue.rs</span><span class="art-ccopy">copy</span></div>
+            <div class="art-cpre"><span class="art-ln">1</span><span class="art-kw">loop</span> <span class="art-pn">{</span>
+<span class="art-ln">2</span>    <span class="art-kw">let</span> head <span class="art-pn">=</span> self<span class="art-pn">.</span>head<span class="art-pn">.</span><span class="art-fn">load</span><span class="art-pn">(</span>Ordering<span class="art-pn">::</span>Acquire<span class="art-pn">);</span>
+<span class="art-hl"><span class="art-ln">3</span>    <span class="art-kw">let</span> next <span class="art-pn">=</span> <span class="art-kw">unsafe</span> <span class="art-pn">{ (*</span>head<span class="art-pn">).</span>next <span class="art-pn">};</span>  <span class="art-com">// danger lives here</span></span>
+<span class="art-ln">4</span>    <span class="art-kw">if</span> self<span class="art-pn">.</span>head<span class="art-pn">.</span><span class="art-fn">compare_exchange</span><span class="art-pn">(</span>head<span class="art-pn">,</span> next<span class="art-pn">,</span> <span class="art-num">/* ... */</span><span class="art-pn">).</span><span class="art-fn">is_ok</span><span class="art-pn">() {</span>
+<span class="art-ln">5</span>        <span class="art-kw">break</span><span class="art-pn">;</span>
+<span class="art-ln">6</span>    <span class="art-pn">}</span>
+<span class="art-ln">7</span><span class="art-pn">}</span></div>
+          </div>
+          <div class="art-aside">
+            <div class="art-av">🦀</div>
+            <div>
+              <div class="art-who">Ferris' hot tip</div>
+              <div class="art-say">If you free that node between the <code style="font-family:var(--mono);font-size:11px;background:var(--surface2);padding:1px 4px;border-radius:3px;">load</code> and the <code style="font-family:var(--mono);font-size:11px;background:var(--surface2);padding:1px 4px;border-radius:3px;">compare_exchange</code>, another thread can reuse the exact same address. CAS says "looks fine!" and you've corrupted the queue. That's ABA.</div>
+            </div>
+          </div>
+          <h2 class="art-h2">Why tagging works</h2>
+          <p class="art-p art-dim">crossbeam attaches a generation counter to each pointer. The CAS now compares (pointer, tag) together, so a recycled address with a bumped tag fails the swap — exactly what we want.</p>
+          <div class="art-callout">
+            <div class="art-ct">⚠ Gotcha</div>
+            <div class="art-cb">Tagging needs spare bits in the pointer (alignment) or a double-width CAS. On 64-bit with 8-byte alignment you get 3 low bits for free — usually enough.</div>
+          </div>
+          <div class="art-prevnext">
+            <div class="art-pn"><div class="art-pn-dir">← previous</div><div class="art-pn-title">Atomic memory ordering, demystified</div></div>
+            <div class="art-pn art-next"><div class="art-pn-dir">next →</div><div class="art-pn-title">Zero-copy fan-out with Bytes</div></div>
+          </div>
+          <div class="art-comments">
+            <div class="art-cmth">4 comments</div>
+            <div class="art-cmt"><div class="art-cmt-av"></div><div><div><span class="art-cmt-name">hannah</span><span class="art-cmt-time">2 days ago</span></div><div class="art-cmt-body">The generation-counter explanation finally made tagging click for me. Great post.</div></div></div>
+            <div class="art-cmt"><div class="art-cmt-av"></div><div><div><span class="art-cmt-name">d_sys</span><span class="art-cmt-time">1 day ago</span></div><div class="art-cmt-body">Would love a follow-up benchmarking this against a Mutex&lt;VecDeque&gt; under real load.</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ PROJECTS ════════════ -->
+  <div class="screen" id="s-projects">
+    <div class="screen-note">
+      Projects index — two-column: filter sidebar (180px) with stack + status filters | project list as accent-bar rows with complete/wip badges, description, chip stack, and links.
+      Mirrors the Writing index panel pattern. Left bar color = project topic accent.
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev/projects</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks"><a class="npill">Writing</a><a class="npill active">Projects</a><a class="npill">About</a></div>
+        <div class="nspacer"></div>
+        <span class="kbd">⌘K</span>
+      </nav>
+      <div class="projects-shell">
+        <div class="proj-filter">
+          <div class="pf-header">
+            <div class="pf-eyebrow">Projects</div>
+            <div class="pf-title">Things I've built</div>
+          </div>
+          <div class="pf-section">
+            <div class="pf-h">stack</div>
+            <div class="pf-item pf-sel">
+              <span class="pf-dot" style="background:var(--muted);"></span>
+              <span class="pf-label">all</span>
+              <span class="pf-count">4</span>
+            </div>
+            <div class="pf-item">
+              <span class="pf-dot" style="background:#f0703c;"></span>
+              <span class="pf-label">rust</span>
+              <span class="pf-count">3</span>
+            </div>
+            <div class="pf-item">
+              <span class="pf-dot" style="background:var(--acc);"></span>
+              <span class="pf-label">infosec</span>
+              <span class="pf-count">2</span>
+            </div>
+            <div class="pf-item">
+              <span class="pf-dot" style="background:var(--blue);"></span>
+              <span class="pf-label">distributed</span>
+              <span class="pf-count">1</span>
+            </div>
+            <div class="pf-item">
+              <span class="pf-dot" style="background:var(--purple);"></span>
+              <span class="pf-label">systems</span>
+              <span class="pf-count">1</span>
+            </div>
+          </div>
+          <div class="pf-section">
+            <div class="pf-h">status</div>
+            <div class="pf-item">
+              <span class="pf-dot" style="background:var(--green);"></span>
+              <span class="pf-label">complete</span>
+              <span class="pf-count">2</span>
+            </div>
+            <div class="pf-item">
+              <span class="pf-dot" style="background:var(--warn);"></span>
+              <span class="pf-label">in progress</span>
+              <span class="pf-count">2</span>
+            </div>
+          </div>
+        </div>
+        <div class="projects-body">
+          <div class="projects-list">
+            <div class="project-card">
+              <div class="pc-bar" style="background:var(--acc);"></div>
+              <div class="pc-inner">
+                <div class="pc-top">
+                  <div class="pc-name">NotiQ</div>
+                  <span class="pc-badge complete">complete</span>
+                </div>
+                <div class="pc-desc">Distributed notification platform. 8 Rust microservices over gRPC, Postgres-native queue with SKIP LOCKED, SWIM gossip, consistent hashing.</div>
+                <div class="pc-footer">
+                  <div class="pc-chips"><span class="pc-chip">Rust</span><span class="pc-chip">gRPC</span><span class="pc-chip">Postgres</span><span class="pc-chip">AWS</span></div>
+                  <div class="pc-links"><a>case study →</a><a>github →</a></div>
+                </div>
+              </div>
+            </div>
+            <div class="project-card">
+              <div class="pc-bar" style="background:var(--blue);"></div>
+              <div class="pc-inner">
+                <div class="pc-top">
+                  <div class="pc-name">genuine-folio</div>
+                  <span class="pc-badge wip">in progress</span>
+                </div>
+                <div class="pc-desc">This portfolio + blog. Modular monolith, hexagonal architecture, markdown→Postgres pipeline, self-hosted on a VPS.</div>
+                <div class="pc-footer">
+                  <div class="pc-chips"><span class="pc-chip">axum</span><span class="pc-chip">maud</span><span class="pc-chip">HTMX</span><span class="pc-chip">Postgres</span></div>
+                  <div class="pc-links"><a>case study →</a><a>github →</a></div>
+                </div>
+              </div>
+            </div>
+            <div class="project-card">
+              <div class="pc-bar" style="background:var(--purple);"></div>
+              <div class="pc-inner">
+                <div class="pc-top">
+                  <div class="pc-name">oob-catcher</div>
+                  <span class="pc-badge complete">complete</span>
+                </div>
+                <div class="pc-desc">Self-hosted out-of-band interaction server for bug-bounty SSRF/blind-RCE detection. Wildcard DNS + HTTP/DNS logging.</div>
+                <div class="pc-footer">
+                  <div class="pc-chips"><span class="pc-chip">Rust</span><span class="pc-chip">DNS</span><span class="pc-chip">infosec</span></div>
+                  <div class="pc-links"><a>case study →</a></div>
+                </div>
+              </div>
+            </div>
+            <div class="project-card">
+              <div class="pc-bar" style="background:#ef5350;"></div>
+              <div class="pc-inner">
+                <div class="pc-top">
+                  <div class="pc-name">ctf-writeups</div>
+                  <span class="pc-badge wip">in progress</span>
+                </div>
+                <div class="pc-desc">Collection of CTF solutions with spoiler-blurred reveals and per-challenge tooling.</div>
+                <div class="pc-footer">
+                  <div class="pc-chips"><span class="pc-chip">pwn</span><span class="pc-chip">web</span><span class="pc-chip">crypto</span></div>
+                  <div class="pc-links"><a>browse →</a></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showScreen(name, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.stab').forEach(t => t.classList.remove('active'));
+  document.getElementById('s-' + name).classList.add('active');
+  btn.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  document.getElementById('tt-label').textContent = next === 'dark' ? 'Dark' : 'Light';
+  document.getElementById('tt-ic').textContent = next === 'dark' ? '◑' : '◐';
+}
+
+/* ── Theme settings screen logic ── */
+const TS = {
+  dark:     { bg:'#0d0f12', surface:'#13161b', surface2:'#1a1e25', border:'#232830', text:'#e2e6ee', muted:'#6b7280', acc:'#00d4a4', kw:'#a78bfa', str:'#34d399' },
+  light:    { bg:'#f6f7f9', surface:'#ffffff', surface2:'#f0f2f5', border:'#e4e8ee', text:'#1a1e25', muted:'#5b6573', acc:'#008f6f', kw:'#7c3aed', str:'#059669' },
+  midnight: { bg:'#0b0c1a', surface:'#12132a', surface2:'#1a1c3a', border:'#242648', text:'#e6e7f5', muted:'#7a7da6', acc:'#7c8cff', kw:'#b08cff', str:'#4fd6a3' },
+  sepia:    { bg:'#f4ecd8', surface:'#fbf5e6', surface2:'#efe5cc', border:'#e0d4b4', text:'#3a2f1d', muted:'#7a6a4f', acc:'#9c6b1f', kw:'#7a5aa0', str:'#5f7d3a' },
+  matrix:   { bg:'#040806', surface:'#0a120c', surface2:'#0f1a12', border:'#16271a', text:'#c8f5d4', muted:'#4f8a63', acc:'#22e06a', kw:'#7ce022', str:'#c8f5d4' },
+};
+let tsTheme = 'dark', tsAcc = '#00d4a4';
+
+function tsHexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+}
+function tsApplyPreview(t, acc) {
+  const pb = document.getElementById('ts-preview-body');
+  if (!pb) return;
+  pb.style.background = t.bg;
+  const set = (id, prop, val) => { const el = document.getElementById(id); if (el) el.style[prop] = val; };
+  set('ts-pv-eyebrow','color', acc);
+  set('ts-pv-span','color', acc);
+  set('ts-pv-h1','color', t.text);
+  set('ts-pv-lead','color', t.muted);
+  ['ts-pv-pill-w','ts-pv-chip'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.background = tsHexA(acc, 0.09);
+    el.style.borderColor = tsHexA(acc, 0.22);
+    el.style.color = acc;
+  });
+  set('ts-pv-bar4','background', acc);
+  const code = document.getElementById('ts-pv-code');
+  if (code) { code.style.background = t.surface; code.style.borderColor = t.border; code.style.color = t.muted; }
+  set('ts-pv-kw','color', t.kw);
+  const str = document.getElementById('ts-pv-str');
+  if (str) { str.style.color = acc; str.textContent = `"${acc}"`; }
+}
+function tsSelectTheme(card) {
+  document.querySelectorAll('.ts-theme-card').forEach(c => c.classList.remove('ts-selected'));
+  card.classList.add('ts-selected');
+  tsTheme = card.dataset.tstheme;
+  tsApplyPreview(TS[tsTheme], tsAcc);
+  tsUpdateBar();
+}
+function tsPickAccent(sw) {
+  document.querySelectorAll('.ts-acc-sw').forEach(s => s.classList.remove('ts-active'));
+  sw.classList.add('ts-active');
+  tsAcc = sw.dataset.color;
+  const dot = document.getElementById('ts-current-dot');
+  const hex = document.getElementById('ts-current-hex');
+  const inp = document.getElementById('ts-custom-color');
+  if (dot) dot.style.background = tsAcc;
+  if (hex) hex.textContent = tsAcc;
+  if (inp) inp.value = tsAcc;
+  tsApplyPreview(TS[tsTheme], tsAcc);
+  tsUpdateBar();
+}
+function tsCustomAccent(val) {
+  document.querySelectorAll('.ts-acc-sw').forEach(s => s.classList.remove('ts-active'));
+  tsAcc = val;
+  const dot = document.getElementById('ts-current-dot');
+  const hex = document.getElementById('ts-current-hex');
+  if (dot) dot.style.background = val;
+  if (hex) hex.textContent = val;
+  tsApplyPreview(TS[tsTheme], val);
+  tsUpdateBar();
+}
+function tsResetAccent() {
+  const def = TS[tsTheme].acc;
+  document.querySelectorAll('.ts-acc-sw').forEach(s => s.classList.toggle('ts-active', s.dataset.color === def));
+  tsAcc = def;
+  const dot = document.getElementById('ts-current-dot');
+  const hex = document.getElementById('ts-current-hex');
+  const inp = document.getElementById('ts-custom-color');
+  if (dot) dot.style.background = def;
+  if (hex) hex.textContent = def;
+  if (inp) inp.value = def;
+  tsApplyPreview(TS[tsTheme], tsAcc);
+  tsUpdateBar();
+}
+function tsUpdateBar() {
+  const bar = document.getElementById('ts-save-bar-txt');
+  if (bar) bar.innerHTML = `<strong>Unsaved changes</strong> — theme: ${tsTheme.charAt(0).toUpperCase()+tsTheme.slice(1)} · accent: ${tsAcc}`;
+}
+
+</script>
+</body>
+</html>
