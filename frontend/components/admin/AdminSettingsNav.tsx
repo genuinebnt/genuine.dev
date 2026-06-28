@@ -38,29 +38,57 @@ export function AdminSettingsMobileNav({ active }: { active: AdminSettingsSectio
   );
 }
 
-/** Left rail for admin settings — matches mockup content / site sections. */
-export default function AdminSettingsNav({ active }: { active: AdminSettingsSection }) {
+const CONTENT_LINKS = [
+  { href: "/admin", icon: "✎", label: "Posts" },
+  { href: "/admin?kind=project", icon: "⊞", label: "Projects" },
+  { href: "/admin?status=scheduled", icon: "◷", label: "Scheduled" },
+];
+
+/** Left rail for admin settings — matches mockup content / site sections.
+ * Collapses to icons-only (persisted toggle) to give the main area more room. */
+export default function AdminSettingsNav({
+  active,
+  collapsed = false,
+  onToggle,
+}: {
+  active: AdminSettingsSection;
+  collapsed?: boolean;
+  onToggle?: () => void;
+}) {
   return (
     <nav className="ts-admin-nav" aria-label="Admin">
+      <button
+        type="button"
+        className="ts-an-toggle"
+        onClick={onToggle}
+        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        aria-expanded={!collapsed}
+      >
+        <span aria-hidden>{collapsed ? "»" : "«"}</span>
+      </button>
       <div className="ts-admin-nav-scroll">
         <div className="ts-an-section">
           <span className="ts-an-label">content</span>
-          <Link href="/admin" className="ts-an-item">
-            <span aria-hidden>✎</span> Posts
-          </Link>
-          <Link href="/admin?kind=project" className="ts-an-item">
-            <span aria-hidden>⊞</span> Projects
-          </Link>
-          <Link href="/admin?status=scheduled" className="ts-an-item">
-            <span aria-hidden>◷</span> Scheduled
-          </Link>
+          {CONTENT_LINKS.map((link) => (
+            <Link key={link.label} href={link.href} className="ts-an-item" title={link.label}>
+              <span className="ts-an-ic" aria-hidden>{link.icon}</span>
+              <span className="ts-an-text">{link.label}</span>
+            </Link>
+          ))}
         </div>
         <div className="ts-an-section">
           <span className="ts-an-label">site</span>
           {SITE_LINKS.map((link) =>
             link.disabled || !link.href ? (
-              <span key={link.id} className="ts-an-item ts-an-disabled" aria-disabled="true">
-                <span aria-hidden>{link.icon}</span> {link.label}
+              <span
+                key={link.id}
+                className="ts-an-item ts-an-disabled"
+                aria-disabled="true"
+                title={link.label}
+              >
+                <span className="ts-an-ic" aria-hidden>{link.icon}</span>
+                <span className="ts-an-text">{link.label}</span>
               </span>
             ) : (
               <Link
@@ -68,8 +96,10 @@ export default function AdminSettingsNav({ active }: { active: AdminSettingsSect
                 href={link.href}
                 className={itemClass(active === link.id)}
                 aria-current={active === link.id ? "page" : undefined}
+                title={link.label}
               >
-                <span aria-hidden>{link.icon}</span> {link.label}
+                <span className="ts-an-ic" aria-hidden>{link.icon}</span>
+                <span className="ts-an-text">{link.label}</span>
               </Link>
             ),
           )}

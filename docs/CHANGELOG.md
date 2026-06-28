@@ -6,6 +6,46 @@ code changes both go here so the history is complete.
 
 ---
 
+## 2026-06-29 — Collapsible sidebars
+
+- **Admin settings rail collapses to icons-only** (`AdminSettingsShell` +
+  `AdminSettingsNav`): a `«`/`»` toggle, persisted in `localStorage`
+  (`adminNavCollapsed`). Reworked sizing to proper icon-rail proportions — larger
+  icons/labels, a 66px collapsed strip with inset rounded hit areas, and `title`
+  tooltips so labels are still reachable. Mobile keeps the horizontal chip nav.
+- **Content rails collapse too** — post TOC, writing/projects filters, and the
+  about profile. A self-contained `RailToggle` (in `components/ui/`) flips
+  `rail-collapsed` on the closest `[data-rail-shell]` and persists per-rail, so it
+  works inside both server (post/about) and client (writing/projects) shells.
+  Collapsing hides the rail to a thin strip with a reopen chevron, giving the main
+  column full width. Desktop-only (≥761px); the toggle is hidden on mobile.
+- *Design note:* icon navs collapse to icons (admin); content rails collapse to a
+  hide/show strip — the right pattern for each rather than forcing icons onto
+  text-only rails.
+
+## 2026-06-28 — UI fixes + session theme + mockup polybar screens
+
+- **Side-panel scrollbars hidden:** the panel-page rails (`.about-sidebar`,
+  `.toc-col`, `.proj-filter`, `.filter-col .fc-body`) scrolled independently and
+  showed the default browser scrollbar right next to the main column's — now
+  hidden via `ui-scrollbar-hidden` (still wheel/trackpad scrollable). Added
+  `.post-list`/`.projects-scroll` to the thin `ui-scrollbar` set.
+- **Home 5-colour divider spans the full shell:** the hero block no longer caps
+  its whole width at 680px; only the hero *text* (eyebrow/h1/meta-row/lead) is
+  capped, so `.divider5` (and the grids below) go full-width.
+- **Two-tier theme persistence (`lib/theme.ts`):** the navbar polybar theme/accent
+  picker now applies a **session-only** override (`sessionStorage`) that resets on
+  a new session; admin theme settings remain the **permanent** default
+  (`localStorage`), and an admin save clears any session override. Resolution order
+  is session → permanent → system; boot-script DOM setters are now DOM-only so a
+  session theme never leaks to `localStorage`. Wired `PolybarAppearance` +
+  `PolybarThemePreview` to the session helpers.
+- **Mockup (`docs/mockups/ui-ux-mockup.html`):** added **Polybar tray** and
+  **Admin — polybar** screens (collapsed rail + expanded tray + widget reference;
+  widget enable/rail/order settings table). Synced the admin settings left-nav
+  (content: Posts/Projects/Scheduled · site: Theme/Settings/Polybar/Analytics) and
+  noted the permanent-vs-session theme model on the Theme screen.
+
 ## 2026-06-28 — Polybar notification click fix
 
 - Notification dropdown items use `router.push` + mark-read instead of `<Link onClick={close}>`; outside dismiss listens on `click` (not `mousedown`) and the rail pill allows overflow while open so the panel receives pointer events.

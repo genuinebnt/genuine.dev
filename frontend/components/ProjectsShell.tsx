@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import type { PostItem } from "../lib/api";
 import { docMetadata, projectBrowseUrl, projectGithub, projectTech } from "../lib/metadata";
 import { deriveTopic, topicColor } from "../lib/topic";
+import { RailToggle } from "./ui/RailToggle";
 import {
   PROJECTS_PAGE_SIZE,
   clampPage,
@@ -95,8 +96,9 @@ export default function ProjectsShell({ projects }: Props) {
   }
 
   return (
-    <div className="projects-shell">
+    <div className="projects-shell" data-rail-shell>
       <div className="proj-filter">
+        <RailToggle storageKey="rail-projects" label="filters" />
         <div className="pf-header">
           <div className="pf-eyebrow">Projects</div>
           <div className="pf-title">Things I&apos;ve built</div>

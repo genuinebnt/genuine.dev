@@ -22,10 +22,18 @@ export default function AdminLogout({
     router.replace(redirectTo);
   }
 
+  const isNavItem = className.includes("ts-an");
+
   return (
-    <button type="button" className={className} onClick={onLogout}>
-      {className.includes("ts-an") && <span aria-hidden>↪</span>}
-      {label}
+    <button type="button" className={className} onClick={onLogout} title={isNavItem ? label : undefined}>
+      {isNavItem ? (
+        <>
+          <span className="ts-an-ic" aria-hidden>↪</span>
+          <span className="ts-an-text">{label}</span>
+        </>
+      ) : (
+        label
+      )}
     </button>
   );
 }

@@ -8,6 +8,7 @@ import { useScrollSpy } from "../hooks/useScrollSpy";
 import { scrollToHashTarget } from "../lib/scrollRoot";
 import { DocInteractive } from "./DocInteractive";
 import { EditButton } from "./EditButton";
+import { RailToggle } from "./ui/RailToggle";
 
 const SKILLS = [
   "Rust",
@@ -35,8 +36,9 @@ export default function AboutDocPage({ doc }: { doc: PostDetail }) {
   return (
     <>
       <div className="about-page">
-        <div className="about-shell">
+        <div className="about-shell" data-rail-shell>
           <aside className="about-sidebar">
+            <RailToggle storageKey="rail-about" label="profile" />
             <div className="avatar-lg" aria-hidden>
               🦀
             </div>

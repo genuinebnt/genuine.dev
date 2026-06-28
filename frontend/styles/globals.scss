@@ -145,9 +145,21 @@ body,
 .about-body,
 .now-body,
 .uses-body,
+.post-list,
+.projects-scroll,
 .cmdk-results,
 .cmdk-sections {
   @include ui-scrollbar;
+}
+
+// Side rails scroll independently of the main column. Hide their scrollbar so it
+// isn't an ugly second bar sitting right next to the main content's scrollbar —
+// the rails are short and stay reachable by wheel/trackpad.
+.about-sidebar,
+.toc-col,
+.proj-filter,
+.filter-col .fc-body {
+  @include ui-scrollbar-hidden;
 }
 
 .shell { width: 100%; padding: 0 var(--gutter); }
@@ -874,9 +886,12 @@ body,
 h1 { font-size: 30px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.15; margin-bottom: 14px; }
 h1 span { color: var(--acc); }
 .lead { color: var(--muted); font-size: 15px; max-width: 620px; line-height: 1.75; margin-bottom: 26px; }
-// Hero block: cap the intro copy at a comfortable reading width. The grids
-// and list rows below are allowed to use the full shell width.
-.hero { max-width: 680px; }
+// Hero block: cap the intro *copy* at a comfortable reading width, but let
+// full-bleed elements (the 5-colour divider, grids, list rows) span the shell.
+.hero { max-width: none; }
+.hero-prose > .eyebrow,
+.hero-prose > h1,
+.hero-prose > .meta-row { max-width: 680px; }
 .hero-prose > p { color: var(--muted); font-size: 15px; max-width: 620px; line-height: 1.75; margin-bottom: 26px; }
 .hero-prose > h1 strong { color: var(--acc); }
 .section-label { font-family: var(--mono); font-size: 10px; color: var(--faint); letter-spacing: 0.15em; text-transform: uppercase; margin: 34px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
@@ -2231,6 +2246,79 @@ button.ts-an-item { width: calc(100% + 20px); border: none; background: transpar
 .ts-an-item.ts-active { background: var(--acc-bg); color: var(--acc); }
 .ts-an-item.ts-an-disabled { opacity: 0.45; cursor: default; pointer-events: none; }
 .ts-an-logout:hover { color: var(--warn); }
+
+// Collapse toggle + icon/label split (icons-only rail).
+.ts-an-ic { width: 20px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; line-height: 1; }
+.ts-an-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ts-an-item { gap: 11px; padding: 8px 10px; font-size: 13.5px; }
+.ts-an-toggle {
+  align-self: flex-end;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 15px;
+  cursor: pointer;
+}
+.ts-an-toggle:hover { color: var(--acc); border-color: var(--acc-border); }
+
+// Collapsed = icons-only rail. Wider strip + larger centered icons + inset
+// rounded hit areas, following common icon-rail practice (VSCode/Linear-style).
+.ts-admin-shell.ts-collapsed { grid-template-columns: 66px 1fr; }
+.ts-collapsed .ts-admin-nav { padding-inline: 10px; align-items: stretch; }
+.ts-collapsed .ts-an-toggle { align-self: center; }
+.ts-collapsed .ts-an-text,
+.ts-collapsed .ts-an-label { display: none; }
+.ts-collapsed .ts-an-section { width: 100%; }
+.ts-collapsed .ts-an-item { justify-content: center; gap: 0; margin: 2px 0; padding: 11px 0; border-radius: 8px; }
+.ts-collapsed .ts-an-ic { width: 100%; font-size: 20px; }
+.ts-collapsed button.ts-an-item { width: 100%; }
+
+// ── Content-rail collapse (post TOC · writing/projects filters · about) ──
+// These rails hold content, not an icon nav, so collapsing hides them down to a
+// thin strip with a reopen chevron — reclaiming the main column's width.
+.rail-toggle {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  align-self: flex-end;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  margin-left: auto;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 15px;
+  cursor: pointer;
+}
+.rail-toggle:hover { color: var(--acc); border-color: var(--acc-border); }
+
+// Collapse only applies on desktop; on mobile the rails stack/hide on their own.
+@media (min-width: 761px) {
+  .post-shell.rail-collapsed,
+  .wri-shell.rail-collapsed,
+  .projects-shell.rail-collapsed,
+  .about-shell.rail-collapsed { grid-template-columns: 46px 1fr; }
+  .rail-collapsed > :is(.toc-col, .filter-col, .proj-filter, .about-sidebar) { padding: 14px 9px; align-items: center; }
+  .rail-collapsed > :is(.toc-col, .filter-col, .proj-filter, .about-sidebar) > :not(.rail-toggle) { display: none; }
+  .rail-collapsed .rail-toggle { align-self: center; margin: 0 auto; }
+}
+
 .ts-admin-mobile-nav {
   display: none;
   flex-wrap: wrap;
@@ -2825,8 +2913,10 @@ html.focus-mode .footer:hover { opacity: 1; pointer-events: auto; }
   .projects-shell { grid-template-columns: 1fr; height: auto; overflow: visible; }
   .projects-body { overflow: visible; }
   .proj-filter { display: none; }
+  .rail-toggle { display: none; } // collapse is a desktop affordance
   .stat-cards { --grid-min: 120px; }
-  .ts-admin-shell { grid-template-columns: 1fr; height: auto; overflow: visible; }
+  .ts-admin-shell,
+  .ts-admin-shell.ts-collapsed { grid-template-columns: 1fr; height: auto; overflow: visible; }
   .ts-admin-nav { display: none; }
   .ts-admin-mobile-nav { display: flex; }
   .ts-main { overflow: visible; padding: 20px var(--gutter) 40px; }

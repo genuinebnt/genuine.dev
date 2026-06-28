@@ -387,6 +387,8 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
     <button class="stab" onclick="showScreen('now', this)">/now</button>
     <button class="stab" onclick="showScreen('uses', this)">/uses</button>
     <button class="stab" onclick="showScreen('cmdk', this)">Cmd-K</button>
+    <button class="stab" onclick="showScreen('polybar', this)">Polybar tray</button>
+    <button class="stab" onclick="showScreen('adminpolybar', this)">Admin — polybar</button>
   </div>
 
   <!-- ════════════ EDITOR (WYSIWYG) ════════════ -->
@@ -1373,18 +1375,21 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
         <div class="ts-admin-nav">
           <div class="ts-an-section">
             <span class="ts-an-label">content</span>
-            <div class="ts-an-item"><span>≡</span> Content</div>
+            <div class="ts-an-item"><span>✎</span> Posts</div>
+            <div class="ts-an-item"><span>⊞</span> Projects</div>
+            <div class="ts-an-item"><span>◷</span> Scheduled</div>
           </div>
           <div class="ts-an-section">
             <span class="ts-an-label">site</span>
             <div class="ts-an-item ts-active"><span>◑</span> Theme</div>
             <div class="ts-an-item"><span>⚙</span> Settings</div>
+            <div class="ts-an-item"><span>◆</span> Polybar</div>
             <div class="ts-an-item"><span>↗</span> Analytics</div>
           </div>
         </div>
         <div class="ts-main">
           <div class="ts-page-title">Theme</div>
-          <div class="ts-page-sub">Controls appearance for all public-facing pages. Per-page overrides available below.</div>
+          <div class="ts-page-sub">The <strong>permanent</strong> default for all public pages (the navbar theme picker only overrides it for the visitor's session). Per-page overrides available below.</div>
           <div class="ts-sec-h">preset</div>
           <div class="ts-theme-grid">
             <div class="ts-theme-card ts-selected" data-tstheme="dark" onclick="tsSelectTheme(this)">
@@ -2500,6 +2505,237 @@ function tsUpdateBar() {
             <span class="cmdk-hint"><span class="cmdk-key">esc</span> close</span>
             <span class="cmdk-footer-sp"></span>
             <span class="cmdk-results-count">4 results</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<style>
+/* ─── POLYBAR (utility tray) mockup ─── */
+.pbm-rail { display: flex; align-items: center; background: var(--surface2); border: 1px solid var(--border2); border-radius: 100px; padding: 3px 4px 3px 6px; }
+.pbm-cell { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--muted); padding: 3px 9px; white-space: nowrap; }
+.pbm-cell.pbm-clock { color: var(--text); }
+.pbm-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.pbm-sep { width: 1px; height: 14px; background: var(--border); }
+.pbm-search { font-size: 14px; color: var(--text); }
+.pbm-bell { position: relative; }
+.pbm-badge { position: absolute; top: -5px; right: -2px; background: var(--acc); color: #04130f; font-size: 8px; font-weight: 600; border-radius: 100px; padding: 0 4px; line-height: 13px; }
+.pbm-toggle { margin-left: 4px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border2); background: var(--surface); color: var(--muted); cursor: pointer; font-size: 13px; }
+.pbm-toggle:hover { color: var(--acc); border-color: var(--acc-border); }
+.pbm-stage { padding: 26px 22px 32px; display: flex; flex-direction: column; gap: 12px; }
+.pbm-anno { font-family: var(--mono); font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: .12em; margin-top: 8px; }
+.pbm-tray { display: flex; align-items: stretch; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 8px 6px; box-shadow: var(--shadow); width: fit-content; max-width: 100%; }
+.pbm-w { display: flex; flex-direction: column; gap: 4px; padding: 7px 15px; justify-content: center; }
+.pbm-w-lbl { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .1em; }
+.pbm-w-val { font-family: var(--mono); font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.pbm-tsep { width: 1px; background: var(--border); margin: 6px 0; }
+.pbm-sw { display: flex; gap: 4px; }
+.pbm-swatch { width: 15px; height: 15px; border-radius: 4px; border: 1px solid var(--border2); }
+.pbm-swatch.on { outline: 2px solid var(--acc); outline-offset: 1px; }
+.pbm-legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; margin-top: 10px; }
+.pbm-leg { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 13px; }
+.pbm-leg b { font-family: var(--mono); font-size: 11px; color: var(--acc); }
+.pbm-leg span { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+/* Polybar admin table */
+.pbm-admin-table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+.pbm-admin-table th { font-family: var(--mono); font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: .1em; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.pbm-admin-table td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.pbm-wname { font-size: 12.5px; color: var(--text); }
+.pbm-wdesc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.pbm-pill { font-family: var(--mono); font-size: 9px; padding: 2px 8px; border-radius: 100px; border: 1px solid var(--border2); background: var(--surface2); color: var(--muted); }
+.pbm-tg { width: 34px; height: 18px; border-radius: 100px; background: var(--acc); position: relative; display: inline-block; cursor: pointer; }
+.pbm-tg.off { background: var(--border2); }
+.pbm-tg::after { content: ""; position: absolute; top: 2px; left: 18px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .15s; }
+.pbm-tg.off::after { left: 2px; background: var(--muted); }
+.pbm-ord { display: flex; gap: 4px; }
+.pbm-ord button { width: 22px; height: 22px; border: 1px solid var(--border2); background: var(--surface2); border-radius: 4px; color: var(--muted); cursor: pointer; }
+.pbm-presets { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 4px; }
+.pbm-preset { font-family: var(--mono); font-size: 11px; padding: 6px 12px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--surface2); color: var(--text); cursor: pointer; }
+.pbm-preset:hover { border-color: var(--acc-border); color: var(--acc); }
+</style>
+
+  <!-- ════════════ POLYBAR TRAY ════════════ -->
+  <div class="screen" id="s-polybar">
+    <div class="screen-note">
+      Polybar utility tray — an admin-configurable widget bar on the right of the site nav (<code>NavPolybar</code>),
+      present on every public page and hidden on <code>/admin</code>. Collapsed it shows a compact rail; the chevron
+      expands the full tray. Widgets: clock · status · light/dark · theme preview · pomodoro · countdown · notifications · search (⌘K).
+      The navbar theme/accent picker applies a <strong>session-only</strong> override that resets on a new session —
+      the permanent default lives in admin → Theme.
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks"><a class="npill active">Articles</a><a class="npill">Projects</a><a class="npill">About</a></div>
+        <div class="nspacer"></div>
+        <div class="pbm-rail">
+          <span class="pbm-cell pbm-clock">21:04</span>
+          <span class="pbm-sep"></span>
+          <span class="pbm-cell"><span class="pbm-dot" style="background:var(--green)"></span> building</span>
+          <span class="pbm-sep"></span>
+          <span class="pbm-cell">◑ dark</span>
+          <span class="pbm-sep"></span>
+          <span class="pbm-cell"><span class="pbm-dot" style="background:var(--acc)"></span></span>
+          <span class="pbm-sep"></span>
+          <span class="pbm-cell">25:00</span>
+          <span class="pbm-sep"></span>
+          <span class="pbm-cell">D-12</span>
+          <span class="pbm-sep"></span>
+          <span class="pbm-cell pbm-bell">🔔<span class="pbm-badge">2</span></span>
+          <span class="pbm-sep"></span>
+          <span class="pbm-cell pbm-search">⌕</span>
+          <button class="pbm-toggle">‹</button>
+        </div>
+      </nav>
+      <div class="pbm-stage">
+        <div class="pbm-anno" style="margin-top:0;">expanded tray — chevron opens full widgets with labels</div>
+        <div class="pbm-tray">
+          <div class="pbm-w"><span class="pbm-w-lbl">clock</span><span class="pbm-w-val">21:04 · Mon 28 Jun</span></div>
+          <span class="pbm-tsep"></span>
+          <div class="pbm-w"><span class="pbm-w-lbl">status</span><span class="pbm-w-val"><span class="pbm-dot" style="background:var(--green)"></span> building NotiQ</span></div>
+          <span class="pbm-tsep"></span>
+          <div class="pbm-w"><span class="pbm-w-lbl">light / dark</span><span class="pbm-w-val">◑ dark</span></div>
+          <span class="pbm-tsep"></span>
+          <div class="pbm-w"><span class="pbm-w-lbl">theme preview</span><span class="pbm-w-val"><span class="pbm-sw"><span class="pbm-swatch on" style="background:#0d0f12"></span><span class="pbm-swatch" style="background:#f6f7f9"></span><span class="pbm-swatch" style="background:#0b0c1a"></span><span class="pbm-swatch" style="background:#f4ecd8"></span><span class="pbm-swatch" style="background:#040806"></span></span></span></div>
+          <span class="pbm-tsep"></span>
+          <div class="pbm-w"><span class="pbm-w-lbl">pomodoro</span><span class="pbm-w-val">25:00 ▶</span></div>
+          <span class="pbm-tsep"></span>
+          <div class="pbm-w"><span class="pbm-w-lbl">countdown</span><span class="pbm-w-val">12d 04h · launch</span></div>
+          <span class="pbm-tsep"></span>
+          <div class="pbm-w"><span class="pbm-w-lbl">notifications</span><span class="pbm-w-val pbm-bell">🔔 2 scheduled</span></div>
+          <span class="pbm-tsep"></span>
+          <div class="pbm-w"><span class="pbm-w-lbl">search</span><span class="pbm-w-val">⌕ ⌘K</span></div>
+        </div>
+        <div class="pbm-anno">widget reference</div>
+        <div class="pbm-legend">
+          <div class="pbm-leg"><b>clock</b><span>Live time + date. Timezone set in admin Settings.</span></div>
+          <div class="pbm-leg"><b>status line</b><span>Short status text from Settings (e.g. "building NotiQ").</span></div>
+          <div class="pbm-leg"><b>light / dark</b><span>Quick flip — applies a session-only override.</span></div>
+          <div class="pbm-leg"><b>theme preview</b><span>Preset swatches + accent picker. Session-only; ⟲ restores the saved default.</span></div>
+          <div class="pbm-leg"><b>pomodoro</b><span>25 / 5 focus timer with start / pause / reset.</span></div>
+          <div class="pbm-leg"><b>countdown</b><span>Custom countdown to a target date.</span></div>
+          <div class="pbm-leg"><b>notifications</b><span>Scheduled publishes + admin alerts (login required).</span></div>
+          <div class="pbm-leg"><b>search</b><span>⌕ circle — opens the ⌘K command palette.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ ADMIN — POLYBAR ════════════ -->
+  <div class="screen" id="s-adminpolybar">
+    <div class="screen-note">
+      Polybar settings — <code>/admin/settings/polybar</code>. Enable / disable widgets, toggle which appear in the
+      collapsed rail, reorder, or apply a preset. Shares the admin settings shell with Theme + Settings.
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev/admin/settings/polybar</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks">
+          <a class="npill">Articles</a><a class="npill">Projects</a><a class="npill">About</a>
+          <a class="npill admin active">Admin ✦</a>
+        </div>
+        <div class="nspacer"></div>
+        <span class="kbd">⌘K</span>
+      </nav>
+      <div class="ts-admin-shell">
+        <div class="ts-admin-nav">
+          <div class="ts-an-section">
+            <span class="ts-an-label">content</span>
+            <div class="ts-an-item"><span>✎</span> Posts</div>
+            <div class="ts-an-item"><span>⊞</span> Projects</div>
+            <div class="ts-an-item"><span>◷</span> Scheduled</div>
+          </div>
+          <div class="ts-an-section">
+            <span class="ts-an-label">site</span>
+            <div class="ts-an-item"><span>◑</span> Theme</div>
+            <div class="ts-an-item"><span>⚙</span> Settings</div>
+            <div class="ts-an-item ts-active"><span>◆</span> Polybar</div>
+            <div class="ts-an-item"><span>↗</span> Analytics</div>
+          </div>
+        </div>
+        <div class="ts-main">
+          <div class="ts-page-title">Polybar widgets</div>
+          <div class="ts-page-sub">Enabled widgets appear in the polybar pill by default; expand for full controls. Search is a ⌕ circle (⌘K). Light/dark and theme picks are session-only for visitors — save the site theme separately under Theme.</div>
+          <div class="ts-sec-h">presets</div>
+          <div class="pbm-presets">
+            <span class="pbm-preset">Minimal (clock + search)</span>
+            <span class="pbm-preset">Focus (pomodoro + countdown)</span>
+            <span class="pbm-preset">Everything</span>
+          </div>
+          <table class="pbm-admin-table">
+            <thead><tr><th>widget</th><th>shown in</th><th>rail</th><th>order</th><th>enabled</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div class="pbm-wname">Clock</div><div class="pbm-wdesc">Live time and date (timezone in Settings)</div></td>
+                <td><span class="pbm-pill">tray</span></td>
+                <td><span class="pbm-tg"></span></td>
+                <td><div class="pbm-ord"><button>↑</button><button>↓</button></div></td>
+                <td><span class="pbm-tg"></span></td>
+              </tr>
+              <tr>
+                <td><div class="pbm-wname">Status line</div><div class="pbm-wdesc">Short status text from Settings</div></td>
+                <td><span class="pbm-pill">tray</span></td>
+                <td><span class="pbm-tg"></span></td>
+                <td><div class="pbm-ord"><button>↑</button><button>↓</button></div></td>
+                <td><span class="pbm-tg"></span></td>
+              </tr>
+              <tr>
+                <td><div class="pbm-wname">Light / dark</div><div class="pbm-wdesc">Session preview toggle between light and dark</div></td>
+                <td><span class="pbm-pill">tray</span></td>
+                <td><span class="pbm-tg"></span></td>
+                <td><div class="pbm-ord"><button>↑</button><button>↓</button></div></td>
+                <td><span class="pbm-tg"></span></td>
+              </tr>
+              <tr>
+                <td><div class="pbm-wname">Theme preview</div><div class="pbm-wdesc">Preset swatches and accent (session-only)</div></td>
+                <td><span class="pbm-pill">tray</span></td>
+                <td><span class="pbm-tg off"></span></td>
+                <td><div class="pbm-ord"><button>↑</button><button>↓</button></div></td>
+                <td><span class="pbm-tg"></span></td>
+              </tr>
+              <tr>
+                <td><div class="pbm-wname">Pomodoro</div><div class="pbm-wdesc">25 / 5 minute focus timer</div></td>
+                <td><span class="pbm-pill">tray</span></td>
+                <td><span class="pbm-tg"></span></td>
+                <td><div class="pbm-ord"><button>↑</button><button>↓</button></div></td>
+                <td><span class="pbm-tg"></span></td>
+              </tr>
+              <tr>
+                <td><div class="pbm-wname">Countdown</div><div class="pbm-wdesc">Custom countdown timer</div></td>
+                <td><span class="pbm-pill">tray</span></td>
+                <td><span class="pbm-tg off"></span></td>
+                <td><div class="pbm-ord"><button>↑</button><button>↓</button></div></td>
+                <td><span class="pbm-tg"></span></td>
+              </tr>
+              <tr>
+                <td><div class="pbm-wname">Notifications</div><div class="pbm-wdesc">Scheduled publishes and admin alerts (login required)</div></td>
+                <td><span class="pbm-pill">polybar</span></td>
+                <td><span class="pbm-tg"></span></td>
+                <td><div class="pbm-ord"><button>↑</button><button>↓</button></div></td>
+                <td><span class="pbm-tg"></span></td>
+              </tr>
+              <tr>
+                <td><div class="pbm-wname">Search</div><div class="pbm-wdesc">⌕ opens command palette (⌘K shortcut)</div></td>
+                <td><span class="pbm-pill">polybar</span></td>
+                <td><span class="pbm-tg"></span></td>
+                <td><div class="pbm-ord"><button>↑</button><button>↓</button></div></td>
+                <td><span class="pbm-tg"></span></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="ts-save-bar">
+            <span class="ts-save-bar-txt">Settings saved.</span>
+            <span class="ts-btn-lg ts-ghost">Reset defaults</span>
+            <span class="ts-btn-lg ts-primary">Save polybar</span>
           </div>
         </div>
       </div>

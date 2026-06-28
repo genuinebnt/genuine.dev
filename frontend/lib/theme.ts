@@ -32,9 +32,14 @@ export const PAGE_OVERRIDE_DEFS: Array<{
 ];
 
 export const STORAGE = {
+  // Permanent site default — set by admin theme settings (localStorage).
   theme: "theme",
   accent: "accent",
   pageOverrides: "pageThemeOverrides",
+  // Per-session visitor override — set by the navbar theme picker
+  // (sessionStorage; survives reloads within the tab, gone on a new session).
+  sessionTheme: "themeSession",
+  sessionAccent: "accentSession",
 } as const;
 
 const THEME_LABELS: Record<ThemeKey, string> = {
@@ -106,10 +111,14 @@ export function resolveThemeForPath(pathname: string): {
   accent: string | null;
   perTopic: boolean;
 } {
+  // Base = session override (navbar picker) → permanent default (admin) → system.
   const siteTheme = (typeof window !== "undefined"
-    ? localStorage.getItem(STORAGE.theme)
+    ? sessionStorage.getItem(STORAGE.sessionTheme) ?? localStorage.getItem(STORAGE.theme)
     : null) as ThemeKey | null;
-  const siteAccent = typeof window !== "undefined" ? localStorage.getItem(STORAGE.accent) : null;
+  const siteAccent =
+    typeof window !== "undefined"
+      ? sessionStorage.getItem(STORAGE.sessionAccent) ?? localStorage.getItem(STORAGE.accent)
+      : null;
   const fallbackTheme: ThemeKey =
     siteTheme && isThemeKey(siteTheme)
       ? siteTheme
@@ -199,12 +208,45 @@ export function previewAccent(hex: string) {
   root.style.setProperty("--acc-border", accentAlpha(hex, 0.25));
 }
 
-/** Persist site theme + accent to localStorage and the DOM (public chrome). */
+/** Persist site theme + accent to localStorage and the DOM (public chrome).
+ * Admin save is authoritative: it clears any per-session navbar override so the
+ * new permanent default takes effect immediately. */
 export function persistSiteTheme(theme: ThemeKey, accent: string) {
   localStorage.setItem(STORAGE.theme, theme);
   localStorage.setItem(STORAGE.accent, accent);
+  sessionStorage.removeItem(STORAGE.sessionTheme);
+  sessionStorage.removeItem(STORAGE.sessionAccent);
   window.__setTheme?.(theme);
   window.__setAccent?.(accent);
+}
+
+/** Navbar theme picker — override the theme for this session only (sessionStorage).
+ * Applied to the DOM but never written to localStorage, so it resets on a new session. */
+export function setSessionTheme(theme: ThemeKey) {
+  sessionStorage.setItem(STORAGE.sessionTheme, theme);
+  if (typeof window !== "undefined") applyThemeForPath(window.location.pathname);
+}
+
+/** Navbar accent picker — session-only override (see `setSessionTheme`). */
+export function setSessionAccent(accent: string) {
+  sessionStorage.setItem(STORAGE.sessionAccent, accent);
+  if (typeof window !== "undefined") applyThemeForPath(window.location.pathname);
+}
+
+/** Drop the session override and fall back to the permanent (admin) default. */
+export function clearSessionTheme() {
+  sessionStorage.removeItem(STORAGE.sessionTheme);
+  sessionStorage.removeItem(STORAGE.sessionAccent);
+  if (typeof window !== "undefined") applyThemeForPath(window.location.pathname);
+}
+
+/** True when a per-session navbar override is currently active. */
+export function hasSessionTheme(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    sessionStorage.getItem(STORAGE.sessionTheme) !== null ||
+    sessionStorage.getItem(STORAGE.sessionAccent) !== null
+  );
 }
 
 export type ThemeBundle = {
@@ -233,9 +275,9 @@ export function importThemeBundle(bundle: ThemeBundle) {
 export function themeBootScript(): string {
   return `(function(){
 function __a(h,a){var n=parseInt(h.slice(1),16);return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')'}
-function __setTheme(t){document.documentElement.setAttribute('data-theme',t);try{localStorage.setItem('theme',t)}catch(e){}}
-function __setAccent(h){var d=document.documentElement;d.style.setProperty('--acc',h);d.style.setProperty('--acc-bg',__a(h,0.08));d.style.setProperty('--acc-border',__a(h,0.25));try{localStorage.setItem('accent',h)}catch(e){}}
-function __resetAccent(){var d=document.documentElement;d.style.removeProperty('--acc');d.style.removeProperty('--acc-bg');d.style.removeProperty('--acc-border');try{localStorage.removeItem('accent')}catch(e){}}
+function __setTheme(t){document.documentElement.setAttribute('data-theme',t);}
+function __setAccent(h){var d=document.documentElement;d.style.setProperty('--acc',h);d.style.setProperty('--acc-bg',__a(h,0.08));d.style.setProperty('--acc-border',__a(h,0.25));}
+function __resetAccent(){var d=document.documentElement;d.style.removeProperty('--acc');d.style.removeProperty('--acc-bg');d.style.removeProperty('--acc-border');}
 function __matchPageKey(p){
   if(p==='/'||p==='')return 'home';
   if(p==='/blog')return 'writing';
@@ -263,8 +305,8 @@ function __readOverrides(){
 }
 function __applyRouteTheme(path){
   if(path.indexOf('/admin')===0)return;
-  var siteTheme=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
-  var siteAccent=localStorage.getItem('accent');
+  var siteTheme=sessionStorage.getItem('themeSession')||localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
+  var siteAccent=sessionStorage.getItem('accentSession')||localStorage.getItem('accent');
   var key=__matchPageKey(path);
   var ov=key?__readOverrides()[key]:null;
   var theme=(ov&&ov.theme)?ov.theme:siteTheme;

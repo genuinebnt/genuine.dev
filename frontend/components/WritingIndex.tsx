@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { PostItem } from "../lib/api";
 import { searchPosts } from "../lib/api";
+import { RailToggle } from "./ui/RailToggle";
 import { deriveTopic, topicCssClass, topicColor, TOPIC_KEYS } from "../lib/topic";
 import {
   WRITING_PAGE_SIZE,
@@ -138,9 +139,10 @@ export default function WritingIndex({ initialPosts }: Props) {
   }, [pagedPosts, sort]);
 
   return (
-    <div className="wri-shell">
+    <div className="wri-shell" data-rail-shell>
       {/* Filter sidebar */}
       <div className="filter-col">
+        <RailToggle storageKey="rail-writing" label="filters" />
         <div className="fc-header">
           <div className="fc-eyebrow">Articles</div>
           <div className="fc-title">All posts</div>

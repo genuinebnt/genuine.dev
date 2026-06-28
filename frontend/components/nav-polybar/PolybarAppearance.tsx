@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { previewTheme, type ThemeKey } from "../../lib/theme";
+import { setSessionTheme, type ThemeKey } from "../../lib/theme";
 
 function isLightTheme(): boolean {
   return document.documentElement.getAttribute("data-theme") === "light";
@@ -24,7 +24,7 @@ function useAppearanceMode() {
   function toggle() {
     const next: ThemeKey = light ? "dark" : "light";
     setLight(!light);
-    previewTheme(next);
+    setSessionTheme(next);
   }
 
   return { light, mode: light ? "light" : "dark", toggle };

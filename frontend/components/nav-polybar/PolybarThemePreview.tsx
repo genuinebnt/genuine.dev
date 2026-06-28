@@ -5,22 +5,29 @@ import {
   STORAGE,
   THEME_PRESETS,
   applyThemeForPath,
+  clearSessionTheme,
+  hasSessionTheme,
   isThemeKey,
-  previewAccent,
-  previewTheme,
+  setSessionAccent,
+  setSessionTheme,
   type ThemeKey,
 } from "../../lib/theme";
 
 const ACCENT_PRESETS = ["#00d4a4", "#f0703c", "#60a5fa", "#a78bfa", "#ef5350", "#f59e0b"] as const;
 
-function readSavedTheme(): { theme: ThemeKey; accent: string } {
-  const storedTheme = localStorage.getItem(STORAGE.theme);
-  const theme: ThemeKey = storedTheme && isThemeKey(storedTheme) ? storedTheme : "dark";
-  const accent = localStorage.getItem(STORAGE.accent) ?? "#00d4a4";
+/** Effective theme/accent = session override (navbar) → permanent (admin) → default. */
+function readEffectiveTheme(): { theme: ThemeKey; accent: string } {
+  const stored =
+    sessionStorage.getItem(STORAGE.sessionTheme) ?? localStorage.getItem(STORAGE.theme);
+  const theme: ThemeKey = stored && isThemeKey(stored) ? stored : "dark";
+  const accent =
+    sessionStorage.getItem(STORAGE.sessionAccent) ??
+    localStorage.getItem(STORAGE.accent) ??
+    "#00d4a4";
   return { theme, accent };
 }
 
-/** Theme + accent preview — does not persist (save in admin settings). */
+/** Navbar theme + accent picker — applies a session-only override (resets next session). */
 export default function PolybarThemePreview({
   pathname,
   onRestore,
@@ -33,34 +40,35 @@ export default function PolybarThemePreview({
   const [isPreviewing, setIsPreviewing] = useState(false);
 
   const syncFromSaved = useCallback(() => {
-    const saved = readSavedTheme();
+    clearSessionTheme();
+    const saved = readEffectiveTheme();
     setActiveTheme(saved.theme);
     setActiveAccent(saved.accent);
     setIsPreviewing(false);
-    applyThemeForPath(pathname);
     onRestore?.();
-  }, [pathname, onRestore]);
+  }, [onRestore]);
 
   useEffect(() => {
-    const saved = readSavedTheme();
+    const saved = readEffectiveTheme();
     setActiveTheme(saved.theme);
     setActiveAccent(saved.accent);
+    setIsPreviewing(hasSessionTheme());
   }, []);
 
   useEffect(() => {
-    if (!isPreviewing) applyThemeForPath(pathname);
-  }, [pathname, isPreviewing]);
+    applyThemeForPath(pathname);
+  }, [pathname]);
 
   function pickTheme(theme: ThemeKey) {
     setActiveTheme(theme);
     setIsPreviewing(true);
-    previewTheme(theme);
+    setSessionTheme(theme);
   }
 
   function pickAccent(hex: string) {
     setActiveAccent(hex);
     setIsPreviewing(true);
-    previewAccent(hex);
+    setSessionAccent(hex);
   }
 
   return (
