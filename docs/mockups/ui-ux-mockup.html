@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>genuine.dev — Editor UI Mockups</title>
+<title>genuine.dev — UI reference mockup</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
@@ -321,6 +321,42 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
 .ra { font-family: var(--mono); font-size: 10px; padding: 3px 9px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; white-space: nowrap; }
 .ra:hover { color: var(--text); border-color: var(--border2); }
 .ra.del:hover { color: var(--red); border-color: rgba(239,68,68,0.25); }
+
+/* ─── ADMIN (shipped) ─── */
+.stat-cards-6 { grid-template-columns: repeat(6, 1fr); }
+.scard.clickable { cursor: pointer; transition: border-color .15s, background .15s; }
+.scard.clickable:hover { border-color: var(--border2); background: var(--surface2); }
+.scard.clickable.active { border-color: var(--acc-border); background: var(--acc-bg); }
+.scard.clickable.active .sc-lab { color: var(--acc); }
+.chip.clickable { cursor: pointer; }
+.chip.clickable.active { background: var(--acc-bg); border-color: var(--acc-border); color: var(--acc); }
+.pt-slug { font-family: var(--mono); font-size: 10px; color: var(--faint); margin: -1px 0 4px; }
+.post-table td.pt-cell { position: relative; padding: 0; vertical-align: middle; }
+.admin-row-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.pt-cell-inner { padding: 10px 10px 10px 14px; }
+.admin-topic { font-family: var(--mono); font-size: 11px; }
+.admin-topic.empty { color: var(--faint); }
+.admin-kind { font-family: var(--mono); font-size: 11px; color: var(--muted); text-transform: lowercase; }
+.kind-badge { font-family: var(--mono); font-size: 9px; padding: 1px 6px; border-radius: 100px; margin-left: 6px; background: var(--surface2); border: 1px solid var(--border2); color: var(--faint); }
+.admin-date { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+.admin-date.scheduled { color: var(--blue); }
+.post-table-check { width: 36px; padding-inline: 10px 6px; }
+.ui-check { display: inline-flex; align-items: center; justify-content: center; }
+.ui-check-box { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border2); background: var(--surface2); }
+.ui-check-box.on { background: var(--acc-bg); border-color: var(--acc-border); box-shadow: inset 0 0 0 2px var(--acc); }
+.admin-bulk-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); font-family: var(--mono); font-size: 11px; }
+.pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.pg-range, .pg-status { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+.pg-controls { display: flex; align-items: center; gap: 8px; }
+.pg-btn { font-family: var(--mono); font-size: 11px; padding: 5px 10px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--surface2); color: var(--text); cursor: pointer; }
+.page-eyebrow { font-family: var(--mono); font-size: 10px; color: var(--acc); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 4px; }
+
+/* ─── EDITOR WYSIWYG (shipped — no markdown split) ─── */
+.editor-wysiwyg { display: block; flex: 1; overflow: auto; background: var(--bg); padding: 20px 24px; }
+.editor-wysiwyg h1 { font-size: 22px; font-weight: 500; margin-bottom: 12px; }
+.editor-wysiwyg p { font-size: 14px; line-height: 1.75; color: var(--text); opacity: .9; margin-bottom: 10px; }
+.editor-wysiwyg h2 { font-size: 15px; font-weight: 500; margin: 16px 0 8px; }
+.publish-btn { font-family: var(--mono); font-size: 11px; padding: 4px 12px; border-radius: var(--radius); border: 1px solid var(--blue); background: var(--blue-bg); color: var(--blue); cursor: pointer; }
 </style>
 </head>
 <body>
@@ -328,7 +364,7 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
 <!-- ── DOC CHROME ── -->
 <div class="docbar">
   <div class="brand">genuine<span>·</span>folio</div>
-  <div class="docsub">Editor UI mockups — 4 screens</div>
+  <div class="docsub">UI reference — 15 screens · synced with shipped app (2026-06-28)</div>
   <div class="spacer"></div>
   <span class="grp-label">theme</span>
   <button class="theme-toggle" onclick="toggleTheme()"><span id="tt-ic">◑</span> <span id="tt-label">Dark</span></button>
@@ -336,11 +372,11 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
 
 <div class="wrap">
   <div class="screen-tabs">
-    <button class="stab active" onclick="showScreen('editor', this)">Editor (split view)</button>
+    <button class="stab active" onclick="showScreen('editor', this)">Editor (WYSIWYG)</button>
     <button class="stab" onclick="showScreen('outline', this)">Sidebar — outline</button>
     <button class="stab" onclick="showScreen('diag', this)">Sidebar — diagnostics</button>
     <button class="stab" onclick="showScreen('publish', this)">Publish modal</button>
-    <button class="stab" onclick="showScreen('admin', this)">Admin post list</button>
+    <button class="stab" onclick="showScreen('admin', this)">Admin — content</button>
     <button class="stab" onclick="showScreen('writing', this)">Writing index</button>
     <button class="stab" onclick="showScreen('home', this)">Home</button>
     <button class="stab" onclick="showScreen('post', this)">Post detail</button>
@@ -353,19 +389,18 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
     <button class="stab" onclick="showScreen('cmdk', this)">Cmd-K</button>
   </div>
 
-  <!-- ════════════ EDITOR (SPLIT VIEW) ════════════ -->
+  <!-- ════════════ EDITOR (WYSIWYG) ════════════ -->
   <div class="screen active" id="s-editor">
     <div class="screen-note">
-      Main editor — three-column shell: file tree (220px) | split editor (source + preview) | meta sidebar (260px).
-      Toolbar covers text formatting, heading levels, and custom markdown directives (::aside, ::callout).
-      Active line highlighted in acc-green; warn-highlighted line shows a diagnostic hit.
-      Status bar: draft pill · warning count · cursor position · reading time.
+      Main editor — three-column shell: file tree | TipTap WYSIWYG (single pane, no markdown source) | meta / outline / diag sidebar.
+      Toolbar: formatting + directives. Publish opens checklist modal; schedule stores <code>metadata.scheduled_for</code> on draft rows.
+      Status bar: draft · warnings · line count · unsaved indicator.
     </div>
     <div class="win">
       <div class="win-bar">
         <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-        <span class="win-url">genuine.dev/admin/posts/lock-free-queue/edit</span>
-        <span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--warn);">● unsaved changes</span>
+        <span class="win-url">genuine.dev/admin/edit/writing-a-lock-free-queue-from-scratch</span>
+        <span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--warn);">● unsaved</span>
       </div>
       <nav class="snav">
         <div class="logo">genuine<span>.</span>dev</div>
@@ -383,7 +418,7 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
         <!-- File tree -->
         <div class="file-tree">
           <div class="ft-header">
-            <span class="ft-title">Posts</span>
+            <span class="ft-title">Content</span>
             <div class="ft-actions">
               <div class="ft-btn" title="New post">+</div>
               <div class="ft-btn" title="Collapse">−</div>
@@ -394,43 +429,13 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
             <input placeholder="filter…">
           </div>
           <div class="file-list">
-            <div class="dir-row">
-              <span class="dicon">▾</span>
-              <span class="dname">rust</span>
-              <span class="dcount">3</span>
-            </div>
-            <div class="file-row active">
-              <span class="ficon">◆</span>
-              <span class="fname">lock-free-queue.md</span>
-              <span class="fbadge">M</span>
-            </div>
-            <div class="file-row">
-              <span class="ficon">◇</span>
-              <span class="fname">zero-copy-bytes.md</span>
-            </div>
-            <div class="file-row">
-              <span class="ficon">◇</span>
-              <span class="fname">atomic-ordering.md</span>
-            </div>
-            <div class="dir-row">
-              <span class="dicon">▾</span>
-              <span class="dname">infosec</span>
-              <span class="dcount">2</span>
-            </div>
-            <div class="file-row">
-              <span class="ficon">◇</span>
-              <span class="fname">blind-ssrf.md</span>
-            </div>
-            <div class="file-row">
-              <span class="ficon">◇</span>
-              <span class="fname">oob-server-setup.md</span>
-              <span class="fbadge new">N</span>
-            </div>
-            <div class="dir-row">
-              <span class="dicon">▸</span>
-              <span class="dname">distributed</span>
-              <span class="dcount">1</span>
-            </div>
+            <div class="dir-row"><span class="dicon">▾</span><span class="dname">posts</span><span class="dcount">4</span></div>
+            <div class="file-row active"><span class="ficon">◆</span><span class="fname">writing-a-lock-free-queue…</span><span class="fbadge">M</span></div>
+            <div class="file-row"><span class="ficon">◇</span><span class="fname">ssrf-to-internal-dashboards</span></div>
+            <div class="dir-row"><span class="dicon">▸</span><span class="dname">projects</span><span class="dcount">1</span></div>
+            <div class="dir-row"><span class="dicon">▾</span><span class="dname">pages</span><span class="dcount">4</span></div>
+            <div class="file-row"><span class="ficon">◇</span><span class="fname">about</span></div>
+            <div class="file-row"><span class="ficon">◇</span><span class="fname">home</span></div>
           </div>
         </div>
 
@@ -476,58 +481,33 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
               <button class="tb-btn action">⊞ img</button>
             </div>
             <div class="tb-right">
-              <button class="preview-btn">split</button>
+              <button class="preview-btn">Preview</button>
               <button class="save-btn">Save draft</button>
+              <button class="publish-btn">Publish…</button>
             </div>
           </div>
 
-          <div class="editor-area">
-            <div class="code-pane">
-              <div class="pane-header">
-                <span class="ph-label">source</span>
-                <span class="ph-lang">markdown</span>
-                <span class="ph-spacer"></span>
-                <span class="ph-action">wrap</span>
-              </div>
-              <pre class="code-editor"><div class="cl"><span class="ln">1</span><span class="lc"><span class="cm">---</span></span></div><div class="cl"><span class="ln">2</span><span class="lc"><span class="fn">title</span><span class="pn">:</span> <span class="str">Writing a lock-free queue from scratch</span></span></div><div class="cl"><span class="ln">3</span><span class="lc"><span class="fn">topic</span><span class="pn">:</span> <span class="str">rust</span></span></div><div class="cl"><span class="ln">4</span><span class="lc"><span class="fn">tags</span><span class="pn">: [</span><span class="str">rust</span><span class="pn">,</span> <span class="str">performance</span><span class="pn">,</span> <span class="str">dsa</span><span class="pn">]</span></span></div><div class="cl"><span class="ln">5</span><span class="lc"><span class="fn">published</span><span class="pn">:</span> <span class="num">false</span></span></div><div class="cl"><span class="ln">6</span><span class="lc"><span class="cm">---</span></span></div><div class="cl"><span class="ln">7</span><span class="lc"></span></div><div class="cl hl"><span class="ln">8</span><span class="lc"><span class="kw"># </span>Writing a lock-free queue from scratch<span class="cursor-blink"></span></span></div><div class="cl"><span class="ln">9</span><span class="lc"></span></div><div class="cl"><span class="ln">10</span><span class="lc">A compare-and-swap only checks that a pointer's</span></div><div class="cl"><span class="ln">11</span><span class="lc"><span class="str">*value*</span> is unchanged — not that it hasn't been</span></div><div class="cl"><span class="ln">12</span><span class="lc">changed and changed back. That gap is the ABA problem.</span></div><div class="cl"><span class="ln">13</span><span class="lc"></span></div><div class="cl warn-hl"><span class="ln">14</span><span class="lc"><span class="kw">## </span><span class="cm">The ABA problem</span></span></div><div class="cl"><span class="ln">15</span><span class="lc"></span></div><div class="cl"><span class="ln">16</span><span class="lc"><span class="pn">:::</span><span class="fn">aside</span><span class="pn">{</span><span class="fn">label</span><span class="pn">=</span><span class="str">"Ferris' hot tip"</span><span class="pn">}</span></span></div><div class="cl"><span class="ln">17</span><span class="lc">If you free that node between the <span class="str">`load`</span> and the</span></div><div class="cl"><span class="ln">18</span><span class="lc"><span class="str">`compare_exchange`</span>, another thread can reuse it.</span></div><div class="cl"><span class="ln">19</span><span class="lc"><span class="pn">:::</span></span></div><div class="cl"><span class="ln">20</span><span class="lc"></span></div><div class="cl"><span class="ln">21</span><span class="lc"><span class="pn">```</span><span class="fn">rust</span></span></div><div class="cl"><span class="ln">22</span><span class="lc"><span class="kw">loop</span> <span class="pn">{</span></span></div><div class="cl"><span class="ln">23</span><span class="lc">    <span class="kw">let</span> head <span class="pn">=</span> self<span class="pn">.</span>head<span class="pn">.</span><span class="fn">load</span><span class="pn">(</span>Ordering<span class="pn">::</span>Acquire<span class="pn">);</span></span></div><div class="cl"><span class="ln">24</span><span class="lc">    <span class="kw">let</span> next <span class="pn">=</span> <span class="kw">unsafe</span> <span class="pn">{ (*</span>head<span class="pn">).</span>next <span class="pn">};</span></span></div><div class="cl"><span class="ln">25</span><span class="lc"><span class="pn">}</span></span></div><div class="cl"><span class="ln">26</span><span class="lc"><span class="pn">```</span></span></div></pre>
-            </div>
-            <div class="preview-pane">
-              <div class="pane-header">
-                <span class="ph-label">preview</span>
-                <span class="ph-spacer"></span>
-                <span class="ph-action">full page</span>
-              </div>
-              <div class="preview-body">
-                <div class="prev-eyebrow">rust · performance</div>
-                <h1 class="prev-h1">Writing a lock-free queue from scratch</h1>
-                <div class="prev-meta"><span>draft</span><span>~12 min read</span><span>line 8 active</span></div>
-                <p class="prev-p">A compare-and-swap only checks that a pointer's <em>value</em> is unchanged — not that it hasn't been changed and changed back. That gap is the ABA problem.</p>
-                <h2 style="font-size:14px;font-weight:500;margin-bottom:8px;color:var(--warn);">⚠ h2: no body follows this heading</h2>
-                <div class="prev-aside">
-                  <div class="av">🦀</div>
-                  <div>
-                    <div class="who">Ferris' hot tip</div>
-                    <div class="say">If you free that node between the <code style="font-family:var(--mono);font-size:11px;background:var(--surface2);padding:1px 4px;border-radius:3px;">load</code> and the <code style="font-family:var(--mono);font-size:11px;background:var(--surface2);padding:1px 4px;border-radius:3px;">compare_exchange</code>, another thread can reuse it.</div>
-                  </div>
-                </div>
-                <div class="prev-chips">
-                  <span class="prev-chip">rust</span>
-                  <span class="prev-chip">performance</span>
-                  <span class="prev-chip">dsa</span>
-                </div>
+          <div class="editor-area editor-wysiwyg">
+            <h1>Writing a lock-free queue from scratch</h1>
+            <p>A compare-and-swap only checks that a pointer's <em>value</em> is unchanged — not that it hasn't been changed and changed back. That gap is the ABA problem.</p>
+            <h2>The ABA problem</h2>
+            <div class="prev-aside">
+              <div class="av">🦀</div>
+              <div>
+                <div class="who">Ferris' hot tip</div>
+                <div class="say">If you free that node between the load and the compare_exchange, another thread can reuse it.</div>
               </div>
             </div>
+            <p style="font-family:var(--mono);font-size:12px;background:var(--surface2);padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border);">loop { let head = self.head.load(Acquire); … }</p>
           </div>
 
           <div class="status-bar">
             <span class="sb-pill">draft</span>
             <span class="sb-warn">⚠ 1 warning</span>
-            <span>Ln 8, Col 42</span>
-            <span>26 lines</span>
+            <span>142 lines</span>
             <span class="sb-spacer"></span>
             <span>~12 min read</span>
-            <span>UTF-8</span>
-            <span style="color:var(--acc);">markdown</span>
+            <span style="color:var(--warn);">unsaved</span>
           </div>
         </div>
 
@@ -540,18 +520,18 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
           </div>
           <div class="sb-body">
             <div class="sb-section">
-              <div class="sb-h">frontmatter</div>
+              <div class="sb-h">metadata</div>
               <div class="meta-field">
                 <div class="mf-label">slug</div>
-                <input class="mf-input" style="font-size:11px;padding:5px 8px;" value="lock-free-queue">
+                <input class="mf-input" style="font-size:11px;padding:5px 8px;" value="writing-a-lock-free-queue-from-scratch">
               </div>
               <div class="meta-field">
-                <div class="mf-label">published at</div>
-                <input class="mf-input" style="font-size:11px;padding:5px 8px;" value="2026-06-20">
+                <div class="mf-label">status</div>
+                <select class="mf-input" style="font-size:11px;padding:5px 8px;"><option>draft</option><option>published</option></select>
               </div>
               <div class="meta-field">
-                <div class="mf-label">reading time</div>
-                <input class="mf-input" style="font-size:11px;padding:5px 8px;color:var(--faint);" value="~12 min  (auto)" disabled>
+                <div class="mf-label">schedule (optional)</div>
+                <input class="mf-input" style="font-size:11px;padding:5px 8px;" type="datetime-local" placeholder="Shows as scheduled in admin">
               </div>
             </div>
             <div class="sb-section">
@@ -772,14 +752,14 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
   <!-- ════════════ PUBLISH MODAL ════════════ -->
   <div class="screen" id="s-publish">
     <div class="screen-note">
-      Publish modal — overlays the editor. Pre-publish checklist runs inline; warnings don't block but surface with a jump-to action.
-      Publish mode toggle: "Now" vs "Schedule". Auto-filled canonical URL field (read-only).
-      Footer: ghost (Cancel) → secondary (Save draft) → primary (Publish now →).
+      Publish modal — overlays the editor from the Publish toolbar button. Pre-publish diagnostics (EditorCheckRow); warnings don't block but offer jump-to.
+      Publish mode: Now vs Schedule (schedule saves draft with <code>metadata.scheduled_for</code>). Primary label becomes "Schedule draft →" when scheduling.
+      Footer: Cancel · Save draft · Publish now → (or Schedule draft →).
     </div>
     <div class="win">
       <div class="win-bar">
         <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-        <span class="win-url">genuine.dev/admin/posts/lock-free-queue/publish</span>
+        <span class="win-url">genuine.dev/admin/edit/writing-a-lock-free-queue-from-scratch</span>
       </div>
       <nav class="snav">
         <div class="logo">genuine<span>.</span>dev</div>
@@ -808,7 +788,7 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
               <div class="check-row">
                 <span class="cr-ic ok">✓</span>
                 <div class="cr-body">
-                  <div class="cr-label">Frontmatter valid</div>
+                  <div class="cr-label">Metadata valid</div>
                   <div class="cr-sub">title · topic · tags · slug all present.</div>
                 </div>
               </div>
@@ -834,13 +814,13 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
                 </div>
                 <div class="radio-opt">
                   <div class="ro-label">○ Schedule</div>
-                  <div class="ro-desc">Pick a future date.</div>
+                  <div class="ro-desc">Save as draft with a target date.</div>
                 </div>
               </div>
             </div>
             <div class="field-group">
               <div class="fg-label">canonical url (auto-filled)</div>
-              <input class="fg-input" value="https://genuine.dev/blog/lock-free-queue" readonly style="color:var(--faint);">
+              <input class="fg-input" value="https://genuine.dev/blog/writing-a-lock-free-queue-from-scratch" readonly style="color:var(--faint);">
             </div>
           </div>
           <div class="modal-footer">
@@ -853,18 +833,17 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
     </div>
   </div>
 
-  <!-- ════════════ ADMIN POST LIST ════════════ -->
+  <!-- ════════════ ADMIN CONTENT ════════════ -->
   <div class="screen" id="s-admin">
     <div class="screen-note">
-      Admin post list — /admin/posts. Stat cards (published · draft · scheduled · total),
-      filter chips mirroring the blog index tag pattern, full post table with topic-colored
-      labels, status badges, and context-sensitive row actions.
-      draft → edit / preview / delete · published → edit / unpublish / delete · scheduled → edit / unschedule / delete.
+      Unified admin — <code>/admin</code>. Clickable stat cards filter status/kind (no second chip row).
+      Tag chips derive from <code>metadata.tags</code>. Table columns: checkbox · title/slug/tags · topic · kind · status · date · actions.
+      3px accent bar on title cell · static portfolio rows (<code>notiq</code>, …) → <code>static</code> badge + view only · pagination 20/page · bulk bar when rows selected.
     </div>
     <div class="win">
       <div class="win-bar">
         <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-        <span class="win-url">genuine.dev/admin/posts</span>
+        <span class="win-url">genuine.dev/admin</span>
       </div>
       <nav class="snav">
         <div class="logo">genuine<span>.</span>dev</div>
@@ -875,34 +854,51 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
       </nav>
       <div class="admin-page">
         <div class="page-header">
-          <h1>Posts</h1>
+          <div>
+            <div class="page-eyebrow">Admin</div>
+            <h1>Content</h1>
+          </div>
           <div class="ph-spacer"></div>
           <div class="searchbar">
             <span style="color:var(--faint);font-family:var(--mono);font-size:12px;">⌕</span>
-            <input placeholder="search posts…">
+            <input placeholder="search content…">
           </div>
-          <button class="btn primary" style="margin-left:8px;">+ New post</button>
+          <button class="btn" style="margin-left:8px;">⚙ Settings</button>
+          <button class="btn primary" style="margin-left:8px;">+ New</button>
         </div>
-        <div class="stat-cards">
-          <div class="scard"><div class="sc-val acc">3</div><div class="sc-lab">published</div></div>
-          <div class="scard"><div class="sc-val warn">1</div><div class="sc-lab">draft</div></div>
-          <div class="scard"><div class="sc-val blue">1</div><div class="sc-lab">scheduled</div></div>
-          <div class="scard"><div class="sc-val">5</div><div class="sc-lab">total</div></div>
+        <div class="stat-cards stat-cards-6">
+          <div class="scard clickable active"><div class="sc-val acc">11</div><div class="sc-lab">published</div></div>
+          <div class="scard clickable"><div class="sc-val warn">0</div><div class="sc-lab">drafts</div></div>
+          <div class="scard clickable"><div class="sc-val blue">0</div><div class="sc-lab">scheduled</div></div>
+          <div class="scard clickable"><div class="sc-val">11</div><div class="sc-lab">total docs</div></div>
+          <div class="scard clickable"><div class="sc-val blue">3</div><div class="sc-lab">projects</div></div>
+          <div class="scard clickable"><div class="sc-val blue">4</div><div class="sc-lab">pages</div></div>
         </div>
         <div class="filter-row">
-          <span class="chip active">all</span>
-          <span class="chip">published</span>
-          <span class="chip">draft</span>
-          <span class="chip">scheduled</span>
-          <span class="chip">rust</span>
-          <span class="chip">infosec</span>
-          <span class="chip">distributed</span>
+          <span class="chip clickable">concurrency</span>
+          <span class="chip clickable">rust</span>
+          <span class="chip clickable">security</span>
+          <span class="chip clickable">bug-bounty</span>
+          <span class="chip clickable">postgres</span>
+          <span class="chip clickable">systems</span>
+          <span class="chip clickable">distributed-systems</span>
+          <span class="chip clickable">fullstack</span>
+          <span class="chip clickable">database</span>
+        </div>
+        <div class="admin-bulk-bar">
+          <span>1 selected</span>
+          <button class="pg-btn">Publish</button>
+          <button class="pg-btn">Unpublish</button>
+          <button class="pg-btn">Delete</button>
+          <button class="pg-btn" style="background:none;border:none;color:var(--muted);">Clear</button>
         </div>
         <table class="post-table">
           <thead>
             <tr>
+              <th class="post-table-check"><span class="ui-check-box on"></span></th>
               <th>title / tags</th>
               <th>topic</th>
+              <th>kind</th>
               <th>status</th>
               <th>date</th>
               <th style="text-align:right;">actions</th>
@@ -910,62 +906,98 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
           </thead>
           <tbody>
             <tr>
-              <td>
-                <div class="pt-title">Writing a lock-free queue from scratch</div>
-                <div class="pt-tags"><span class="pt-tag">rust</span><span class="pt-tag">performance</span><span class="pt-tag">dsa</span></div>
+              <td class="post-table-check"><span class="ui-check-box on"></span></td>
+              <td class="pt-cell">
+                <span class="admin-row-bar topic-bar t-rust"></span>
+                <div class="pt-cell-inner">
+                  <div class="pt-title">Writing a lock-free queue from scratch</div>
+                  <div class="pt-slug">writing-a-lock-free-queue-from-scratch</div>
+                  <div class="pt-tags"><span class="pt-tag">rust</span><span class="pt-tag">concurrency</span></div>
+                </div>
               </td>
-              <td><span style="font-family:var(--mono);font-size:11px;color:#f0703c;">rust</span></td>
-              <td><span class="status-badge draft">draft</span></td>
-              <td><span style="font-family:var(--mono);font-size:11px;color:var(--faint);">—</span></td>
-              <td><div class="row-actions"><span class="ra">edit</span><span class="ra">preview</span><span class="ra del">delete</span></div></td>
-            </tr>
-            <tr>
-              <td>
-                <div class="pt-title">Blind SSRF: building your own OOB server</div>
-                <div class="pt-tags"><span class="pt-tag">infosec</span><span class="pt-tag">bug-bounty</span></div>
-              </td>
-              <td><span style="font-family:var(--mono);font-size:11px;color:var(--acc);">infosec</span></td>
+              <td><span class="admin-topic" style="color:#f0703c;">rust</span></td>
+              <td><span class="admin-kind">post</span></td>
               <td><span class="status-badge published">published</span></td>
-              <td><span style="font-family:var(--mono);font-size:11px;color:var(--faint);">2026-05-28</span></td>
+              <td><span class="admin-date">2026-06-26</span></td>
               <td><div class="row-actions"><span class="ra">edit</span><span class="ra">unpublish</span><span class="ra del">delete</span></div></td>
             </tr>
             <tr>
-              <td>
-                <div class="pt-title">SWIM gossip, explained by building it</div>
-                <div class="pt-tags"><span class="pt-tag">distributed</span><span class="pt-tag">rust</span></div>
+              <td class="post-table-check"><span class="ui-check-box"></span></td>
+              <td class="pt-cell">
+                <span class="admin-row-bar topic-bar t-rust"></span>
+                <div class="pt-cell-inner">
+                  <div class="pt-title">Reclaiming memory: hazard pointers vs epochs</div>
+                  <div class="pt-slug">reclaiming-memory-hazard-pointers-vs-epochs</div>
+                  <div class="pt-tags"><span class="pt-tag">rust</span><span class="pt-tag">concurrency</span></div>
+                </div>
               </td>
-              <td><span style="font-family:var(--mono);font-size:11px;color:#4a90e8;">distributed</span></td>
+              <td><span class="admin-topic" style="color:#f0703c;">rust</span></td>
+              <td><span class="admin-kind">post</span></td>
               <td><span class="status-badge published">published</span></td>
-              <td><span style="font-family:var(--mono);font-size:11px;color:var(--faint);">2026-04-15</span></td>
+              <td><span class="admin-date">2026-06-19</span></td>
               <td><div class="row-actions"><span class="ra">edit</span><span class="ra">unpublish</span><span class="ra del">delete</span></div></td>
             </tr>
             <tr>
-              <td>
-                <div class="pt-title">Zero-copy fan-out with Bytes</div>
-                <div class="pt-tags"><span class="pt-tag">rust</span><span class="pt-tag">performance</span></div>
+              <td class="post-table-check"><span class="ui-check-box"></span></td>
+              <td class="pt-cell">
+                <span class="admin-row-bar topic-bar t-infosec"></span>
+                <div class="pt-cell-inner">
+                  <div class="pt-title">SSRF to internal dashboards: a bug-bounty walkthrough</div>
+                  <div class="pt-slug">ssrf-to-internal-dashboards</div>
+                  <div class="pt-tags"><span class="pt-tag">security</span><span class="pt-tag">bug-bounty</span></div>
+                </div>
               </td>
-              <td><span style="font-family:var(--mono);font-size:11px;color:#f0703c;">rust</span></td>
-              <td><span class="status-badge scheduled">scheduled</span></td>
-              <td><span style="font-family:var(--mono);font-size:11px;color:var(--blue);">2026-07-04</span></td>
-              <td><div class="row-actions"><span class="ra">edit</span><span class="ra">unschedule</span><span class="ra del">delete</span></div></td>
+              <td><span class="admin-topic" style="color:var(--acc);">infosec</span></td>
+              <td><span class="admin-kind">post</span></td>
+              <td><span class="status-badge published">published</span></td>
+              <td><span class="admin-date">2026-05-28</span></td>
+              <td><div class="row-actions"><span class="ra">edit</span><span class="ra">unpublish</span><span class="ra del">delete</span></div></td>
             </tr>
             <tr>
-              <td>
-                <div class="pt-title">Postgres as a job queue: SKIP LOCKED in depth</div>
-                <div class="pt-tags"><span class="pt-tag">postgres</span><span class="pt-tag">systems</span></div>
+              <td class="post-table-check"><span class="ui-check-box"></span></td>
+              <td class="pt-cell">
+                <span class="admin-row-bar topic-bar t-systems"></span>
+                <div class="pt-cell-inner">
+                  <div class="pt-title">What SKIP LOCKED actually does</div>
+                  <div class="pt-slug">what-skip-locked-actually-does</div>
+                  <div class="pt-tags"><span class="pt-tag">postgres</span><span class="pt-tag">systems</span></div>
+                </div>
               </td>
-              <td><span style="font-family:var(--mono);font-size:11px;color:var(--acc);">systems</span></td>
+              <td><span class="admin-topic" style="color:var(--purple);">systems</span></td>
+              <td><span class="admin-kind">post</span></td>
               <td><span class="status-badge published">published</span></td>
-              <td><span style="font-family:var(--mono);font-size:11px;color:var(--faint);">2026-03-02</span></td>
+              <td><span class="admin-date">2026-03-02</span></td>
               <td><div class="row-actions"><span class="ra">edit</span><span class="ra">unpublish</span><span class="ra del">delete</span></div></td>
+            </tr>
+            <tr>
+              <td class="post-table-check"><span class="ui-check-box"></span></td>
+              <td class="pt-cell">
+                <span class="admin-row-bar" style="background:var(--acc);"></span>
+                <div class="pt-cell-inner">
+                  <div class="pt-title">NotiQ — distributed notification platform</div>
+                  <div class="pt-slug">notiq</div>
+                  <div class="pt-tags"><span class="pt-tag">distributed-systems</span><span class="pt-tag">rust</span></div>
+                </div>
+              </td>
+              <td><span class="admin-topic" style="color:var(--blue);">distributed</span></td>
+              <td><span class="admin-kind">project</span> <span class="kind-badge">static</span></td>
+              <td><span class="status-badge published">published</span></td>
+              <td><span class="admin-date">2026-04-01</span></td>
+              <td><div class="row-actions"><span class="ra">view</span></div></td>
             </tr>
           </tbody>
         </table>
+        <div class="pagination">
+          <span class="pg-range">1–11 of 11</span>
+          <div class="pg-controls">
+            <button class="pg-btn" disabled>← prev</button>
+            <span class="pg-status">1 / 1</span>
+            <button class="pg-btn" disabled>next →</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-
-</div>
 
 <style>
 /* ─── WRITING INDEX ─── */
@@ -1031,13 +1063,13 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
   <!-- ════════════ WRITING INDEX ════════════ -->
   <div class="screen" id="s-writing">
     <div class="screen-note">
-      Writing index — two-column shell: sticky filter sidebar (200px) with topic + tag filters, sort control | post list with year dividers, topic-colored 3px left bar, reading time + view count per row.
-      Mirrors the editor shell's panel pattern. Topic bar colors match the per-topic accent system (rust → #f0703c, infosec → --acc, distributed → --blue, etc.).
+      Writing index — <code>/blog</code>. Filter sidebar (topic + tag counts) | post list with year dividers and 3px topic bars.
+      Pagination 15/page (<code>?page=</code>). Four seed posts; no view counts in the list UI.
     </div>
     <div class="win">
       <div class="win-bar">
         <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-        <span class="win-url">genuine.dev/writing</span>
+        <span class="win-url">genuine.dev/blog</span>
       </div>
       <nav class="snav">
         <div class="logo">genuine<span>.</span>dev</div>
@@ -1055,7 +1087,7 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
         <!-- filter sidebar -->
         <div class="filter-col">
           <div class="fc-header">
-            <div class="fc-eyebrow">Writing</div>
+            <div class="fc-eyebrow">Articles</div>
             <div class="fc-title">All posts</div>
           </div>
           <div class="fc-body">
@@ -1068,22 +1100,22 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
               <div class="filter-item wri-active">
                 <span class="fi-dot" style="background:var(--muted);"></span>
                 <span class="fi-label">all</span>
-                <span class="fi-count">7</span>
+                <span class="fi-count">4</span>
               </div>
               <div class="filter-item">
                 <span class="fi-dot t-rust"></span>
                 <span class="fi-label">rust</span>
-                <span class="fi-count">3</span>
+                <span class="fi-count">2</span>
               </div>
               <div class="filter-item">
                 <span class="fi-dot t-infosec"></span>
                 <span class="fi-label">infosec</span>
-                <span class="fi-count">2</span>
+                <span class="fi-count">1</span>
               </div>
               <div class="filter-item">
                 <span class="fi-dot t-distributed"></span>
                 <span class="fi-label">distributed</span>
-                <span class="fi-count">1</span>
+                <span class="fi-count">0</span>
               </div>
               <div class="filter-item">
                 <span class="fi-dot t-systems"></span>
@@ -1105,13 +1137,23 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
               <div class="fs-h">tags</div>
               <div class="filter-item">
                 <span class="fi-dot" style="background:var(--faint);"></span>
-                <span class="fi-label">lock-free</span>
+                <span class="fi-label">concurrency</span>
+                <span class="fi-count">2</span>
+              </div>
+              <div class="filter-item">
+                <span class="fi-dot" style="background:var(--faint);"></span>
+                <span class="fi-label">rust</span>
+                <span class="fi-count">2</span>
+              </div>
+              <div class="filter-item">
+                <span class="fi-dot" style="background:var(--faint);"></span>
+                <span class="fi-label">security</span>
                 <span class="fi-count">1</span>
               </div>
               <div class="filter-item">
                 <span class="fi-dot" style="background:var(--faint);"></span>
                 <span class="fi-label">bug-bounty</span>
-                <span class="fi-count">2</span>
+                <span class="fi-count">1</span>
               </div>
               <div class="filter-item">
                 <span class="fi-dot" style="background:var(--faint);"></span>
@@ -1120,7 +1162,7 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
               </div>
               <div class="filter-item">
                 <span class="fi-dot" style="background:var(--faint);"></span>
-                <span class="fi-label">dsa</span>
+                <span class="fi-label">systems</span>
                 <span class="fi-count">1</span>
               </div>
             </div>
@@ -1140,7 +1182,7 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
         <!-- post list -->
         <div class="post-col">
           <div class="pc-header">
-            <span class="pc-count"><span>7</span> posts</span>
+            <span class="pc-count"><span>4</span> posts</span>
             <span class="pc-sp"></span>
             <div class="view-toggle">
               <span class="vt-btn vt-active">≡ list</span>
@@ -1161,12 +1203,27 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
                 <div class="wpr-top">
                   <div class="wpr-title">Writing a lock-free queue from scratch</div>
                   <span class="new-badge">new</span>
-                  <span class="wpr-date">2026-06-20</span>
+                  <span class="wpr-date">Jun 2026</span>
                 </div>
-                <div class="wpr-summary">The ABA problem, why pointer tagging is necessary, and how a Michael-Scott queue stays correct without a mutex.</div>
+                <div class="wpr-summary">The ABA problem, pointer tagging, and CAS — by building it in Rust.</div>
                 <div class="wpr-footer">
-                  <div class="wpr-chips"><span class="wpr-chip">rust</span><span class="wpr-chip">performance</span><span class="wpr-chip">dsa</span></div>
-                  <div class="wpr-meta"><span class="wpr-read">12 min</span><span class="wpr-views">—</span></div>
+                  <div class="wpr-chips"><span class="wpr-chip">rust</span><span class="wpr-chip">concurrency</span></div>
+                  <div class="wpr-meta"><span class="wpr-read">12 min</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wri-post-row">
+              <div class="topic-bar t-rust"></div>
+              <div class="wpr-body">
+                <div class="wpr-top">
+                  <div class="wpr-title">Reclaiming memory: hazard pointers vs epochs</div>
+                  <span class="wpr-date">Jun 2026</span>
+                </div>
+                <div class="wpr-summary">Once the queue works, the hard part begins — freeing nodes safely.</div>
+                <div class="wpr-footer">
+                  <div class="wpr-chips"><span class="wpr-chip">rust</span><span class="wpr-chip">concurrency</span></div>
+                  <div class="wpr-meta"><span class="wpr-read">10 min</span></div>
                 </div>
               </div>
             </div>
@@ -1175,28 +1232,13 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
               <div class="topic-bar t-infosec"></div>
               <div class="wpr-body">
                 <div class="wpr-top">
-                  <div class="wpr-title">Blind SSRF: building your own OOB server</div>
-                  <span class="wpr-date">2026-05-28</span>
+                  <div class="wpr-title">SSRF to internal dashboards: a bug-bounty walkthrough</div>
+                  <span class="wpr-date">Jun 2026</span>
                 </div>
-                <div class="wpr-summary">How out-of-band interaction servers work, and standing one up safely on isolated infrastructure for bug bounty.</div>
+                <div class="wpr-summary">How a forgotten URL preview endpoint exposed an entire metadata service.</div>
                 <div class="wpr-footer">
-                  <div class="wpr-chips"><span class="wpr-chip">infosec</span><span class="wpr-chip">bug-bounty</span></div>
-                  <div class="wpr-meta"><span class="wpr-read">9 min</span><span class="wpr-views">482 views</span></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="wri-post-row">
-              <div class="topic-bar t-distributed"></div>
-              <div class="wpr-body">
-                <div class="wpr-top">
-                  <div class="wpr-title">SWIM gossip, explained by building it</div>
-                  <span class="wpr-date">2026-04-15</span>
-                </div>
-                <div class="wpr-summary">Direct ping → suspect → indirect ping → dead. Epidemic dissemination and O(log N) convergence, implemented in Rust.</div>
-                <div class="wpr-footer">
-                  <div class="wpr-chips"><span class="wpr-chip">distributed</span><span class="wpr-chip">rust</span></div>
-                  <div class="wpr-meta"><span class="wpr-read">15 min</span><span class="wpr-views">1.2k views</span></div>
+                  <div class="wpr-chips"><span class="wpr-chip">security</span><span class="wpr-chip">bug-bounty</span></div>
+                  <div class="wpr-meta"><span class="wpr-read">9 min</span></div>
                 </div>
               </div>
             </div>
@@ -1205,68 +1247,25 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
               <div class="topic-bar t-systems"></div>
               <div class="wpr-body">
                 <div class="wpr-top">
-                  <div class="wpr-title">Postgres as a job queue: SKIP LOCKED in depth</div>
-                  <span class="wpr-date">2026-03-02</span>
+                  <div class="wpr-title">What SKIP LOCKED actually does</div>
+                  <span class="wpr-date">May 2026</span>
                 </div>
-                <div class="wpr-summary">Lock-free dequeue, LISTEN/NOTIFY for low-latency wake, and where this approach hits its ceiling.</div>
+                <div class="wpr-summary">A Postgres-native job queue in 30 lines, and why it doesn't block.</div>
                 <div class="wpr-footer">
                   <div class="wpr-chips"><span class="wpr-chip">postgres</span><span class="wpr-chip">systems</span></div>
-                  <div class="wpr-meta"><span class="wpr-read">11 min</span><span class="wpr-views">2.1k views</span></div>
+                  <div class="wpr-meta"><span class="wpr-read">11 min</span></div>
                 </div>
               </div>
             </div>
 
-            <div class="year-row">
-              <span class="yr-label">2025</span>
-              <span class="yr-line"></span>
-              <span class="yr-count">3 posts</span>
+          </div>
+          <div class="pagination" style="margin:16px 16px 0;border-top:none;padding-top:0;">
+            <span class="pg-range">1–4 of 4</span>
+            <div class="pg-controls">
+              <button class="pg-btn" disabled>← prev</button>
+              <span class="pg-status">1 / 1</span>
+              <button class="pg-btn" disabled>next →</button>
             </div>
-
-            <div class="wri-post-row">
-              <div class="topic-bar t-rust"></div>
-              <div class="wpr-body">
-                <div class="wpr-top">
-                  <div class="wpr-title">Zero-copy fan-out with Bytes</div>
-                  <span class="wpr-date">2025-11-14</span>
-                </div>
-                <div class="wpr-summary">How <code style="font-family:var(--mono);font-size:11px;background:var(--surface2);padding:1px 4px;border-radius:3px;">bytes::Bytes</code> achieves shallow clones via reference counting, and when it pays off in a fan-out pipeline.</div>
-                <div class="wpr-footer">
-                  <div class="wpr-chips"><span class="wpr-chip">rust</span><span class="wpr-chip">performance</span></div>
-                  <div class="wpr-meta"><span class="wpr-read">8 min</span><span class="wpr-views">3.4k views</span></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="wri-post-row">
-              <div class="topic-bar t-rust"></div>
-              <div class="wpr-body">
-                <div class="wpr-top">
-                  <div class="wpr-title">Atomic memory ordering, demystified</div>
-                  <span class="wpr-date">2025-09-03</span>
-                </div>
-                <div class="wpr-summary">Acquire, Release, SeqCst — what the CPU actually does with these hints, and why you almost always want Acquire/Release pairs.</div>
-                <div class="wpr-footer">
-                  <div class="wpr-chips"><span class="wpr-chip">rust</span><span class="wpr-chip">performance</span></div>
-                  <div class="wpr-meta"><span class="wpr-read">10 min</span><span class="wpr-views">5.8k views</span></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="wri-post-row">
-              <div class="topic-bar t-ctf"></div>
-              <div class="wpr-body">
-                <div class="wpr-top">
-                  <div class="wpr-title">First blood on a blind RCE: how the chain came together</div>
-                  <span class="wpr-date">2025-06-19</span>
-                </div>
-                <div class="wpr-summary">Walking through the recon → SSRF → internal metadata → RCE chain on a private program, and what made each step stick.</div>
-                <div class="wpr-footer">
-                  <div class="wpr-chips"><span class="wpr-chip">infosec</span><span class="wpr-chip">bug-bounty</span><span class="wpr-chip">ctf</span></div>
-                  <div class="wpr-meta"><span class="wpr-read">14 min</span><span class="wpr-views">7.2k views</span></div>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
 
@@ -1354,7 +1353,7 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
   <!-- ════════════ ADMIN — THEME SETTINGS ════════════ -->
   <div class="screen" id="s-theme">
     <div class="screen-note">
-      Admin theme settings — /admin/settings/theme. Left admin nav (content / site sections). Main area: preset grid (5 cards with miniature surface+accent previews), accent color row (8 presets + custom color picker), live preview panel (re-renders on every change), per-page override table, save bar. All controls are interactive.
+      Admin theme settings — <code>/admin/settings/theme</code>. Left nav: unified Content at <code>/admin</code> + site settings. Preset grid, accent swatches, live preview, per-page overrides, save bar.
     </div>
     <div class="win">
       <div class="win-bar">
@@ -1374,9 +1373,7 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
         <div class="ts-admin-nav">
           <div class="ts-an-section">
             <span class="ts-an-label">content</span>
-            <div class="ts-an-item"><span>✎</span> Posts</div>
-            <div class="ts-an-item"><span>⊞</span> Projects</div>
-            <div class="ts-an-item"><span>◷</span> Scheduled</div>
+            <div class="ts-an-item"><span>≡</span> Content</div>
           </div>
           <div class="ts-an-section">
             <span class="ts-an-label">site</span>
@@ -1703,26 +1700,26 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
             <div class="fc-body">
               <span class="fc-tag" style="color:#f0703c;">rust</span>
               <div class="fc-title">Writing a lock-free queue from scratch</div>
-              <div class="fc-summary">What the ABA problem actually is, and why crossbeam tags its pointers.</div>
+              <div class="fc-summary">The ABA problem, pointer tagging, and CAS — by building it in Rust.</div>
               <div class="fc-meta"><span>Jun 2026</span><span>12 min</span></div>
+            </div>
+          </div>
+          <div class="feat-card">
+            <div class="fc-bar" style="background:#f0703c;"></div>
+            <div class="fc-body">
+              <span class="fc-tag" style="color:#f0703c;">rust</span>
+              <div class="fc-title">Reclaiming memory: hazard pointers vs epochs</div>
+              <div class="fc-summary">Once the queue works, the hard part begins — freeing nodes safely.</div>
+              <div class="fc-meta"><span>Jun 2026</span><span>10 min</span></div>
             </div>
           </div>
           <div class="feat-card">
             <div class="fc-bar" style="background:var(--acc);"></div>
             <div class="fc-body">
               <span class="fc-tag" style="color:var(--acc);">infosec</span>
-              <div class="fc-title">Blind SSRF: building your own OOB server</div>
-              <div class="fc-summary">Catching out-of-band callbacks with a self-hosted interaction server.</div>
-              <div class="fc-meta"><span>May 2026</span><span>9 min</span></div>
-            </div>
-          </div>
-          <div class="feat-card">
-            <div class="fc-bar" style="background:var(--blue);"></div>
-            <div class="fc-body">
-              <span class="fc-tag" style="color:var(--blue);">distributed</span>
-              <div class="fc-title">SWIM gossip, explained by building it</div>
-              <div class="fc-summary">Failure detection without a coordinator, in 400 lines of Rust.</div>
-              <div class="fc-meta"><span>Apr 2026</span><span>15 min</span></div>
+              <div class="fc-title">SSRF to internal dashboards: a bug-bounty walkthrough</div>
+              <div class="fc-summary">How a forgotten URL preview endpoint exposed an entire metadata service.</div>
+              <div class="fc-meta"><span>Jun 2026</span><span>9 min</span></div>
             </div>
           </div>
         </div>
@@ -1743,9 +1740,9 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
             <div class="hpr-bar" style="background:var(--blue);"></div>
             <div class="hpr-content">
               <div class="hpr-info">
-                <div class="hpr-name">genuine.dev</div>
-                <div class="hpr-desc">This site — Rust full-stack portfolio + blog. Modular monolith, hexagonal, self-hosted.</div>
-                <div class="hpr-stack"><span class="hpr-chip">axum</span><span class="hpr-chip">maud</span><span class="hpr-chip">HTMX</span></div>
+                <div class="hpr-name">genuine.dev — this site</div>
+                <div class="hpr-desc">A hexagonal Rust API + Next.js CMS with a custom directive renderer.</div>
+                <div class="hpr-stack"><span class="hpr-chip">Rust</span><span class="hpr-chip">axum</span><span class="hpr-chip">Next.js</span><span class="hpr-chip">Postgres</span></div>
               </div>
               <a class="hpr-link">case study →</a>
             </div>
@@ -1758,13 +1755,13 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
   <!-- ════════════ POST DETAIL ════════════ -->
   <div class="screen" id="s-post">
     <div class="screen-note">
-      Post detail — two-column: sticky TOC sidebar (180px) with scroll-spy + meta panel (date, read time, topic pill, tags) | article body with eyebrow, h1, meta row, code blocks, ::aside (purple), ::callout (warn), prev/next, comments.
-      Win-bar shows active topic accent. TOC sidebar mirrors the filter sidebar panel pattern.
+      Post detail — <code>/blog/[slug]</code>. Two-column: sticky TOC sidebar + article body (eyebrow, h1, meta, directives, related posts, prev/next, comments).
+      Topic accent on win-bar dot; TOC meta panel shows date, read time, topic, tags.
     </div>
     <div class="win">
       <div class="win-bar">
         <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-        <span class="win-url">genuine.dev/writing/lock-free-queue</span>
+        <span class="win-url">genuine.dev/blog/writing-a-lock-free-queue-from-scratch</span>
         <span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:#f0703c;">● rust</span>
       </div>
       <nav class="snav">
@@ -1797,13 +1794,13 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
           <div class="toc-kv">
             <div class="toc-kv-label">Tags</div>
             <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;">
-              <span style="font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);color:var(--faint);">performance</span>
-              <span style="font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);color:var(--faint);">dsa</span>
+              <span style="font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);color:var(--faint);">rust</span>
+              <span style="font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);color:var(--faint);">concurrency</span>
             </div>
           </div>
         </div>
         <div class="article-col">
-          <div class="art-eyebrow">rust · performance · dsa</div>
+          <div class="art-eyebrow">rust · concurrency</div>
           <h1 class="art-h1">Writing a lock-free queue from scratch</h1>
           <div class="art-meta">
             <span>2026-06-20</span>
@@ -1837,8 +1834,8 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
             <div class="art-cb">Tagging needs spare bits in the pointer (alignment) or a double-width CAS. On 64-bit with 8-byte alignment you get 3 low bits for free — usually enough.</div>
           </div>
           <div class="art-prevnext">
-            <div class="art-pn"><div class="art-pn-dir">← previous</div><div class="art-pn-title">Atomic memory ordering, demystified</div></div>
-            <div class="art-pn art-next"><div class="art-pn-dir">next →</div><div class="art-pn-title">Zero-copy fan-out with Bytes</div></div>
+            <div class="art-pn"><div class="art-pn-dir">← previous</div><div class="art-pn-title">What SKIP LOCKED actually does</div></div>
+            <div class="art-pn art-next"><div class="art-pn-dir">next →</div><div class="art-pn-title">Reclaiming memory: hazard pointers vs epochs</div></div>
           </div>
           <div class="art-comments">
             <div class="art-cmth">4 comments</div>
@@ -1853,8 +1850,7 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
   <!-- ════════════ PROJECTS ════════════ -->
   <div class="screen" id="s-projects">
     <div class="screen-note">
-      Projects index — two-column: filter sidebar (180px) with stack + status filters | project list as accent-bar rows with complete/wip badges, description, chip stack, and links.
-      Mirrors the Writing index panel pattern. Left bar color = project topic accent.
+      Projects index — <code>/projects</code>. Stack + status filters | accent-bar project cards. Pagination 10/page when list grows.
     </div>
     <div class="win">
       <div class="win-bar">
@@ -1978,8 +1974,6 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
       </div>
     </div>
   </div>
-
-</div>
 
 <script>
 function showScreen(name, btn) {
@@ -2211,7 +2205,7 @@ function tsUpdateBar() {
   <!-- ════════════ LOGIN ════════════ -->
   <div class="screen" id="s-login">
     <div class="screen-note">
-      Admin login — /admin/login. Centered card with passphrase field (no username — single-user site), session hint, submit button, back-to-site link, and attempt counter. Intentionally minimal and slightly opaque — signals it's not meant for visitors without being hostile.
+      Admin login — <code>/admin/login</code>. Passphrase only (JWT stored in <code>localStorage</code>, not http-only cookie). Attempt counter + back link.
     </div>
     <div class="win">
       <div class="win-bar">
@@ -2235,7 +2229,7 @@ function tsUpdateBar() {
             </div>
             <div class="lc-hint">
               <div class="lc-hint-dot"></div>
-              <span>session persists for 30 days · stored in http-only cookie</span>
+              <span>session token in localStorage · re-login after expiry</span>
             </div>
             <button class="lc-submit">Enter →</button>
           </div>
@@ -2275,17 +2269,17 @@ function tsUpdateBar() {
             <div class="e404-link">
               <div class="ell-bar" style="background:#f0703c;"></div>
               <div><div class="ell-title">Writing a lock-free queue from scratch</div><div style="font-size:11px;color:var(--faint);">rust · performance · 12 min</div></div>
-              <span class="ell-url">writing/lock-free-queue</span>
+              <span class="ell-url">blog/writing-a-lock-free-queue-from-scratch</span>
             </div>
             <div class="e404-link">
               <div class="ell-bar" style="background:var(--acc);"></div>
-              <div><div class="ell-title">NotiQ — Distributed Notification Platform</div><div style="font-size:11px;color:var(--faint);">project · case study</div></div>
+              <div><div class="ell-title">NotiQ — distributed notification platform</div><div style="font-size:11px;color:var(--faint);">project · case study</div></div>
               <span class="ell-url">projects/notiq</span>
             </div>
             <div class="e404-link">
-              <div class="ell-bar" style="background:var(--blue);"></div>
-              <div><div class="ell-title">Blind SSRF: building your own OOB server</div><div style="font-size:11px;color:var(--faint);">infosec · bug-bounty · 9 min</div></div>
-              <span class="ell-url">writing/blind-ssrf</span>
+              <div class="ell-bar" style="background:var(--acc);"></div>
+              <div><div class="ell-title">SSRF to internal dashboards: a bug-bounty walkthrough</div><div style="font-size:11px;color:var(--faint);">infosec · bug-bounty · 9 min</div></div>
+              <span class="ell-url">blog/ssrf-to-internal-dashboards</span>
             </div>
           </div>
           <div class="e404-search">
@@ -2366,6 +2360,14 @@ function tsUpdateBar() {
             <div class="nr-spine" style="background:var(--purple);"></div>
             <div><div class="nr-title">Rust Atomics and Locks</div><div class="nr-author">Mara Bos</div><div class="nr-progress">finished — reference</div></div>
           </div>
+          <h2 class="now-h2">Fitness</h2>
+          <p class="now-p">Calisthenics three times a week — working towards a clean muscle-up. Running 5K twice a week for baseline cardio. No gym, bodyweight only.</p>
+          <div class="now-chip-row">
+            <span class="now-chip">calisthenics</span>
+            <span class="now-chip">running</span>
+          </div>
+          <h2 class="now-h2">Not doing</h2>
+          <p class="now-p">Not doing freelance work. Not doing hackathons or side projects outside the portfolio. Not on social media other than GitHub. Focused mode until the three case studies ship.</p>
         </div>
       </div>
     </div>
@@ -2455,29 +2457,20 @@ function tsUpdateBar() {
             <div class="cmdk-item cmdk-sel">
               <div class="ci-icon">✎</div>
               <div class="ci-body">
-                <div class="ci-title">Blind SSRF: building your own OOB server</div>
-                <div class="ci-sub">infosec · bug-bounty · 9 min read</div>
+                <div class="ci-title">SSRF to internal dashboards: a bug-bounty walkthrough</div>
+                <div class="ci-sub">security · bug-bounty · 9 min read</div>
               </div>
               <div class="ci-topic-dot" style="background:var(--acc);"></div>
-              <span class="ci-type">post</span>
-            </div>
-            <div class="cmdk-item">
-              <div class="ci-icon">✎</div>
-              <div class="ci-body">
-                <div class="ci-title">First blood on a blind RCE: how the chain came together</div>
-                <div class="ci-sub">infosec · ctf · 14 min read</div>
-              </div>
-              <div class="ci-topic-dot" style="background:#ef5350;"></div>
               <span class="ci-type">post</span>
             </div>
             <div class="cmdk-group-label">projects</div>
             <div class="cmdk-item">
               <div class="ci-icon">⊞</div>
               <div class="ci-body">
-                <div class="ci-title">oob-catcher</div>
-                <div class="ci-sub">Self-hosted OOB interaction server · Rust · infosec</div>
+                <div class="ci-title">NotiQ — distributed notification platform</div>
+                <div class="ci-sub">distributed-systems · rust · case study</div>
               </div>
-              <div class="ci-topic-dot" style="background:var(--acc);"></div>
+              <div class="ci-topic-dot" style="background:var(--blue);"></div>
               <span class="ci-type">project</span>
             </div>
             <div class="cmdk-group-label">tags</div>
@@ -2506,7 +2499,7 @@ function tsUpdateBar() {
             <span class="cmdk-hint"><span class="cmdk-key">↵</span> open</span>
             <span class="cmdk-hint"><span class="cmdk-key">esc</span> close</span>
             <span class="cmdk-footer-sp"></span>
-            <span class="cmdk-results-count">6 results</span>
+            <span class="cmdk-results-count">4 results</span>
           </div>
         </div>
       </div>
@@ -2515,7 +2508,5 @@ function tsUpdateBar() {
 
 </div>
 
-<script>
-function showScreen(name, btn) {
 </body>
 </html>

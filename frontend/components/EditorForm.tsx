@@ -1,125 +1,331 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { marked } from "marked";
+import type { Editor } from "@tiptap/react";
 import {
+  adminDuplicate,
   adminList,
+  adminPreview,
   adminSave,
   uploadImage,
   type AdminItem,
-  type DocMetadata,
   type EditDoc,
 } from "../lib/auth";
-import { isStaticCaseStudy } from "../lib/cmsPages";
-import { RichEditor } from "./editor/RichEditor";
-import { deriveTopic, topicColor } from "../lib/topic";
+import { effectiveStatus, clearScheduledMetadata } from "../lib/adminDocs";
+import {
+  BLANK_DOC,
+  buildDocMetadata,
+  buildDocMetadataForPublish,
+  fieldsFromDoc,
+  isEditorDirty,
+  type EditorFields,
+} from "../lib/editor/formState";
+import {
+  buildEditorDiagnostics,
+  parseHeadings,
+  parseOutlineBlocks,
+  publishChecks,
+  type EditorDiag,
+} from "../lib/editorDiagnostics";
+import { publicDocPath } from "../lib/cmsPages";
+import { lineCount, readingMinutes, wordCount } from "../lib/readingStats";
+import {
+  clearEditorAutosave,
+  readEditorAutosave,
+  writeEditorAutosave,
+  writeReadingPrefs,
+  readReadingPrefs,
+} from "../lib/siteExtras";
+import EditorDiagTab from "./editor/EditorDiagTab";
+import EditorFileTree, { groupEditorDocs } from "./editor/EditorFileTree";
+import EditorMetaTab from "./editor/EditorMetaTab";
+import EditorOutlineTab from "./editor/EditorOutlineTab";
+import PublishModal from "./editor/PublishModal";
+import {
+  readTabs,
+  tabDisplayName,
+  tabHref,
+  tabSlug,
+  TAB_NEW,
+  writeTabs,
+} from "./editor/editorTabs";
+import { RichEditor, editorMarkdown } from "./editor/RichEditor";
 
-const TABS_KEY = "editor-open-tabs";
-const TAB_NEW = "__new__";
-
-function readTabs(): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = sessionStorage.getItem(TABS_KEY);
-    return raw ? (JSON.parse(raw) as string[]) : [];
-  } catch {
-    return [];
-  }
+function fieldSnapshot(state: {
+  title: string;
+  slug: string;
+  summary: string;
+  kind: string;
+  status: string;
+  body: string;
+  coverImage: string | null;
+  featured: boolean;
+  tags: string;
+  tech: string;
+  topic: string;
+  seriesName: string;
+  seriesPart: string;
+  scheduleAt: string;
+}): EditorFields {
+  return state;
 }
 
-function writeTabs(tabs: string[]) {
-  sessionStorage.setItem(TABS_KEY, JSON.stringify(tabs));
-}
-
-function tabSlug(initial: EditDoc): string {
-  return initial.slug || TAB_NEW;
-}
-
-function tabLabel(slug: string, title: string, fallbackSlug: string): string {
-  if (slug === TAB_NEW) return "untitled.md";
-  return `${slug || fallbackSlug || "untitled"}.md`;
-}
-
-// ── helpers ──────────────────────────────────────────────────────────────────
-
-const blank: EditDoc = {
-  slug: "",
-  kind: "post",
-  title: "",
-  summary: null,
-  status: "draft",
-  body_markdown: "",
-  cover_image: null,
-  metadata: {},
-};
-
-const csv = (value: unknown): string => (Array.isArray(value) ? value.join(", ") : "");
-const toList = (v: string): string[] => v.split(",").map((s) => s.trim()).filter(Boolean);
-
-function wordCount(text: string): number {
-  return text.trim().split(/\s+/).filter(Boolean).length;
-}
-
-function parseHeadings(md: string) {
-  const lines = md.split("\n");
-  return lines
-    .map((line, i) => {
-      const m = line.match(/^(#{1,3})\s+(.+)$/);
-      if (!m) return null;
-      return { level: m[1].length, text: m[2], lineNum: i + 1 };
-    })
-    .filter(Boolean) as { level: number; text: string; lineNum: number }[];
-}
-
-const TOPIC_OPTIONS = ["rust", "infosec", "distributed", "systems", "performance", "ctf"];
-
-// ── main component ────────────────────────────────────────────────────────────
-
-export default function EditorForm({ initial = blank }: { initial?: EditDoc }) {
+export default function EditorForm({ initial = BLANK_DOC }: { initial?: EditDoc }) {
   const router = useRouter();
-  const md = initial.metadata ?? {};
-  const initialSeries = (md.series ?? null) as { name: string; part: number } | null;
+  const baseline = useMemo(() => fieldsFromDoc(initial), [initial]);
+  const baseMetadata = initial.metadata ?? {};
 
-  const [title, setTitle] = useState(initial.title);
-  const [slug, setSlug] = useState(initial.slug);
-  const [summary, setSummary] = useState(initial.summary ?? "");
-  const [kind, setKind] = useState(initial.kind);
-  const [status, setStatus] = useState(initial.status);
-  const [body, setBody] = useState(initial.body_markdown);
-  const [coverImage, setCoverImage] = useState<string | null>(initial.cover_image);
-  const [featured, setFeatured] = useState(Boolean(md.featured));
-  const [seriesName, setSeriesName] = useState(initialSeries?.name ?? "");
-  const [seriesPart, setSeriesPart] = useState(String(initialSeries?.part ?? 1));
-  const [tags, setTags] = useState(csv(md.tags));
-  const [tech, setTech] = useState(csv(md.tech));
-  const [topic, setTopic] = useState((md.topic as string | undefined) ?? "");
+  const [title, setTitle] = useState(baseline.title);
+  const [slug, setSlug] = useState(baseline.slug);
+  const [summary, setSummary] = useState(baseline.summary);
+  const [kind, setKind] = useState(baseline.kind);
+  const [status, setStatus] = useState(baseline.status);
+  const [body, setBody] = useState(baseline.body);
+  const [coverImage, setCoverImage] = useState(baseline.coverImage);
+  const [featured, setFeatured] = useState(baseline.featured);
+  const [seriesName, setSeriesName] = useState(baseline.seriesName);
+  const [seriesPart, setSeriesPart] = useState(baseline.seriesPart);
+  const [tags, setTags] = useState(baseline.tags);
+  const [tech, setTech] = useState(baseline.tech);
+  const [topic, setTopic] = useState(baseline.topic);
+  const [scheduleAt, setScheduleAt] = useState(baseline.scheduleAt);
 
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [sideTab, setSideTab] = useState<"meta" | "outline" | "diag">("meta");
   const [showPreview, setShowPreview] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [docs, setDocs] = useState<AdminItem[]>([]);
   const [ftFilter, setFtFilter] = useState("");
+  const [recovery, setRecovery] = useState<ReturnType<typeof readEditorAutosave>>(null);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishMode, setPublishMode] = useState<"now" | "schedule">("now");
+  const [publishScheduleDate, setPublishScheduleDate] = useState("");
+  const [treeCollapsed, setTreeCollapsed] = useState(false);
+  const editorRef = useRef<Editor | null>(null);
+  const autosaveKey = initial.slug || TAB_NEW;
 
+  const currentFields = fieldSnapshot({
+    title,
+    slug,
+    summary,
+    kind,
+    status,
+    body,
+    coverImage,
+    featured,
+    tags,
+    tech,
+    topic,
+    seriesName,
+    seriesPart,
+    scheduleAt,
+  });
+
+  const isDirty = isEditorDirty(initial, currentFields);
   const words = useMemo(() => wordCount(body), [body]);
-  const readMin = Math.max(1, Math.round(words / 250));
+  const lines = useMemo(() => lineCount(body), [body]);
+  const readMin = readingMinutes(words);
   const headings = useMemo(() => parseHeadings(body), [body]);
-  const previewHtml = useMemo(() => {
-    const result = marked(body);
-    return typeof result === "string" ? result : "";
-  }, [body]);
-  const isDirty =
-    body !== initial.body_markdown ||
-    title !== initial.title ||
-    slug !== initial.slug ||
-    summary !== (initial.summary ?? "") ||
-    status !== initial.status;
+  const outlineBlocks = useMemo(() => parseOutlineBlocks(body), [body]);
+  const grouped = useMemo(() => groupEditorDocs(docs, ftFilter), [docs, ftFilter]);
+  const knownSlugs = useMemo(() => new Set(docs.map((d) => d.slug)), [docs]);
+  const slugTaken = useMemo(
+    () => Boolean(slug.trim() && slug !== initial.slug && knownSlugs.has(slug.trim())),
+    [slug, initial.slug, knownSlugs],
+  );
+
+  const metaFields = useMemo(
+    () => ({ featured, topic, seriesName, seriesPart, tags, tech, kind, scheduleAt }),
+    [featured, topic, seriesName, seriesPart, tags, tech, kind, scheduleAt],
+  );
+
+  const diags = useMemo(
+    () =>
+      buildEditorDiagnostics({
+        title,
+        slug,
+        summary,
+        tags,
+        topic,
+        body,
+        knownSlugs,
+        slugTaken,
+      }),
+    [title, slug, summary, tags, topic, body, knownSlugs, slugTaken],
+  );
+  const warnCount = diags.filter((d) => d.type === "warn").length;
+  const publishChecklist = useMemo(() => publishChecks(diags), [diags]);
+
+  const statusLabel = useMemo(
+    () =>
+      effectiveStatus({
+        status,
+        metadata: scheduleAt ? { scheduled_for: scheduleAt } : {},
+      }),
+    [status, scheduleAt],
+  );
+
+  const canonicalUrl = useMemo(() => {
+    const path = publicDocPath({ slug: slug || "…", kind });
+    return path ? `https://genuine.dev${path}` : "";
+  }, [slug, kind]);
 
   const currentTab = tabSlug(initial);
-
   const [openTabs, setOpenTabs] = useState<string[]>(() => [currentTab]);
+
+  function currentBody(): string {
+    const ed = editorRef.current;
+    return ed ? editorMarkdown(ed) : body;
+  }
+
+  function metadataFields() {
+    return buildDocMetadata(baseMetadata, metaFields);
+  }
+
+  function jumpToHeading(text: string) {
+    const ed = editorRef.current;
+    if (!ed) return;
+    let target: number | null = null;
+    ed.state.doc.descendants((node, pos) => {
+      if (node.type.name === "heading" && node.textContent.trim() === text.trim()) {
+        target = pos;
+        return false;
+      }
+    });
+    if (target != null) {
+      ed.chain().focus().setTextSelection(target + 1).scrollIntoView().run();
+    }
+  }
+
+  function jumpToDiag(diag: EditorDiag) {
+    setShowPublishModal(false);
+    setSideTab("diag");
+    if (diag.headingText) jumpToHeading(diag.headingText);
+  }
+
+  function jumpToLine(lineNum: number) {
+    const heading = headings.find((h) => h.lineNum === lineNum);
+    if (heading) jumpToHeading(heading.text);
+  }
+
+  function openTab(nextSlug: string) {
+    const next = openTabs.includes(nextSlug) ? openTabs : [...openTabs, nextSlug];
+    writeTabs(next);
+    setOpenTabs(next);
+  }
+
+  function closeTab(e: React.MouseEvent, tab: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    const next = openTabs.filter((t) => t !== tab);
+    writeTabs(next);
+    setOpenTabs(next);
+    if (tab === currentTab && next.length > 0) {
+      const target = next[next.length - 1];
+      router.push(target === TAB_NEW ? "/admin/new" : `/admin/edit/${target}`);
+    } else if (tab === currentTab) {
+      router.push("/admin");
+    }
+  }
+
+  async function persist(
+    redirectAdmin: boolean,
+    opts: { forceDraft?: boolean; forcePublished?: boolean; metadata?: ReturnType<typeof metadataFields> } = {},
+  ) {
+    setSaving(true);
+    setErr(null);
+    const saveStatus = opts.forceDraft ? "draft" : opts.forcePublished ? "published" : status;
+    const saveBody = currentBody();
+    let metadata = opts.metadata ?? metadataFields();
+    if (saveStatus === "published") metadata = clearScheduledMetadata(metadata);
+    try {
+      const { slug: savedSlug } = await adminSave({
+        slug,
+        kind,
+        title,
+        summary: summary || "",
+        status: saveStatus,
+        body: saveBody,
+        cover_image: coverImage,
+        metadata,
+      });
+      setBody(saveBody);
+      setStatus(saveStatus);
+      if (saveStatus === "published") setScheduleAt("");
+      clearEditorAutosave(autosaveKey);
+      setRecovery(null);
+      if (savedSlug && savedSlug !== slug) setSlug(savedSlug);
+      if (redirectAdmin) router.push("/admin");
+      else if (savedSlug && savedSlug !== initial.slug) router.replace(`/admin/edit/${savedSlug}`);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Save failed — are you logged in?");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSaveDraft() {
+    await persist(false, { forceDraft: true });
+  }
+
+  function openPublishModal() {
+    if (editorRef.current) setBody(editorMarkdown(editorRef.current));
+    setPublishScheduleDate(scheduleAt);
+    setShowPublishModal(true);
+  }
+
+  async function handlePublishFromModal() {
+    const metadata = buildDocMetadataForPublish(baseMetadata, metaFields, publishMode, publishScheduleDate);
+    if (publishMode === "schedule") {
+      if (publishScheduleDate) setScheduleAt(publishScheduleDate);
+      await persist(true, { forceDraft: true, metadata });
+    } else {
+      setScheduleAt("");
+      await persist(true, { forcePublished: true, metadata });
+    }
+    setShowPublishModal(false);
+  }
+
+  async function handleDuplicate() {
+    if (!initial.slug) return;
+    try {
+      const { slug: newSlug } = await adminDuplicate(initial.slug);
+      router.push(`/admin/edit/${newSlug}`);
+    } catch {
+      setErr("Duplicate failed.");
+    }
+  }
+
+  function handleCancel() {
+    if (isDirty && !window.confirm("Discard unsaved changes?")) return;
+    clearEditorAutosave(autosaveKey);
+    router.push("/admin");
+  }
+
+  async function onCover(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      setCoverImage(await uploadImage(file));
+    } catch {
+      setErr("Cover image upload failed.");
+    }
+  }
+
+  function restoreRecovery() {
+    if (!recovery) return;
+    setTitle(recovery.title);
+    setSlug(recovery.slug);
+    setSummary(recovery.summary);
+    setBody(recovery.body);
+    setRecovery(null);
+  }
 
   useEffect(() => {
     const existing = readTabs();
@@ -128,216 +334,96 @@ export default function EditorForm({ initial = blank }: { initial?: EditDoc }) {
     setOpenTabs(next);
   }, [currentTab]);
 
-  function openTab(slug: string) {
-    const next = openTabs.includes(slug) ? openTabs : [...openTabs, slug];
-    writeTabs(next);
-    setOpenTabs(next);
-  }
-
-  function closeTab(e: React.MouseEvent, slug: string) {
-    e.preventDefault();
-    e.stopPropagation();
-    const next = openTabs.filter((t) => t !== slug);
-    writeTabs(next);
-    setOpenTabs(next);
-    if (slug === currentTab && next.length > 0) {
-      const target = next[next.length - 1];
-      router.push(target === TAB_NEW ? "/admin/new" : `/admin/edit/${target}`);
-    } else if (slug === currentTab) {
-      router.push("/admin");
-    }
-  }
-
-  function tabHref(slug: string): string {
-    return slug === TAB_NEW ? "/admin/new" : `/admin/edit/${slug}`;
-  }
-
-  function tabDisplayName(slug: string): string {
-    if (slug === currentTab) return tabLabel(slug, title, slug);
-    if (slug === TAB_NEW) return "untitled.md";
-    const doc = docs.find((d) => d.slug === slug);
-    return `${slug}.md${doc?.title ? "" : ""}`;
-  }
-
   useEffect(() => {
     adminList().then(setDocs).catch(() => {});
   }, []);
 
-  // group docs by kind for the file tree
-  const grouped = useMemo(() => {
-    const q = ftFilter.toLowerCase();
-    const filtered = docs.filter(
-      (d) => !q || d.title.toLowerCase().includes(q) || d.slug.includes(q),
-    );
-    const posts = filtered.filter((d) => d.kind === "post");
-    const projects = filtered.filter((d) => d.kind === "project" && !isStaticCaseStudy(d.slug));
-    const pages = filtered.filter((d) => d.kind === "page");
-    return { posts, projects, pages };
-  }, [docs, ftFilter]);
-
-  // diagnostics
-  const diags = useMemo(() => {
-    const issues: { type: "warn" | "ok" | "info"; msg: string; sub: string }[] = [];
-    if (!title.trim()) issues.push({ type: "warn", msg: "title missing", sub: "Add a title to the post." });
-    else issues.push({ type: "ok", msg: "title present", sub: title.trim() });
-    if (!slug.trim()) issues.push({ type: "warn", msg: "slug empty", sub: "Will be auto-generated from title on save." });
-    else issues.push({ type: "ok", msg: "slug set", sub: slug });
-    if (!summary.trim()) issues.push({ type: "warn", msg: "summary missing", sub: "Add a summary for the post card." });
-    else issues.push({ type: "ok", msg: "summary present", sub: summary.trim().slice(0, 60) + "…" });
-    if (!toList(tags).length) issues.push({ type: "warn", msg: "no tags", sub: "Add tags to enable filtering." });
-    else issues.push({ type: "ok", msg: `${toList(tags).length} tag(s)`, sub: tags });
-    issues.push({ type: "info", msg: `${words} words · ~${readMin} min read`, sub: "Estimated at 250 wpm." });
-    if (topic) issues.push({ type: "info", msg: `topic: ${topic}`, sub: `Accent colour will follow the ${topic} palette.` });
-    return issues;
-  }, [title, slug, summary, tags, words, readMin, topic]);
-
-  const warnCount = diags.filter((d) => d.type === "warn").length;
-
-  function buildMetadata(): DocMetadata {
-    const next: DocMetadata = { ...md };
-    next.featured = featured;
-    if (topic) next.topic = topic; else delete next.topic;
-    if (seriesName.trim()) next.series = { name: seriesName.trim(), part: Number(seriesPart) || 1 };
-    else delete next.series;
-    if (toList(tags).length) next.tags = toList(tags); else delete next.tags;
-    if (kind === "project" && toList(tech).length) next.tech = toList(tech); else delete next.tech;
-    return next;
-  }
-
-  async function onCover(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    try { setCoverImage(await uploadImage(file)); }
-    catch { setErr("Cover image upload failed."); }
-  }
-
-  async function persist(redirectAdmin: boolean, forceDraft = false) {
-    setSaving(true);
-    setErr(null);
-    const saveStatus = forceDraft ? "draft" : status;
-    try {
-      await adminSave({
-        slug,
-        kind,
-        title,
-        summary: summary || "",
-        status: saveStatus,
-        body,
-        cover_image: coverImage,
-        metadata: buildMetadata(),
-      });
-      if (redirectAdmin) router.push("/admin");
-      else setStatus(saveStatus);
-    } catch {
-      setErr("Save failed — are you logged in?");
-    } finally {
-      setSaving(false);
+  useEffect(() => {
+    const saved = readEditorAutosave(autosaveKey);
+    if (saved && saved.savedAt > Date.now() - 7 * 24 * 60 * 60 * 1000) {
+      if (saved.body !== initial.body_markdown || saved.title !== initial.title) {
+        setRecovery(saved);
+      }
     }
-  }
+  }, [autosaveKey, initial.body_markdown, initial.title]);
 
-  async function handleSave() {
-    await persist(true);
-  }
+  useEffect(() => {
+    if (!showPreview) return;
+    const markdown = currentBody();
+    if (!markdown.trim()) {
+      setPreviewHtml("");
+      setPreviewError(null);
+      setPreviewLoading(false);
+      return;
+    }
+    setPreviewLoading(true);
+    setPreviewError(null);
+    const timer = window.setTimeout(() => {
+      adminPreview(markdown)
+        .then((html) => {
+          setPreviewHtml(html);
+          setPreviewError(null);
+        })
+        .catch(() => setPreviewError("Preview failed — check login and API."))
+        .finally(() => setPreviewLoading(false));
+    }, 280);
+    return () => window.clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [body, showPreview, topic]);
 
-  async function handleSaveDraft() {
-    await persist(false, true);
-  }
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (!isDirty && !title && !body) return;
+      writeEditorAutosave(autosaveKey, {
+        title,
+        slug,
+        summary,
+        body: currentBody(),
+        savedAt: Date.now(),
+      });
+    }, 8000);
+    return () => window.clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autosaveKey, title, slug, summary, body, isDirty]);
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key === "s") {
+        e.preventDefault();
+        void handleSaveDraft();
+      }
+      if (e.key === "p" && e.shiftKey) {
+        e.preventDefault();
+        if (!showPreview && editorRef.current) setBody(editorMarkdown(editorRef.current));
+        setShowPreview((p) => !p);
+      }
+      if (e.key === "l" && e.shiftKey) {
+        e.preventDefault();
+        const prefs = readReadingPrefs();
+        writeReadingPrefs({ focusMode: !prefs.focusMode });
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPreview]);
 
   return (
     <div className="editor-shell">
-      {/* ── Left: file tree ── */}
-      <div className="file-tree">
-        <div className="ft-header">
-          <span className="ft-title">Content</span>
-          <div className="ft-actions">
-            <Link href="/admin/new" className="ft-btn" title="New post">+</Link>
-          </div>
-        </div>
-        <div className="ft-search">
-          <span style={{ color: "var(--faint)", fontFamily: "var(--mono)", fontSize: "11px" }}>⌕</span>
-          <input
-            placeholder="filter…"
-            value={ftFilter}
-            onChange={(e) => setFtFilter(e.target.value)}
-          />
-        </div>
-        <div className="file-list">
-          {grouped.posts.length > 0 && (
-            <>
-              <div className="dir-row">
-                <span className="dicon">▾</span>
-                <span className="dname">posts</span>
-                <span className="dcount">{grouped.posts.length}</span>
-              </div>
-              {grouped.posts.map((d) => (
-                <Link
-                  key={d.slug}
-                  href={`/admin/edit/${d.slug}`}
-                  className={`file-row${d.slug === initial.slug ? " active" : ""}`}
-                  onClick={() => openTab(d.slug)}
-                >
-                  <span className="ficon">{d.slug === initial.slug ? "◆" : "◇"}</span>
-                  <span className="fname">{d.slug}.md</span>
-                  {d.slug === initial.slug && isDirty && <span className="fbadge">M</span>}
-                  {d.slug === initial.slug && !initial.slug && <span className="fbadge new">N</span>}
-                  {d.status === "draft" && d.slug !== initial.slug && (
-                    <span className="fbadge">D</span>
-                  )}
-                </Link>
-              ))}
-            </>
-          )}
-          {grouped.pages.length > 0 && (
-            <>
-              <div className="dir-row">
-                <span className="dicon">▾</span>
-                <span className="dname">pages</span>
-                <span className="dcount">{grouped.pages.length}</span>
-              </div>
-              {grouped.pages.map((d) => (
-                <Link
-                  key={d.slug}
-                  href={`/admin/edit/${d.slug}`}
-                  className={`file-row${d.slug === initial.slug ? " active" : ""}`}
-                  onClick={() => openTab(d.slug)}
-                >
-                  <span className="ficon">{d.slug === initial.slug ? "◆" : "◇"}</span>
-                  <span className="fname">{d.slug}.md</span>
-                  {d.slug === initial.slug && isDirty && <span className="fbadge">M</span>}
-                  {d.status === "draft" && d.slug !== initial.slug && (
-                    <span className="fbadge">D</span>
-                  )}
-                </Link>
-              ))}
-            </>
-          )}
-          {grouped.projects.length > 0 && (
-            <>
-              <div className="dir-row">
-                <span className="dicon">▾</span>
-                <span className="dname">projects</span>
-                <span className="dcount">{grouped.projects.length}</span>
-              </div>
-              {grouped.projects.map((d) => (
-                <Link
-                  key={d.slug}
-                  href={`/admin/edit/${d.slug}`}
-                  className={`file-row${d.slug === initial.slug ? " active" : ""}`}
-                  onClick={() => openTab(d.slug)}
-                >
-                  <span className="ficon">{d.slug === initial.slug ? "◆" : "◇"}</span>
-                  <span className="fname">{d.slug}.md</span>
-                  {d.slug === initial.slug && isDirty && <span className="fbadge">M</span>}
-                </Link>
-              ))}
-            </>
-          )}
-        </div>
-      </div>
+      <EditorFileTree
+        docs={docs}
+        filter={ftFilter}
+        onFilterChange={setFtFilter}
+        collapsed={treeCollapsed}
+        onToggleCollapse={() => setTreeCollapsed((c) => !c)}
+        grouped={grouped}
+        activeSlug={initial.slug}
+        isDirty={isDirty}
+        isNewDoc={!initial.slug}
+        onOpenTab={openTab}
+      />
 
-      {/* ── Center: editor main ── */}
       <div className="editor-main">
         <div className="tab-bar">
           {openTabs.map((t) => (
@@ -348,7 +434,7 @@ export default function EditorForm({ initial = blank }: { initial?: EditDoc }) {
               onClick={() => openTab(t)}
             >
               <span className={`tdot${t === currentTab && isDirty ? "" : " saved"}`} />
-              <span className="tname">{tabDisplayName(t)}</span>
+              <span className="tname">{tabDisplayName(t, currentTab, title)}</span>
               <span className="tclose" onClick={(e) => closeTab(e, t)} role="button" tabIndex={0}>
                 ×
               </span>
@@ -356,6 +442,25 @@ export default function EditorForm({ initial = blank }: { initial?: EditDoc }) {
           ))}
           <div className="tab-spacer" />
         </div>
+
+        {recovery && (
+          <div className="editor-recovery-toast">
+            <span>Recovered local draft from {new Date(recovery.savedAt).toLocaleString()}</span>
+            <button type="button" className="ts-btn" onClick={restoreRecovery}>
+              Restore
+            </button>
+            <button
+              type="button"
+              className="ts-btn"
+              onClick={() => {
+                clearEditorAutosave(autosaveKey);
+                setRecovery(null);
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <div className={`editor-content-area${showPreview ? " split" : ""}`}>
           <div className="editor-write-pane">
@@ -368,8 +473,16 @@ export default function EditorForm({ initial = blank }: { initial?: EditDoc }) {
             <RichEditor
               value={body}
               onChange={setBody}
+              onEditorReady={(ed) => {
+                editorRef.current = ed;
+              }}
               showPreview={showPreview}
-              onTogglePreview={() => setShowPreview((p) => !p)}
+              onTogglePreview={() => {
+                setShowPreview((open) => {
+                  if (!open && editorRef.current) setBody(editorMarkdown(editorRef.current));
+                  return !open;
+                });
+              }}
               onSaveDraft={handleSaveDraft}
               saving={saving}
             />
@@ -379,44 +492,65 @@ export default function EditorForm({ initial = blank }: { initial?: EditDoc }) {
               <div className="pane-header">
                 <span className="ph-label">preview</span>
                 <span className="ph-spacer" />
-                <Link className="ph-action" href={slug ? `/blog/${slug}` : "#"} target="_blank">full page</Link>
+                {previewLoading && <span className="ph-status">rendering…</span>}
+                <Link className="ph-action" href={slug ? `/blog/${slug}` : "#"} target="_blank">
+                  full page
+                </Link>
               </div>
-              <div
-                className="preview-body prose"
-                dangerouslySetInnerHTML={{ __html: previewHtml }}
-              />
+              <div className="preview-body prose article" data-topic={topic || undefined}>
+                {previewError ? (
+                  <p className="dim">{previewError}</p>
+                ) : previewLoading && !previewHtml ? (
+                  <p className="dim">Rendering preview…</p>
+                ) : (
+                  <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                )}
+              </div>
             </div>
           )}
         </div>
 
         <div className="editor-status-bar">
-          <span className={`esb-pill${status === "draft" ? " draft" : ""}`}>{status}</span>
+          <span className={`esb-pill${statusLabel === "draft" ? " draft" : ""}`}>{statusLabel}</span>
           {warnCount > 0 && (
             <span className="esb-warn" onClick={() => setSideTab("diag")} style={{ cursor: "pointer" }}>
               ⚠ {warnCount} warning{warnCount > 1 ? "s" : ""}
             </span>
           )}
+          <span>{lines} lines</span>
           <span className="esb-spacer" />
-          <span>{words} words · {readMin} min read</span>
-          <button type="button" className="preview-btn" onClick={() => setShowPreview((p) => !p)}>
-            {showPreview ? "single" : "split"}
+          <span>
+            {words} words · {readMin} min read
+          </span>
+          {isDirty && <span style={{ color: "var(--warn)" }}>● unsaved</span>}
+          <button type="button" className="cancel-btn" onClick={handleCancel}>
+            Cancel
           </button>
-          <button type="button" className="save-btn" onClick={handleSaveDraft} disabled={saving}>
-            {saving ? "Saving…" : "Save draft"}
-          </button>
+          {initial.slug && (
+            <button type="button" className="preview-btn" onClick={() => void handleDuplicate()}>
+              duplicate
+            </button>
+          )}
           <button
             type="button"
-            className="ed-save-btn"
-            onClick={handleSave}
-            disabled={saving}
+            className="preview-btn"
+            onClick={() => {
+              if (!showPreview && editorRef.current) setBody(editorMarkdown(editorRef.current));
+              setShowPreview((p) => !p);
+            }}
           >
+            {showPreview ? "single" : "split"}
+          </button>
+          <button type="button" className="save-btn" onClick={() => void handleSaveDraft()} disabled={saving}>
+            {saving ? "Saving…" : "Save draft"}
+          </button>
+          <button type="button" className="ed-save-btn" onClick={openPublishModal} disabled={saving}>
             Publish
           </button>
         </div>
         {err && <p className="form-error" style={{ padding: "6px 14px", margin: 0 }}>{err}</p>}
       </div>
 
-      {/* ── Right: sidebar ── */}
       <div className="ed-sidebar">
         <div className="sb-tabs">
           {(["meta", "outline", "diag"] as const).map((t) => (
@@ -429,221 +563,62 @@ export default function EditorForm({ initial = blank }: { initial?: EditDoc }) {
             </div>
           ))}
         </div>
-
         <div className="sb-body">
           {sideTab === "meta" && (
-            <MetaTab
-              slug={slug} setSlug={setSlug}
-              summary={summary} setSummary={setSummary}
-              kind={kind} setKind={setKind}
-              status={status} setStatus={setStatus}
-              featured={featured} setFeatured={setFeatured}
-              tags={tags} setTags={setTags}
-              tech={tech} setTech={setTech}
-              topic={topic} setTopic={setTopic}
-              seriesName={seriesName} setSeriesName={setSeriesName}
-              seriesPart={seriesPart} setSeriesPart={setSeriesPart}
-              coverImage={coverImage} setCoverImage={setCoverImage}
+            <EditorMetaTab
+              slug={slug}
+              setSlug={setSlug}
+              summary={summary}
+              setSummary={setSummary}
+              kind={kind}
+              setKind={setKind}
+              status={status}
+              setStatus={setStatus}
+              scheduleAt={scheduleAt}
+              setScheduleAt={setScheduleAt}
+              featured={featured}
+              setFeatured={setFeatured}
+              tags={tags}
+              setTags={setTags}
+              tech={tech}
+              setTech={setTech}
+              topic={topic}
+              setTopic={setTopic}
+              seriesName={seriesName}
+              setSeriesName={setSeriesName}
+              seriesPart={seriesPart}
+              setSeriesPart={setSeriesPart}
+              coverImage={coverImage}
+              setCoverImage={setCoverImage}
               onCover={onCover}
-              words={words} readMin={readMin}
+              words={words}
+              readMin={readMin}
             />
           )}
-          {sideTab === "outline" && <OutlineTab headings={headings} />}
-          {sideTab === "diag" && <DiagTab diags={diags} />}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Meta tab ─────────────────────────────────────────────────────────────────
-
-function MetaTab({
-  slug, setSlug,
-  summary, setSummary,
-  kind, setKind,
-  status, setStatus,
-  featured, setFeatured,
-  tags, setTags,
-  tech, setTech,
-  topic, setTopic,
-  seriesName, setSeriesName,
-  seriesPart, setSeriesPart,
-  coverImage, setCoverImage,
-  onCover,
-  words, readMin,
-}: {
-  slug: string; setSlug: (v: string) => void;
-  summary: string; setSummary: (v: string) => void;
-  kind: string; setKind: (v: string) => void;
-  status: string; setStatus: (v: string) => void;
-  featured: boolean; setFeatured: (v: boolean) => void;
-  tags: string; setTags: (v: string) => void;
-  tech: string; setTech: (v: string) => void;
-  topic: string; setTopic: (v: string) => void;
-  seriesName: string; setSeriesName: (v: string) => void;
-  seriesPart: string; setSeriesPart: (v: string) => void;
-  coverImage: string | null; setCoverImage: (v: string | null) => void;
-  onCover: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  words: number; readMin: number;
-}) {
-  return (
-    <>
-      <div className="sb-section">
-        <div className="sb-h">metadata</div>
-        <div className="meta-field">
-          <div className="mf-label">slug</div>
-          <input className="mf-input" placeholder="from title" value={slug} onChange={(e) => setSlug(e.target.value)} />
-        </div>
-        <div className="meta-field">
-          <div className="mf-label">summary</div>
-          <textarea className="mf-input" rows={3} value={summary} onChange={(e) => setSummary(e.target.value)} />
-        </div>
-        <div style={{ display: "flex", gap: "6px" }}>
-          <div className="meta-field" style={{ flex: 1 }}>
-            <div className="mf-label">kind</div>
-            <select className="mf-input" value={kind} onChange={(e) => setKind(e.target.value)}>
-              <option value="post">post</option>
-              <option value="project">project</option>
-              <option value="page">page</option>
-            </select>
-          </div>
-          <div className="meta-field" style={{ flex: 1 }}>
-            <div className="mf-label">status</div>
-            <select className="mf-input" value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="draft">draft</option>
-              <option value="published">published</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div className="sb-section">
-        <div className="sb-h">topic</div>
-        <div className="topic-grid">
-          {TOPIC_OPTIONS.map((t) => (
-            <button
-              key={t}
-              type="button"
-              className={`tpick${topic === t ? " sel" : ""}`}
-              style={topic === t ? { borderColor: topicColor(t), color: topicColor(t), background: topicColor(t) + "18" } : {}}
-              onClick={() => setTopic(topic === t ? "" : t)}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="sb-section">
-        <div className="sb-h">tags</div>
-        <input className="mf-input" placeholder="rust, performance, …" value={tags} onChange={(e) => setTags(e.target.value)} />
-      </div>
-
-      {kind === "project" && (
-        <div className="sb-section">
-          <div className="sb-h">tech stack</div>
-          <input className="mf-input" placeholder="rust, postgres, …" value={tech} onChange={(e) => setTech(e.target.value)} />
-        </div>
-      )}
-
-      <div className="sb-section">
-        <div className="sb-h">series</div>
-        <div style={{ display: "flex", gap: "6px" }}>
-          <input className="mf-input" placeholder="Series name" value={seriesName} onChange={(e) => setSeriesName(e.target.value)} style={{ flex: 1 }} />
-          <input className="mf-input" type="number" min={1} value={seriesPart} onChange={(e) => setSeriesPart(e.target.value)} style={{ width: "52px" }} />
-        </div>
-      </div>
-
-      <div className="sb-section">
-        <div className="sb-h">options</div>
-        <label style={{ display: "flex", alignItems: "center", gap: "7px", fontFamily: "var(--mono)", fontSize: "11px", color: "var(--muted)", cursor: "pointer" }}>
-          <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} />
-          Featured on homepage
-        </label>
-      </div>
-
-      <div className="sb-section">
-        <div className="sb-h">cover image</div>
-        {coverImage && (
-          <img src={coverImage} alt="cover" style={{ width: "100%", borderRadius: "var(--radius)", marginBottom: "6px" }} />
-        )}
-        <div style={{ display: "flex", gap: "6px" }}>
-          <label className="btn-sm" style={{ cursor: "pointer" }}>
-            {coverImage ? "Replace" : "Upload"}
-            <input type="file" accept="image/*" hidden onChange={onCover} />
-          </label>
-          {coverImage && (
-            <button type="button" className="btn-sm danger" onClick={() => setCoverImage(null)}>Remove</button>
+          {sideTab === "outline" && (
+            <EditorOutlineTab headings={headings} blocks={outlineBlocks} onJump={jumpToLine} />
           )}
+          {sideTab === "diag" && <EditorDiagTab diags={diags} onJump={jumpToDiag} />}
         </div>
       </div>
 
-      <div className="sb-section">
-        <div className="sb-h">stats</div>
-        <div className="stat-row">
-          <div className="stat-box"><div className="sv">{words}</div><div className="sl">words</div></div>
-          <div className="stat-box"><div className="sv">{readMin}</div><div className="sl">min read</div></div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ── Outline tab ───────────────────────────────────────────────────────────────
-
-function OutlineTab({ headings }: { headings: { level: number; text: string; lineNum: number }[] }) {
-  if (headings.length === 0) {
-    return <p style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--faint)" }}>No headings yet.</p>;
-  }
-  return (
-    <>
-      <div className="sb-h">document structure</div>
-      {headings.map((h, i) => (
-        <div
-          key={i}
-          className={`outline-item${h.level === 3 ? " oi-sub2" : h.level === 2 ? " oi-sub" : ""}`}
-        >
-          <span className="oi-mark">H{h.level}</span>
-          <span className={`oi-title${h.level === 1 ? " h1" : ""}`}>{h.text}</span>
-          <span className="oi-line">L{h.lineNum}</span>
-        </div>
-      ))}
-    </>
-  );
-}
-
-// ── Diagnostics tab ───────────────────────────────────────────────────────────
-
-function DiagTab({ diags }: { diags: { type: "warn" | "ok" | "info"; msg: string; sub: string }[] }) {
-  const warns = diags.filter((d) => d.type === "warn");
-  const oks = diags.filter((d) => d.type === "ok");
-  const infos = diags.filter((d) => d.type === "info");
-
-  const icon = (t: "warn" | "ok" | "info") =>
-    t === "warn" ? "▲" : t === "ok" ? "✓" : "i";
-
-  const group = (title: string, items: typeof diags) =>
-    items.length === 0 ? null : (
-      <div className="diag-group" key={title}>
-        <div className="dg-h">{title} · {items.length}</div>
-        {items.map((d, i) => (
-          <div key={i} className={`diag-item ${d.type === "warn" ? "warn-d" : d.type}`}>
-            <span className="di-ic">{icon(d.type)}</span>
-            <div className="di-body">
-              <div className="di-msg">{d.msg}</div>
-              <div className="di-sub">{d.sub}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-
-  return (
-    <>
-      {group("warnings", warns)}
-      {group("checks passed", oks)}
-      {group("info", infos)}
-    </>
+      <PublishModal
+        open={showPublishModal}
+        checks={publishChecklist}
+        canonicalUrl={canonicalUrl}
+        publishMode={publishMode}
+        scheduleDate={publishScheduleDate}
+        saving={saving}
+        onClose={() => setShowPublishModal(false)}
+        onSaveDraft={async () => {
+          await handleSaveDraft();
+          setShowPublishModal(false);
+        }}
+        onPublish={() => void handlePublishFromModal()}
+        onModeChange={setPublishMode}
+        onScheduleDateChange={setPublishScheduleDate}
+        onJumpTo={jumpToDiag}
+      />
+    </div>
   );
 }

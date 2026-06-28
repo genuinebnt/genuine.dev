@@ -43,6 +43,11 @@ fn decode_jwt(token: &str) -> Option<Uuid> {
     Uuid::parse_str(&data.claims.sub).ok()
 }
 
+/// Validates a raw JWT string (query param or Bearer prefix stripped by caller).
+pub fn user_id_from_token(token: &str) -> Option<Uuid> {
+    decode_jwt(token)
+}
+
 /// Extractor that requires a valid `Authorization: Bearer <jwt>`.
 pub struct AuthUser {
     #[allow(dead_code)]

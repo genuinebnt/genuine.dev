@@ -1,10 +1,26 @@
-import CodeBlock from "@tiptap/extension-code-block";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+
+/** Languages exposed in the editor toolbar when a fence is focused. */
+export const CODE_LANGUAGES = [
+  "plaintext",
+  "rust",
+  "javascript",
+  "typescript",
+  "python",
+  "sql",
+  "bash",
+  "json",
+  "yaml",
+  "markdown",
+  "html",
+  "css",
+] as const;
 
 /**
- * Code block that preserves the backend's `filename="…"` / `highlight="…"` fence
- * attributes through the markdown round-trip (syntect renders them server-side).
+ * Code block with lowlight syntax highlighting plus backend fence attrs
+ * (`filename`, `highlight`) preserved through the markdown round-trip.
  */
-export const CodeBlockMeta = CodeBlock.extend({
+export const CodeBlockMeta = CodeBlockLowlight.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
@@ -37,8 +53,6 @@ export const CodeBlockMeta = CodeBlock.extend({
         },
         parse: {
           setup(md: any) {
-            // Carry the fence's filename/highlight attributes onto the rendered
-            // <pre> so they survive into the editor (markdown-it drops them).
             const defaultFence = md.renderer.rules.fence;
             md.renderer.rules.fence = (
               tokens: any[],

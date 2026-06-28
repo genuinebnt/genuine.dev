@@ -1,25 +1,19 @@
 "use client";
 
-const PRESETS = ["dark", "light", "midnight", "sepia", "matrix"] as const;
+import { THEME_PRESETS, previewAccent, previewTheme, type ThemeKey } from "../lib/theme";
 
-declare global {
-  interface Window {
-    __setTheme?: (t: string) => void;
-    __setAccent?: (h: string) => void;
-    __resetAccent?: () => void;
-  }
-}
-
+/** Compact preview-only picker (legacy export). Prefer NavThemeTray on public pages. */
 export default function ThemePicker() {
   return (
     <div className="theme-picker">
-      {PRESETS.map((name) => (
+      {THEME_PRESETS.map((name) => (
         <button
           key={name}
+          type="button"
           className={`tp-sw ${name}`}
           title={name}
           aria-label={`${name} theme`}
-          onClick={() => window.__setTheme?.(name)}
+          onClick={() => previewTheme(name as ThemeKey)}
         />
       ))}
       <label className="accent-pick" title="Custom accent">
@@ -27,16 +21,9 @@ export default function ThemePicker() {
         <input
           type="color"
           defaultValue="#00d4a4"
-          onChange={(e) => window.__setAccent?.(e.target.value)}
+          onChange={(e) => previewAccent(e.target.value)}
         />
       </label>
-      <button
-        className="accent-reset"
-        title="Reset accent"
-        onClick={() => window.__resetAccent?.()}
-      >
-        ⟲
-      </button>
     </div>
   );
 }

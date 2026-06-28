@@ -6,6 +6,230 @@ code changes both go here so the history is complete.
 
 ---
 
+## 2026-06-28 — Polybar notification click fix
+
+- Notification dropdown items use `router.push` + mark-read instead of `<Link onClick={close}>`; outside dismiss listens on `click` (not `mousedown`) and the rail pill allows overflow while open so the panel receives pointer events.
+
+## 2026-06-28 — Schedule picker year chip click fix
+
+- Portaled panel clicks no longer race the window outside-click handler; year chip opens the year grid reliably.
+
+## 2026-06-28 — Schedule picker month/year grids
+
+- Header chips open 4×3 month and year grids; year view pages by 12 with ‹ › navigation.
+
+## 2026-06-28 — Schedule picker size and placement
+
+- Calendar panel fixed at 248px, centered under the trigger with viewport clamping; tighter cell padding and controls.
+
+## 2026-06-28 — Custom schedule calendar panel
+
+- `ScheduleDateTimeInput` opens a site-styled calendar + time panel (portal, mono/surface tokens) instead of native browser date/time popups or split fields.
+
+## 2026-06-28 — Schedule date/time picker component
+
+- Replaced native `datetime-local` with split date + time fields (`ScheduleDateTimeInput`) using `.mf-input` / `.fg-input` — matches kind/status row pattern and site form tokens.
+
+## 2026-06-28 — Datetime picker design-system styling
+
+- `datetime-local` inputs in editor meta + publish modal use mono/surface tokens, theme-aware `color-scheme`, and webkit edit-field styling; modal fields use full `.fg-input` (was width-only) per ui-ux mockup.
+
+## 2026-06-28 — Admin notification WebSocket push
+
+- `NotificationHub` (tokio broadcast) emits `new` and `refresh` events on insert and mark-read; scheduler and REST handlers wired through shared `AppState`.
+- `GET /api/admin/notifications/ws?token=JWT` streams hub events to logged-in admins.
+- Polybar bell connects over WebSocket with exponential reconnect; polls every 2 min only when the socket is down.
+
+## 2026-06-28 — Polybar collapsed rail slimming
+
+- Scoped expanded-tray clock column layout to `.nav-tray-widget.nav-tray-clock` so the collapsed rail cell no longer inherits min-width, padding, or vertical stack — rail pill stays a single ~26px row.
+- Expanded tray clock uses two rows (time + `date · tz` meta line) instead of three stacked lines; rail compact clock stays single-line with explicit `line-height: 1`.
+
+## 2026-06-28 — Polybar clock spacing
+
+- Expanded tray clock stacks time, date, and timezone as three sibling lines with larger gaps and min-width so the block doesn’t crush together.
+
+## 2026-06-28 — Admin notifications + scheduled publish worker
+
+- `notifications` table and JWT API (`GET /api/admin/notifications`, mark read / mark all read).
+- Background worker publishes drafts when `metadata.scheduled_for` is due and inserts a `scheduled_published` notification linking to the live doc.
+- Polybar **◔** bell (logged-in admin) opens a dropdown panel with unread badge; configurable in Admin → Polybar.
+
+## 2026-06-28 — Reading measure width + title wrap
+
+- Narrow/wide/focus measures use px caps (720px / 860px) instead of `ch` — `ch` underruns for large titles. Flex column children get `min-width: 0` so titles wrap instead of overflowing the column.
+
+## 2026-06-28 — Reading column alignment, measure, focus mode
+
+- Narrow measure widened to 65ch (was 58ch); focus mode on default width uses 68ch. One flex-centered column aligns title, meta, and prose; section `#` anchors no longer indent headings.
+- Focus mode hides article/about/now/uses sidebars and single-columns the layout so the reading stack centers without the TOC rail.
+
+## 2026-06-28 — Narrow/wide reading measure centering
+
+- `--read-measure` centers title, meta, cover, prose, related, prev/next, and comments in article layouts — not just `.prose` left-aligned in a wide column.
+
+## 2026-06-28 — Editor list / checklist spacing
+
+- ProseMirror `ul`/`ol` regain left indent after global reset (bullets no longer sit in/over content padding); diag/publish check rows wrap long text.
+
+## 2026-06-28 — Editor cancel, tabs, code highlighting
+
+- Editor status bar adds Cancel (discards unsaved with confirm, returns to `/admin`); tab links no longer underline filenames; tab bar and in-block horizontal scrollbars hidden where redundant.
+- Code fences use lowlight syntax highlighting in edit mode; toolbar shows language + optional filename when a block is focused.
+
+## 2026-06-28 — Nav clock + article tag rail spacing
+
+- Polybar clock stacks time, date, and timezone vertically with clearer gaps; article sidebar tag chips sit further below the "Tags" label.
+
+## 2026-06-28 — Polybar clock hydration fix
+
+- `PolybarClock` defers live time/date until client mount (static placeholder on SSR); fixed `en-GB` locale avoids Node vs browser date string mismatch.
+
+## 2026-06-28 — Code fence line number alignment
+
+- Removed legacy `.code .hl { display: block }` rule that broke grid/flex on `.code-line.hl` (highlighted lines had misaligned gutters).
+- Code lines use flex gutter (`.ln` + `.code-txt`) matching mockup; empty lines render `&nbsp;` so row height stays consistent. Run `just seed-refresh`.
+
+## 2026-06-28 — Code fence copy attribute fix
+
+- Code blocks: flex line gutter (`.ln` + `.code-txt`), dynamic width for line numbers, trimmed trailing newline — fixes misaligned line numbers. Run `just seed-refresh`.
+
+## 2026-06-28 — Articles/projects pagination + code block UI
+
+- Articles pager now shows at 10/page (15 seed posts → 2 pages); projects at 2/page with `?page=` URL sync and sticky footer bar.
+- Code fence highlights apply to `.code-line.hl` (no broken wrapper); theme boot via `next/script` `beforeInteractive` (fixes layout dev error).
+- Run `just seed-refresh` after pulling renderer change to re-render stored HTML.
+
+## 2026-06-28 — Admin content layout gutters
+
+- `/admin` content table back in padded `shell` layout (was `panel-fullbleed`, flush to viewport edge); settings/editor shells unchanged.
+
+## 2026-06-28 — Seed articles expanded
+
+- Added 11 blog seed posts (distributed, systems, infosec, rust) — 15 total; run `just seed-refresh` to upsert into an existing DB.
+
+## 2026-06-28 — About sidebar, admin toolbar, layout script
+
+- `/about` sidebar shows profile rail plus “On this page” TOC (h2/h3 from CMS HTML) with scroll-spy; `extractPanelSections` reads Comrak anchor ids; replaced `AboutShell` with `AboutDocPage`.
+- Admin content header uses `.admin-toolbar` so search and Settings/New/Logout wrap cleanly; admin routes drop the public footer (panel shell).
+- Theme boot script moved to a native `<script>` in `<head>` to fix Next.js “script tag while rendering” dev warning.
+
+## 2026-06-28 — Project row spacing
+
+- `/projects`, home selected projects, and `/now` roadmap/reading rows use `--grid-gap` (10px) between stacked panel rows; roadmap items are bordered cards instead of a flush border list.
+
+## 2026-06-28 — /now roadmap progress
+
+- Added `:::now-progress` directive (roadmap bars + optional `# title` label) and aligned `/now` seed copy with the UI mockup — status cards, four-project progress, Learning/Reading/Fitness/Not doing sections. Run `just seed-refresh` to update an existing DB.
+
+## 2026-06-28 — UI mockup sync
+
+- Updated `docs/mockups/ui-ux-mockup.html` to match shipped app: WYSIWYG editor, unified `/admin` (bulk bar, seed-aligned stats/tags, pagination), `/blog` with four seed posts, publish modal metadata checks, `/blog/[slug]` URLs, Cmd-K tags group, JWT login hint.
+
+## 2026-06-28 — Seed metadata topics
+
+- All seed posts and projects now set `metadata.topic` (rust, infosec, systems, distributed) alongside tags — run `just seed-refresh` to update an existing DB.
+
+## 2026-06-28 — List pagination
+
+- Shared `Pagination` component + `lib/pagination` helpers.
+- Admin content table (20/page, `?page=`), writing index (15/page), projects list (10/page). Pager hidden when a list fits one page.
+- Admin table rows: 3px topic/portfolio accent bar (same derivation as writing index: topic or first tag).
+
+## 2026-06-28 — Admin table polish
+
+- Topic column uses explicit `metadata.topic` (tags stay in title row); scheduled dates use blue styling.
+- Slug moved out of tag pills; static portfolio rows show a `static` badge, `view` only, no bulk select/delete.
+
+## 2026-06-28 — Admin content filters
+
+- Removed duplicate status/kind chip row; stat cards remain the primary filters.
+- Tag filter chips (and clickable row tags) derive from `metadata.tags` on loaded documents only.
+
+## 2026-06-28 — Frontend lib tests + onboarding comments
+
+- Vitest coverage for `adminDocs`, `editor/formState`, and `editorDiagnostics` (scheduling contract, dirty tracking, link/heading checks).
+- Module-level comments on non-obvious editor/admin contracts; `just check` runs frontend tests.
+
+## 2026-06-28 — Frontend refactor (S-tier maintainability)
+
+- Split `EditorForm` into `editor/*` modules; moved form state, diagnostics, reading stats, admin helpers, and auth/admin API into focused `lib/` files.
+- Unified scheduling via `metadata.scheduled_for`; full `isEditorDirty`; single `useComments` provider (no double fetch).
+- Shared `EditorCheckRow`, `TOPIC_KEYS`, indexed Cmd-K sections, curated publish checklist.
+
+## 2026-06-28 — Mockup gap fill (keep existing overrides)
+
+- **Publish modal**: Pre-publish checklist, Now vs Schedule (stores `metadata.scheduled_for` as draft), canonical URL, jump-to-editor on warnings — TipTap/WYSIWYG unchanged.
+- **Editor diag/outline**: Empty-heading checks, internal link resolution, code fence tags, jump-to-heading, directives/blocks in outline, file-tree collapse, line count in status bar.
+- **Admin list**: Search bar, topic/date/tag columns, topic filter chips, scheduled stat (from `scheduled_for` metadata) — unified `/admin` + bulk select kept.
+- **⌘K**: Tags result group → `/blog?tag=…`.
+- **Post comments**: Mockup `art-comments` styling; comment count in meta row via `CommentMeta`.
+- **Login**: Session hint matches JWT-in-localStorage (not cookie).
+- **API**: `AdminItem` includes `published_at` + `metadata` for admin table.
+
+## 2026-06-28 — Selection controls match mockup
+
+- Replaced native checkboxes/toggles with design-system **`UiCheckbox`** (admin bulk select, editor featured) and **`UiPillToggle`** on/off pills (polybar settings); settings fields use **`mf-input`** styling.
+
+## 2026-06-28 — Reader + admin polish bundle
+
+- **Reader**: Heading `#` copy links, image lightbox, `#L12` code line flash, related posts + series prev/next (API), Mermaid/`:::math` directives + client KaTeX, reading width prefs, focus mode, print stylesheet, view transitions.
+- **⌘K**: Recent docs, copy URL, focus mode, admin link, blog topic filters, `?` shortcuts overlay.
+- **Polybar**: Status line widget, timezone clock, pomodoro notifications, presets (Minimal/Writer/Demo).
+- **Admin/editor**: Bulk publish/delete, duplicate doc API, local autosave recovery, live slug URL, scheduled status option, editor ⌘S / ⌘⇧P / ⌘⇧L.
+- **Settings**: Status line + timezone + reading width; theme JSON import/export; per-page override modal.
+- **SEO**: Open Graph / Twitter metadata on blog posts.
+
+## 2026-06-28 — Admin settings hub + unified sidebar
+
+- **`/admin/settings`**: Settings index (Theme, Polybar cards; Analytics placeholder) matching mockup site nav.
+- **`AdminSettingsNav` / `AdminSettingsShell`**: Shared left rail for all settings pages — full content links, session footer, panel-rail width; settings routes use `panel-fullbleed` like other sidebar pages.
+- **Admin header**: Single ⚙ Settings link replaces separate Theme/Polybar buttons.
+
+## 2026-06-28 — Polybar search icon in pill
+
+- **`PolybarSearch`**: ⌕ only (circular, no ⌘K label) inside the unified polybar pill with other widgets; respects admin order.
+
+## 2026-06-28 — Search in polybar
+
+- **`PolybarSearch`**: Command palette trigger is a polybar widget (enable/rail toggle in admin); removed standalone nav ⌘K and `searchInNav` setting.
+
+## 2026-06-28 — Polybar collapsed rail
+
+- **Nav polybar**: Enabled widgets default to compact controls in the collapsed nav rail (`showCollapsed` per widget in admin); expanded tray still shows full widgets. Timers share state via `PolybarProviders`.
+
+## 2026-06-28 — Polybar tray polish (overflow, scroll, toggle)
+
+- **Nav polybar**: Expanded tray floats over the nav (no row spill); touch/trackpad scroll when widgets overflow with **hidden** scrollbar. Toggle always shows **‹** and stays above the tray when open.
+
+## 2026-06-28 — Polybar UI consistency (mockup alignment)
+
+- **Polybar widgets**: Shared `ft-btn` / `meta-pill` controls; light/dark shows ◑/◐ + label; removed other tray uppercase labels. Nav ⌘K/search match mockup `.kbd`; tray uses mockup surface/border tokens.
+
+## 2026-06-28 — Admin-controlled polybar widgets
+
+- **`/admin/settings/polybar`**: Toggle and reorder nav tray widgets (clock, light/dark preview, theme swatches, pomodoro, countdown); optional ⌕ search button in nav instead of plain ⌘K. Settings in `localStorage` (`polybarSettings`); `NavPolybar` + `Nav` react via `polybar-config-updated`.
+
+## 2026-06-28 — Nav polybar utility tray (clock + theme)
+
+- **`NavPolybar`**: Modular expandable tray — `PolybarClock` (live time/date) + `PolybarThemePreview` (non-persisting theme/accent). Toggle shows compact clock + ◑ when collapsed; add widgets as cells in `nav-tray-inner`.
+
+## 2026-06-28 — Nav polybar theme preview tray
+
+- **`NavThemeTray`**: Expandable ‹/› polybar on the nav (public pages) — theme presets, accent swatches, custom color, ⟲ restore saved. Preview only (`previewTheme` / `previewAccent`); persists via `/admin/settings/theme` only.
+
+## 2026-06-28 — Admin filters, preview parity, themed scrollbars
+
+- **Admin dashboard**: Stat cards (published, drafts, projects, pages) now filter the table; filter chips use proper buttons with active/hover states. URL params `?kind=` / `?status=` pre-select filters.
+- **Editor preview**: Split preview calls `POST /api/admin/preview` (same comrak+syntect+directives pipeline as publish) instead of client `marked` — callouts, code highlighting, and directive blocks match production. Topic accent applied via `data-topic`.
+- **Scrollbars**: Global theme-aware thin scrollbars (muted thumb, accent on hover) across editor, panels, cmd-k, and main content.
+
+## 2026-06-28 — Admin publish, theme save, directive delete fixes
+
+- **Publish**: Editor "Publish" now forces `status: published` (was saving whatever the meta dropdown showed, often draft). Save flushes latest TipTap markdown; API returns `{ slug }` for new docs.
+- **Theme**: Admin theme preview no longer writes localStorage until Save; Discard restores last saved snapshot. Projects page default override no longer hardcodes midnight — inherits site theme.
+- **Editor**: Callout/aside blocks get a Remove control; atom directives can be deleted in edit mode.
+
 ## 2026-06-28 — Roadmap redesign + dev seed on startup
 
 - **`docs/ROADMAP.md`**: Rewritten for ADR-013 stack (Next.js + Rust API); §2 shipped inventory; §9 post-MVP phases with ✅/⬜ per feature; trimmed stale Leptos/maud references in §1–§9.

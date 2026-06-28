@@ -67,7 +67,7 @@ export default function Login() {
           </div>
           <div className="lc-hint">
             <div className="lc-hint-dot" />
-            <span>session persists for 30 days · stored in http-only cookie</span>
+            <span>session stored in this browser · JWT in localStorage</span>
           </div>
           {err && <div className="lc-error">{err}</div>}
           <button className="lc-submit" type="submit" disabled={locked || loading || !passphrase}>

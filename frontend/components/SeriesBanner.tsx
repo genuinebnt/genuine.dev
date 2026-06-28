@@ -1,25 +1,43 @@
-export function SeriesBanner({ series }: { series: { name: string; part: number } }) {
+import Link from "next/link";
+import type { PostNavItem } from "../lib/api";
+
+type SeriesMeta = { name: string; part: number };
+
+export function SeriesBanner({
+  series,
+  prev,
+  next,
+}: {
+  series: SeriesMeta;
+  prev?: PostNavItem | null;
+  next?: PostNavItem | null;
+}) {
   if (!series) return null;
 
   return (
-    <div style={{
-      marginBottom: "24px",
-      padding: "12px 16px",
-      borderRadius: "var(--radius)",
-      backgroundColor: "var(--acc-bg)",
-      border: "1px solid var(--acc-border)",
-      color: "var(--acc)",
-      fontSize: "13px",
-      display: "flex",
-      alignItems: "center",
-      gap: "8px"
-    }}>
-      <span style={{ fontFamily: "var(--mono)", fontSize: "11px", fontWeight: "bold" }}>
-        SERIES
-      </span>
-      <span>
-        This is part {series.part} of the <strong>{series.name}</strong> series.
-      </span>
+    <div className="series-banner">
+      <div className="series-banner-main">
+        <span className="series-banner-label">Series</span>
+        <span>
+          Part {series.part} of <strong>{series.name}</strong>
+        </span>
+      </div>
+      {(prev || next) && (
+        <div className="series-banner-nav">
+          {prev ? (
+            <Link href={`/blog/${prev.slug}`} className="series-banner-link">
+              ← {prev.title}
+            </Link>
+          ) : (
+            <span />
+          )}
+          {next ? (
+            <Link href={`/blog/${next.slug}`} className="series-banner-link series-banner-link-next">
+              {next.title} →
+            </Link>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,15 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { PostItem } from "../lib/api";
 import { docMetadata, projectBrowseUrl, projectGithub, projectTech } from "../lib/metadata";
 import { deriveTopic, topicColor } from "../lib/topic";
+import {
+  PROJECTS_PAGE_SIZE,
+  clampPage,
+  paginateSlice,
+  parsePageParam,
+  writePageQuery,
+} from "../lib/pagination";
 import {
   projectAccentColor,
   projectCaseStudyHref,
   projectStatusFromMetadata,
 } from "../lib/projects";
 import ProjectCard from "./ProjectCard";
+import Pagination from "./ui/Pagination";
 
 interface Props {
   projects: PostItem[];
@@ -42,8 +51,10 @@ function summarizeFilters(projects: PostItem[]) {
 }
 
 export default function ProjectsShell({ projects }: Props) {
+  const searchParams = useSearchParams();
   const [activeStack, setActiveStack] = useState<string | null>(null);
   const [activeStatus, setActiveStatus] = useState<string | null>(null);
+  const skipFilterReset = useRef(true);
   const { allStacks, stackCounts, statusCounts } = useMemo(
     () => summarizeFilters(projects),
     [projects],
@@ -62,6 +73,26 @@ export default function ProjectsShell({ projects }: Props) {
     }
     return true;
   });
+
+  useEffect(() => {
+    if (skipFilterReset.current) {
+      skipFilterReset.current = false;
+      return;
+    }
+    writePageQuery(1);
+  }, [activeStack, activeStatus]);
+
+  const page = parsePageParam(searchParams.get("page"));
+
+  const pageProjects = useMemo(
+    () => paginateSlice(filtered, page, PROJECTS_PAGE_SIZE),
+    [filtered, page],
+  );
+
+  function goToPage(next: number) {
+    const clamped = clampPage(next, filtered.length, PROJECTS_PAGE_SIZE);
+    writePageQuery(clamped);
+  }
 
   return (
     <div className="projects-shell">
@@ -124,28 +155,37 @@ export default function ProjectsShell({ projects }: Props) {
       </div>
 
       <div className="projects-body">
-        <div className="projects-list">
-          {filtered.map((project) => {
-            const metadata = docMetadata(project);
-            const topic = deriveTopic(metadata);
-            return (
-              <ProjectCard
-                key={project.slug}
-                href={projectCaseStudyHref(project.slug)}
-                name={project.title}
-                description={project.summary ?? ""}
-                accentColor={projectAccentColor(project.slug) ?? topicColor(topic)}
-                status={projectStatusFromMetadata(metadata)}
-                tech={projectTech(metadata)}
-                github={projectGithub(metadata)}
-                browse={projectBrowseUrl(metadata)}
-              />
-            );
-          })}
-          {filtered.length === 0 && (
-            <p className="projects-empty">No projects match the filter.</p>
-          )}
+        <div className="projects-scroll">
+          <div className="projects-list">
+            {pageProjects.map((project) => {
+              const metadata = docMetadata(project);
+              const topic = deriveTopic(metadata);
+              return (
+                <ProjectCard
+                  key={project.slug}
+                  href={projectCaseStudyHref(project.slug)}
+                  name={project.title}
+                  description={project.summary ?? ""}
+                  accentColor={projectAccentColor(project.slug) ?? topicColor(topic)}
+                  status={projectStatusFromMetadata(metadata)}
+                  tech={projectTech(metadata)}
+                  github={projectGithub(metadata)}
+                  browse={projectBrowseUrl(metadata)}
+                />
+              );
+            })}
+            {filtered.length === 0 && (
+              <p className="projects-empty">No projects match the filter.</p>
+            )}
+          </div>
         </div>
+        <Pagination
+          className="proj-pagination"
+          page={page}
+          totalItems={filtered.length}
+          pageSize={PROJECTS_PAGE_SIZE}
+          onPageChange={goToPage}
+        />
       </div>
     </div>
   );

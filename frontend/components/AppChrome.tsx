@@ -12,12 +12,17 @@ import Footer from "./Footer";
  *
  * Auth pages centre their card with a full-height flex container, also no footer.
  *
- * Home, admin, portfolio case studies, and 404 use padded shell + footer.
+ * Home, portfolio case studies, and 404 use padded shell + footer.
+ * Admin content list (`/admin`) uses padded shell without footer; settings keep panel shell.
  */
 export default function AppChrome({ children }: { children: React.ReactNode }) {
   const path = usePathname();
 
   const isEditor = path.startsWith("/admin/new") || path.startsWith("/admin/edit");
+
+  const isAdminList = path === "/admin";
+
+  const isAdminSettings = path.startsWith("/admin/settings");
 
   // Two-column pages: sidebar rail fills viewport height below the nav (no footer).
   // Portfolio sub-routes (/projects/notiq, /projects/genuine-dev) keep the normal shell.
@@ -35,12 +40,16 @@ export default function AppChrome({ children }: { children: React.ReactNode }) {
     return <main className="editor-fullbleed">{children}</main>;
   }
 
-  if (isPanelPage) {
+  if (isPanelPage || isAdminSettings) {
     return (
       <main className="panel-fullbleed">
         <div className="panel-stage">{children}</div>
       </main>
     );
+  }
+
+  if (isAdminList) {
+    return <main className="shell page">{children}</main>;
   }
 
   if (isAuth) {

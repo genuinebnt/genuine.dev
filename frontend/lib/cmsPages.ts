@@ -18,3 +18,8 @@ export function publicDocPath(item: Pick<AdminItem, "slug" | "kind">): string | 
 export function isAdminEditable(item: Pick<AdminItem, "slug" | "kind">): boolean {
   return item.kind !== "project" || !isStaticCaseStudy(item.slug);
 }
+
+/** Portfolio projects rendered from `app/projects/<slug>` — listed in admin but not CMS-edited. */
+export function isStaticCaseStudyRow(item: Pick<AdminItem, "slug" | "kind">): boolean {
+  return item.kind === "project" && isStaticCaseStudy(item.slug);
+}

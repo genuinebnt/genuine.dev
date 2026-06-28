@@ -6,16 +6,18 @@ mod content;
 mod error;
 mod feeds;
 mod newsletter;
+mod notifications;
+mod state;
 
 pub use error::ApiError;
+pub use state::AppState;
 
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
-use sqlx::PgPool;
 
 /// All routes. `/api/*` is JSON; the top-level routes serve machine/email targets.
-pub fn router() -> Router<PgPool> {
+pub fn router() -> Router<AppState> {
     Router::new()
         .route("/healthz", get(feeds::healthz))
         .route("/feed.xml", get(feeds::feed))
@@ -28,7 +30,7 @@ pub fn router() -> Router<PgPool> {
         .nest("/api", api_routes())
 }
 
-fn api_routes() -> Router<PgPool> {
+fn api_routes() -> Router<AppState> {
     Router::new()
         .route("/posts", get(content::list_posts))
         .route("/posts/{slug}", get(content::get_doc))
@@ -43,12 +45,24 @@ fn api_routes() -> Router<PgPool> {
         .route("/auth/login", post(auth::login))
         .route("/auth/me", get(auth::me))
         .route("/admin/docs", get(admin::list).post(admin::save))
+        .route("/admin/preview", post(admin::preview))
         .route("/admin/docs/{slug}", get(admin::get).delete(admin::delete))
+        .route("/admin/docs/{slug}/duplicate", post(admin::duplicate))
         .route(
             "/admin/upload",
             // Body limit slightly above the handler's 5MB cap to leave room for
             // multipart framing; the handler enforces the real per-file limit.
             post(admin::upload).layer(DefaultBodyLimit::max(6 * 1024 * 1024)),
         )
+        .route("/admin/notifications", get(notifications::list))
+        .route(
+            "/admin/notifications/read",
+            post(notifications::mark_read_handler),
+        )
+        .route(
+            "/admin/notifications/read-all",
+            post(notifications::mark_all_read_handler),
+        )
+        .route("/admin/notifications/ws", get(notifications::ws))
         .route("/newsletter/subscribe", post(newsletter::subscribe))
 }

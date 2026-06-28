@@ -60,6 +60,7 @@ async fn run_seed(pool: &PgPool, mode: SeedMode) -> Result<(), AppError> {
         LOCKFREE_PART1_MD,
         json!({
             "featured": true,
+            "topic": "rust",
             "series": { "name": "Lock-free data structures in Rust", "part": 1 },
             "tags": ["rust", "concurrency"]
         }),
@@ -79,6 +80,7 @@ async fn run_seed(pool: &PgPool, mode: SeedMode) -> Result<(), AppError> {
         LOCKFREE_PART2_MD,
         json!({
             "featured": true,
+            "topic": "rust",
             "series": { "name": "Lock-free data structures in Rust", "part": 2 },
             "tags": ["rust", "concurrency"]
         }),
@@ -96,7 +98,7 @@ async fn run_seed(pool: &PgPool, mode: SeedMode) -> Result<(), AppError> {
         "SSRF to internal dashboards: a bug-bounty walkthrough",
         Some("How a forgotten URL preview endpoint exposed an entire metadata service."),
         SSRF_MD,
-        json!({ "featured": true, "tags": ["security", "bug-bounty"] }),
+        json!({ "featured": true, "topic": "infosec", "tags": ["security", "bug-bounty"] }),
         18,
     )
     .await?;
@@ -111,8 +113,186 @@ async fn run_seed(pool: &PgPool, mode: SeedMode) -> Result<(), AppError> {
         "What SKIP LOCKED actually does",
         Some("A Postgres-native job queue in 30 lines, and why it doesn't block."),
         SKIP_LOCKED_MD,
-        json!({ "tags": ["postgres", "systems"] }),
+        json!({ "topic": "systems", "tags": ["postgres", "systems"] }),
         33,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "consistent-hashing-virtual-nodes",
+        "Consistent hashing without the magic",
+        Some("Why 150 virtual nodes per worker is a heuristic, not a religion."),
+        CONSISTENT_HASH_MD,
+        json!({
+            "topic": "distributed",
+            "tags": ["distributed-systems", "hashing"]
+        }),
+        5,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "reading-postgres-explain-analyze",
+        "Reading Postgres EXPLAIN (ANALYZE, BUFFERS)",
+        Some("Seq scans aren't always evil — learn what the planner is actually telling you."),
+        EXPLAIN_MD,
+        json!({ "topic": "systems", "tags": ["postgres", "performance"] }),
+        12,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "idor-via-predictable-ids",
+        "IDOR via predictable IDs: a logic bug dressed as auth",
+        Some("When UUIDs in the URL aren't secret — and the API never checks ownership."),
+        IDOR_MD,
+        json!({ "topic": "infosec", "tags": ["security", "bug-bounty", "web"] }),
+        21,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "tokio-cooperative-scheduling",
+        "Tokio's cooperative scheduler: budgets, yields, and starvation",
+        Some("Async Rust isn't preemptive — long polls block everyone on the same worker."),
+        TOKIO_SCHED_MD,
+        json!({ "topic": "rust", "tags": ["rust", "async", "tokio"] }),
+        27,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "raft-leader-election-walkthrough",
+        "Raft leader election, step by step",
+        Some("Terms, votes, and why split votes aren't a bug — they're the protocol working."),
+        RAFT_MD,
+        json!({
+            "topic": "distributed",
+            "tags": ["consensus", "distributed-systems"]
+        }),
+        45,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "rust-pin-and-self-referential-structs",
+        "Pin and self-referential structs in Rust",
+        Some("Why `Pin<&mut T>` exists, and when your future really needs it."),
+        PIN_MD,
+        json!({ "topic": "rust", "tags": ["rust", "async"] }),
+        52,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "bpf-kprobes-for-latency-tracing",
+        "BPF kprobes for latency tracing",
+        Some("Attach to kernel entry points without recompiling — and know when to stop."),
+        BPF_MD,
+        json!({ "topic": "systems", "tags": ["linux", "observability"] }),
+        60,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "swim-gossip-membership-basics",
+        "SWIM gossip membership in plain language",
+        Some("Failure detectors without a central heartbeat server — and the false-positive knob."),
+        SWIM_MD,
+        json!({
+            "topic": "distributed",
+            "tags": ["distributed-systems", "gossip"]
+        }),
+        72,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "logic-bugs-in-checkout-flows",
+        "Logic bugs in checkout flows",
+        Some("When the price is right in the UI but wrong in the API — and how hunters find it."),
+        CHECKOUT_MD,
+        json!({ "topic": "infosec", "tags": ["security", "web", "bug-bounty"] }),
+        85,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "memory-ordering-in-practice",
+        "Memory ordering in practice (not the spec)",
+        Some("Acquire, release, and when Relaxed is actually fine on hot paths."),
+        MEMORY_ORDER_MD,
+        json!({
+            "topic": "rust",
+            "tags": ["rust", "concurrency"],
+            "series": { "name": "Lock-free data structures in Rust", "part": 3 }
+        }),
+        95,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "postgres-connection-pooling-pitfalls",
+        "Postgres connection pooling pitfalls",
+        Some("Prepared statements, transaction pooling, and the errors that only show under load."),
+        POOLING_MD,
+        json!({ "topic": "systems", "tags": ["postgres", "systems"] }),
+        105,
     )
     .await?;
 
@@ -129,6 +309,7 @@ async fn run_seed(pool: &PgPool, mode: SeedMode) -> Result<(), AppError> {
         NOTIQ_MD,
         json!({
             "featured": true,
+            "topic": "distributed",
             "tech": ["Rust", "gRPC", "Postgres", "Redis", "AWS", "Terraform"],
             "tags": ["distributed-systems", "rust"],
             "status": "complete"
@@ -149,6 +330,7 @@ async fn run_seed(pool: &PgPool, mode: SeedMode) -> Result<(), AppError> {
         FOLIO_MD,
         json!({
             "featured": true,
+            "topic": "rust",
             "tech": ["Rust", "axum", "Next.js", "Postgres", "syntect"],
             "tags": ["fullstack", "rust"],
             "status": "wip"
@@ -165,10 +347,13 @@ async fn run_seed(pool: &PgPool, mode: SeedMode) -> Result<(), AppError> {
         Kind::Project,
         "db-labs",
         "db-labs — relational DBMS from scratch",
-        Some("From-scratch relational DBMS in Rust — buffer pool, B+ tree, executors, transactions."),
+        Some(
+            "From-scratch relational DBMS in Rust — buffer pool, B+ tree, executors, transactions.",
+        ),
         DB_LABS_MD,
         json!({
             "featured": true,
+            "topic": "systems",
             "tech": ["Rust", "systems", "database"],
             "tags": ["database", "rust", "systems"],
             "github": "https://github.com/genuinebnt/db-labs"
@@ -266,10 +451,7 @@ async fn insert(
     }
     let rendered = renderer.render(markdown);
     let doc = Document {
-        id: existing
-            .as_ref()
-            .map(|d| d.id)
-            .unwrap_or_else(Uuid::now_v7),
+        id: existing.as_ref().map(|d| d.id).unwrap_or_else(Uuid::now_v7),
         slug,
         kind,
         title: title.to_owned(),
@@ -484,6 +666,464 @@ Postgres-native queue — Graphile Worker, River, and [NotiQ](/projects/notiq).
 
 Until then, the database you already operate is one `SKIP LOCKED` away from being
 a perfectly good job queue.
+"#;
+
+const CONSISTENT_HASH_MD: &str = r#"Consistent hashing shows up in every distributed systems interview — and in
+production at [NotiQ](/projects/notiq), Cassandra, and Dynamo-shaped stores. The
+idea is simple; the *details* (virtual nodes, bounded loads, rebalancing) are where
+teams actually lose sleep.
+
+## The naive problem
+
+Modulo hashing (`hash(key) % N`) is easy until `N` changes. Add a worker and almost
+every key moves — a thundering herd of cache misses and shard migrations.
+
+Consistent hashing maps keys and nodes onto a ring. When a node leaves, only keys
+*near* that node on the ring need to move — not the whole keyspace.
+
+## Virtual nodes
+
+One physical machine as a single point on the ring is a hotspot magnet: remove it and
+its entire arc lands on one successor.
+
+**Virtual nodes** (vnodes) spread each physical worker at many points on the ring:
+
+:::callout ℹ "The 150 heuristic"
+Cassandra's default of ~150 vnodes per host is a well-studied compromise — enough
+spread to avoid hot successors, not so many that metadata overhead dominates.
+Tune for your skew, not for folklore.
+:::
+
+## What to watch in production
+
+:::cards
+:::card ring "Rebalance cost" "owns: migration bandwidth"
+- measure keys moved per topology change
+- throttle background transfers
+A ring change during peak traffic without rate limits is an outage.
+:::
+:::card worker "Hot keys" "owns: skew"
+- salting / sub-sharding
+- separate hot-key cache tier
+Hashing doesn't fix popularity — it only spreads *average* load.
+:::
+:::
+
+When you're building membership + routing, pair consistent hashing with a gossip layer
+(see [SWIM gossip](/blog/swim-gossip-membership-basics)) so the ring view converges
+without a single coordinator.
+"#;
+
+const EXPLAIN_MD: &str = r#"The first time someone runs `EXPLAIN ANALYZE` on a slow query, they either panic
+at **Seq Scan** or celebrate **Index Scan** without reading the numbers. Both reactions
+are wrong often enough to hurt.
+
+## Start with actual time
+
+```sql filename="explain.sql" highlight="1"
+EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
+SELECT * FROM posts WHERE topic = 'rust' ORDER BY published_at DESC LIMIT 20;
+```
+
+`ANALYZE` runs the query; `BUFFERS` tells you whether you're hitting shared buffers
+or disk. *Wall time* and *rows* matter more than the operator name.
+
+## Seq scan vs index scan
+
+:::aside 🦀 "Ferris' hot tip"
+Postgres may choose a seq scan when it expects to read a large fraction of the table
+anyway — an index lookup + heap fetch for half the rows is *more* expensive than one
+sequential pass. Small tables almost always seq scan.
+:::
+
+## Red flags in the plan
+
+:::timeline
+1 **Nested Loop** with huge row estimates on the inner side — missing index or stale stats.
+2 **Sort** on millions of rows — consider an index that matches `ORDER BY`.
+3 **Buffers: read=… written=…** dominated by `read` — you're IO-bound, not CPU-bound.
+4 **Planning time** spikes — check for prepared-statement churn or pooler mode mismatches (see [pooling pitfalls](/blog/postgres-connection-pooling-pitfalls)).
+:::
+
+## Fix order
+
+1. `ANALYZE` / autovacuum health — bad stats lie to the planner.
+2. Indexes that match filter + sort columns.
+3. Query shape — fewer round trips beats micro-optimizing operators.
+
+`EXPLAIN` is a conversation with the planner, not a scoreboard.
+"#;
+
+const IDOR_MD: &str = r#"Insecure Direct Object Reference (IDOR) sounds like "broken access control" because
+it is — but in bug bounty programs it often shows up as **perfectly valid UUIDs** in
+URLs and APIs that never ask *"does this user own this object?"*
+
+## The pattern
+
+```http filename="request.http" highlight="1"
+GET /api/v1/invoices/7c9e6679-7425-40de-944b-e07fc1f90ae7 HTTP/1.1
+Authorization: Bearer <user-a-token>
+```
+
+User A's token. User B's invoice ID. If the response is 200 with B's PDF, you have
+IDOR — not "UUID guessing," just missing authorization.
+
+:::callout ⚠ "Why UUIDs don't save you"
+UUIDs are identifiers, not secrets. They leak in emails, analytics, referrers, and
+browser history. Security through obscurity fails the moment one ID crosses a trust boundary.
+:::
+
+## How to hunt it
+
+:::timeline
+1 Create two accounts — low-privilege "victim" and your tester account.
+2 Capture object IDs from the victim session (export, share link, notification email).
+3 Replay requests from the tester session with the victim's IDs.
+4 Mutate verbs — `GET` might be locked down while `PATCH` or `DELETE` isn't.
+:::
+
+## The fix
+
+:::cards
+:::card gateway "Authorize on every handler" "owns: object ownership"
+- resolve resource → owner tenant/user
+- deny by default
+Middleware auth ≠ resource auth. Check ownership *after* you load the row.
+:::
+:::card delivery "Opaque IDs at the edge" "owns: public references"
+- signed tokens / capability URLs
+- separate internal vs external IDs
+Defense in depth — but never skip server-side checks.
+:::
+:::
+
+For a network-layer cousin of "trust the wrong boundary," see [SSRF walkthrough](/blog/ssrf-to-internal-dashboards).
+"#;
+
+const TOKIO_SCHED_MD: &str = r#"Tokio feels like magic until one task runs a 200ms CPU loop on a worker thread and
+every other future on that worker stalls. Async Rust is **cooperative** — tasks must
+yield explicitly or at await points.
+
+## Workers and the run queue
+
+Each Tokio worker thread pulls tasks from a local queue (and occasionally steals from
+siblings). There's no preemption: a future that never awaits monopolizes its worker.
+
+```rust filename="bad-task.rs" highlight="3-5"
+async fn poison() {
+    loop {
+        heavy_cpu(); // no .await — blocks the worker
+    }
+}
+```
+
+:::callout ⚠ "Gotcha"
+`block_in_place` and `spawn_blocking` exist for a reason — don't call blocking IO or
+long CPU work inside async fn bodies without them.
+:::
+
+## Task budgets (Tokio 1.x+)
+
+Tokio can **stop polling** a task after a budget expires, forcing other tasks on the
+same worker to run. This mitigates starvation but doesn't replace good hygiene.
+
+:::aside 🦀 "Ferris' hot tip"
+If you're CPU-bound, use `rayon` or a dedicated thread pool. Async is for waiting,
+not for saturating cores — that's what threads are for.
+:::
+
+## Checklist
+
+- Await at natural boundaries; chunk long loops with `yield_now().await`.
+- Move blocking work to `spawn_blocking`.
+- Watch p99 latency when load mixes fast handlers with heavy ones — starvation shows up
+  as tail latency, not average CPU.
+
+Pinning and self-referential futures interact with this model too — see [Pin in practice](/blog/rust-pin-and-self-referential-structs).
+"#;
+
+const RAFT_MD: &str = r#"Raft exists because Paxos is correct and unreadable. Leader election is the piece
+everyone sketches on a whiteboard and then gets subtly wrong in code.
+
+## Roles and terms
+
+Each server is follower, candidate, or leader. **Terms** are logical clocks — a stale
+leader's writes must be rejected once a newer term has begun.
+
+## Election in one pass
+
+:::timeline
+1 Follower times out (no heartbeat from leader) → becomes **candidate**, increments term, votes for self.
+2 Sends `RequestVote` RPCs to peers; needs a **majority** to win.
+3 Winner becomes leader; sends heartbeats; followers accept append entries.
+4 Loser or split vote → new election after randomized timeout.
+:::
+
+## Split votes aren't failure
+
+If two candidates split the vote, *no* leader is chosen — and that's correct. Randomized
+election timeouts make another round likely to pick a single winner.
+
+```rust filename="election.rs" highlight="4-6"
+if self.state == State::Candidate && votes_received > quorum {
+    self.state = State::Leader;
+    self.send_heartbeats();
+}
+```
+
+:::callout ℹ "The mental model"
+Raft trades availability during partitions for understandability. You still need
+application-level conflict handling — consensus replicates an ordered log, not your
+business rules.
+:::
+
+## Where it shows up
+
+etcd, TiKV, and countless homework implementations. [NotiQ](/projects/notiq) uses
+Postgres advisory locks for scheduler leadership — a different tool, same *"one
+decider"* shape. For membership before consensus, see [SWIM gossip](/blog/swim-gossip-membership-basics).
+"#;
+
+const PIN_MD: &str = r#"`Pin` is the type that makes people bounce off async Rust. It's not ceremony for
+its own sake — it's how the language keeps **self-referential structs** (most async
+state machines) from moving in memory while pointers inside them still point inward.
+
+## The problem
+
+```rust filename="self-ref.rs" highlight="2-3"
+struct Bad {
+    slice: [u8; 4],
+    ptr: *const u8, // would point into slice if we built it wrong
+}
+```
+
+If `Bad` moved, `ptr` would dangle. Async futures often embed pointers into their
+own stack frame — same issue, bigger scale.
+
+## Pin breaks the move
+
+`Pin<P>` promises not to move the pointee (unless `Unpin`). The compiler then allows
+safe APIs that rely on a stable address.
+
+:::aside 🦀 "Ferris' hot tip"
+Most types are `Unpin` — ordinary structs move freely. Pin matters for generated future
+state machines and manual self-referential code. You'll feel it in `async` traits and
+some stream adapters long before you write Pin yourself.
+:::
+
+## Practical guidance
+
+:::cards
+:::card stack "When you need Pin" "owns: stable address"
+- async state machines
+- intrusive lists / self-referential buffers
+If you're not building those, you probably import Pin because a trait requires it.
+:::
+:::card heap "When you don't" "owns: everyday Rust"
+- `Box<T>` + no internal pointers into self
+- data moved by value only
+Don't Pin everything "just in case."
+:::
+:::
+
+For the concurrency story that makes all this matter, start with [lock-free part one](/blog/writing-a-lock-free-queue-from-scratch).
+"#;
+
+const BPF_MD: &str = r#"eBPF started as "run tiny programs in the kernel safely." For observability, **kprobes**
+let you attach at function entry/return and export histograms without a custom kernel
+module — until you overdo it and measure the observer more than the system.
+
+## What a kprobe gives you
+
+Attach to `tcp_sendmsg`, record timestamp delta to userspace, aggregate p99 latency.
+No recompile, no `printk` spam — verifier-checked bytecode instead.
+
+```c filename="latency.bpf.c" highlight="1"
+SEC("kprobe/tcp_sendmsg")
+int BPF_KPROBE(tcp_sendmsg_entry) {
+    // store start ts keyed by pid/tid
+    return 0;
+}
+```
+
+:::callout ⚠ "Gotcha"
+Probes run in kernel context on hot paths. Heavy maps, string formatting, or unbounded
+loops fail verification or cost more than the syscall you're measuring.
+:::
+
+## When BPF beats strace
+
+- Production-safe sampling at high QPS.
+- Aggregated metrics in-kernel (histograms, per-cgroup counts).
+- No stop-the-world attach to every process.
+
+When you need full argument capture or userspace stacks only, `perf` / `eBPF` stack
+walkers / `tokio-console` may be simpler starting points.
+
+:::aside 🦀 "Ferris' hot tip"
+Start with off-the-shelf tools (`bpftrace`, `bcc`) before writing C. Custom probes
+shine when you have a specific kernel boundary and a SLO to defend — not for hello world.
+:::
+
+Pair latency tracing with [reading EXPLAIN](/blog/reading-postgres-explain-analyze) on
+the database side — most "mystery slowness" is two hops, not one.
+"#;
+
+const SWIM_MD: &str = r#"Heartbeats through a central server don't scale: the coordinator becomes a SPoF and
+a fan-in bottleneck. **SWIM** (Scalable Weakly-consistent Infection-style Process group
+Membership) spreads failure detection with gossip — the same family [NotiQ](/projects/notiq)
+uses for worker membership.
+
+## Ping → ack → suspect
+
+Each node periodically picks a random peer and sends a **ping**. No ack within timeout?
+**Indirect probe**: ask other nodes to ping the target. Still silent? Mark **suspect**,
+then propagate via infection-style gossip.
+
+## The false-positive knob
+
+Aggressive timeouts catch failures fast but flag healthy nodes on slow networks.
+Conservative timeouts delay failover. There is no free lunch — only a tunable trade-off.
+
+:::callout ℹ "The mental model"
+SWIM gives you *eventually consistent membership* — not a linearizable registry.
+Your routing layer (consistent hash ring, load balancer) must tolerate brief disagreement.
+:::
+
+## Ops checklist
+
+:::timeline
+1 Set probe intervals from **p99 network RTT**, not mean.
+2 Cap gossip fan-out — infection-style, not broadcast storms.
+3 On suspect → confirm before draining — flapping nodes hurt more than slow detection.
+4 Log *why* a node was marked (direct vs indirect timeout) — postmortems need it.
+:::
+
+For where membership meets data placement, read [consistent hashing](/blog/consistent-hashing-virtual-nodes).
+For consensus *after* you know who's alive, [Raft election](/blog/raft-leader-election-walkthrough).
+"#;
+
+const CHECKOUT_MD: &str = r#"Logic bugs pay bounties when authorization holds but **business rules don't**. Checkout
+flows are gold: price, quantity, coupons, and shipping interact — and the UI is rarely
+the source of truth.
+
+## Classic shapes
+
+:::cards
+:::card cart "Negative quantity" "owns: cart arithmetic"
+- `-1` × price → credit
+- integer overflow on totals
+Server must recompute totals; never trust client JSON.
+:::
+:::card gateway "Coupon stacking" "owns: discount rules"
+- apply expired code via replay
+- stack incompatible promos via parameter pollution
+State machine for discounts, not nested `if`s in one handler.
+:::
+:::
+
+## How to test safely
+
+Capture the checkout API with two accounts. Replay with:
+
+- swapped `product_id` to a cheaper SKU while keeping displayed name metadata.
+- `quantity: 0` or fractional values if the schema is loose.
+- race double-submit on payment intent creation.
+
+:::callout ⚠ "Why this isn't IDOR"
+IDOR is "access someone else's object." Logic bugs are "access your own cart with
+rules the developer forgot." Both pay; the hunt looks different. See [IDOR patterns](/blog/idor-via-predictable-ids) for the other side.
+:::
+
+## Fix posture
+
+Single **pricing service** (or function) used by cart, checkout, and receipts. Property
+tests on invariants: total ≥ 0, discounts ≤ subtotal, inventory non-negative.
+"#;
+
+const MEMORY_ORDER_MD: &str = r#"The Rust memory model docs are precise and cold. On a hot path you need a smaller
+question: *what synchronization does this atomic actually guarantee?*
+
+This is part three of the [lock-free series](/blog/writing-a-lock-free-queue-from-scratch) —
+after [ABA/tagging](/blog/writing-a-lock-free-queue-from-scratch) and [reclamation](/blog/reclaiming-memory-hazard-pointers-vs-epochs).
+
+## The three you use daily
+
+:::cards
+:::card worker "Relaxed" "owns: atomicity only"
+- counters, statistics
+- no cross-thread ordering
+Cheapest. Don't use for publishing a pointer others will dereference.
+:::
+:::card queue "Acquire / Release" "owns: publish-subscribe"
+- Release store after writing data
+- Acquire load before reading it
+The default pattern for lock-free handoff.
+:::
+:::card ring "SeqCst" "owns: global order"
+- rare in app code
+- debugging heisenbugs
+Strongest, slowest. Reach for it when weaker orders fail and you need proof.
+:::
+:::
+
+## A handoff that works
+
+```rust filename="handoff.rs" highlight="4-5"
+data.write(payload);
+ready.store(true, Ordering::Release);
+
+if ready.load(Ordering::Acquire) {
+    let v = data.read();
+}
+```
+
+:::aside 🦀 "Ferris' hot tip"
+If you're mixing atomics and mutexes on the same data, stop — pick one story. Hybrid
+"mostly lock-free" code is where ordering bugs hide for months.
+:::
+
+## When to read the spec
+
+Before you ship a general-purpose concurrent crate. Before you argue on Twitter.
+For application queues and metrics, Acquire/Release + `crossbeam` gets you home.
+"#;
+
+const POOLING_MD: &str = r#"Connection poolers (PgBouncer, RDS Proxy, serverless Postgres) fix "too many connections"
+and create a new class of **works on my laptop** bugs. Most of them involve transactions,
+prepared statements, and which pool *mode* you're in.
+
+## Session vs transaction pooling
+
+**Session mode** — one server connection per client for the whole client session. Safest;
+least multiplexing.
+
+**Transaction mode** — server connection assigned only for the duration of a transaction.
+Between transactions, session state (prepared statements, `SET`, temp tables) is lost or
+shared wrongly.
+
+:::callout ⚠ "Gotcha"
+ORMs that prepare statements implicitly + PgBouncer transaction pooling = `prepared statement
+"foo" does not exist` at 3am under load.
+:::
+
+## Symptoms under load
+
+:::timeline
+1 Intermittent `42P05` / missing prepared statement — pool mode mismatch.
+2 `SET search_path` or timezone "randomly" wrong — session state leaked across clients.
+3 Idle-in-transaction timeouts — long requests hold pool slots; everything else queues.
+4 Planner surprises after deploy — new query shapes without updated stats (see [EXPLAIN](/blog/reading-postgres-explain-analyze)).
+:::
+
+## Practical defaults
+
+- App servers → **session mode** unless you truly understand transaction pooling.
+- Use PgBouncer `pool_mode = session` for ORMs; transaction mode for stateless micro-handlers only.
+- Size pools from **Postgres `max_connections`**, not "one pool entry per thread."
+
+[SKIP LOCKED workers](/blog/what-skip-locked-actually-does) still need sane pool sizing —
+a fast dequeue loop with 500 idle connections helps nobody.
 "#;
 
 // ─────────────────────────── NotiQ project (recreates notiq_portfolio.html) ─────
@@ -940,16 +1580,20 @@ nmap | Network scanning and service fingerprinting. | active
 
 const NOW_MD: &str = r#"## Building
 
-Shipping the third portfolio project — **db-labs**, a from-scratch DBMS in Rust —
-while finishing **genuine.dev**. NotiQ is done. Buffer pool manager is the
-current build focus.
+Finishing **genuine.dev** — the site you're reading — and the four-project Rust
+backend roadmap that backs up the portfolio. NotiQ is done. Working through the
+e-commerce platform next.
 
 :::now-status
-current project | db-labs | from-scratch DBMS · P1 buffer pool | purple
+current project | genuine.dev | portfolio + blog, this site | acc
 job hunt | Jan 2027 | targeting DB-infra companies | warn
 :::
 
-:::portfolio-projects
+:::now-progress
+NotiQ | 100 | acc
+genuine.dev | 70 | blue
+e-commerce platform | 0 | purple
+Raft KV store | 0 | warn
 :::
 
 ## Learning

@@ -1,5 +1,6 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
+import { NodeSelection } from "@tiptap/pm/state";
 
 import { DirectiveView } from "./DirectiveView";
 import { directiveName, registerDirectiveRule } from "./markdownDirectives";
@@ -54,6 +55,20 @@ export const Directive = Node.create({
 
   addNodeView() {
     return ReactNodeViewRenderer(DirectiveView);
+  },
+
+  addKeyboardShortcuts() {
+    const removeWhenSelected = ({ editor }: { editor: import("@tiptap/core").Editor }) => {
+      const { selection } = editor.state;
+      if (selection instanceof NodeSelection && selection.node.type.name === this.name) {
+        return editor.commands.deleteSelection();
+      }
+      return false;
+    };
+    return {
+      Backspace: removeWhenSelected,
+      Delete: removeWhenSelected,
+    };
   },
 
   addStorage() {

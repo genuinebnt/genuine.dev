@@ -20,6 +20,8 @@ pub struct AdminItem {
     title: String,
     kind: String,
     status: String,
+    published_at: Option<String>,
+    metadata: serde_json::Value,
 }
 
 #[derive(Serialize)]
@@ -60,6 +62,8 @@ pub async fn list(
                 title: d.title,
                 kind: d.kind.as_str().to_owned(),
                 status: d.status.as_str().to_owned(),
+                published_at: d.published_at.map(|t| t.date().to_string()),
+                metadata: d.metadata,
             })
             .collect(),
     ))
@@ -86,11 +90,37 @@ pub async fn get(
     .ok_or(ApiError::NotFound)
 }
 
+#[derive(Serialize)]
+pub struct SaveOut {
+    slug: String,
+}
+
+#[derive(Deserialize)]
+pub struct PreviewReq {
+    body: String,
+}
+
+#[derive(Serialize)]
+pub struct PreviewOut {
+    html: String,
+}
+
+/// Renders markdown through the same pipeline as publish — preview parity for the admin editor.
+pub async fn preview(
+    _user: AuthUser,
+    Json(req): Json<PreviewReq>,
+) -> Result<Json<PreviewOut>, ApiError> {
+    let rendered = MarkdownRenderer::new().render(&req.body);
+    Ok(Json(PreviewOut {
+        html: rendered.html,
+    }))
+}
+
 pub async fn save(
     _user: AuthUser,
     State(pool): State<PgPool>,
     Json(req): Json<SaveReq>,
-) -> Result<StatusCode, ApiError> {
+) -> Result<Json<SaveOut>, ApiError> {
     let slug = if req.slug.trim().is_empty() {
         Slug::from_title(&req.title)
     } else {
@@ -124,14 +154,17 @@ pub async fn save(
         status,
         cover_image,
         metadata,
-        published_at: matches!(status, Status::Published).then(time::OffsetDateTime::now_utc),
+        published_at: match status {
+            Status::Published => Some(time::OffsetDateTime::now_utc()),
+            Status::Draft => None,
+        },
     };
 
     PgContentRepository::new(pool.clone()).upsert(&doc).await?;
     if matches!(doc.status, Status::Published) {
         crate::infra::subscribers::notify_new_post(&pool, &doc.title, &doc.slug).await;
     }
-    Ok(StatusCode::NO_CONTENT)
+    Ok(Json(SaveOut { slug: doc.slug }))
 }
 
 pub async fn delete(
@@ -141,6 +174,43 @@ pub async fn delete(
 ) -> Result<StatusCode, ApiError> {
     PgContentRepository::new(pool).delete(&slug).await?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// Clone a document as a new draft with a unique `-copy` slug.
+pub async fn duplicate(
+    _user: AuthUser,
+    State(pool): State<PgPool>,
+    Path(slug): Path<String>,
+) -> Result<Json<SaveOut>, ApiError> {
+    let repo = PgContentRepository::new(pool.clone());
+    let source = repo.get_by_slug(&slug).await?.ok_or(ApiError::NotFound)?;
+
+    let base = format!("{}-copy", source.slug);
+    let mut candidate = base.clone();
+    let mut n = 2u32;
+    while repo.get_by_slug(&candidate).await?.is_some() {
+        candidate = format!("{base}-{n}");
+        n += 1;
+    }
+
+    let rendered = MarkdownRenderer::new().render(&source.body_markdown);
+    let doc = Document {
+        id: uuid::Uuid::now_v7(),
+        slug: candidate.clone(),
+        kind: source.kind,
+        title: format!("{} (copy)", source.title),
+        summary: source.summary,
+        body_markdown: source.body_markdown,
+        body_html: rendered.html,
+        reading_min: rendered.reading_min,
+        status: Status::Draft,
+        cover_image: source.cover_image,
+        metadata: source.metadata,
+        published_at: None,
+    };
+
+    repo.upsert(&doc).await?;
+    Ok(Json(SaveOut { slug: candidate }))
 }
 
 // ── Image upload ────────────────────────────────────────────────────────────────

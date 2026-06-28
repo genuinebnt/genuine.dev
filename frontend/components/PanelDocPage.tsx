@@ -63,7 +63,9 @@ export function PanelDocPage({
             <a
               key={section.id}
               href={`#${section.id}`}
-              className={`now-toc-link${active === section.label ? " now-cur" : ""}`}
+              className={`now-toc-link${active === section.label ? " now-cur" : ""}${
+                section.level === 3 ? " now-toc-sub" : ""
+              }`}
               onClick={(e) => {
                 e.preventDefault();
                 scrollToSection(section.id, section.label);

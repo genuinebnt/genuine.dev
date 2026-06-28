@@ -22,6 +22,9 @@ export type PostDetail = PostItem & {
   cover_image: string | null;
   prev: PostNavItem | null;
   next: PostNavItem | null;
+  related?: PostNavItem[];
+  series_prev?: PostNavItem | null;
+  series_next?: PostNavItem | null;
 };
 
 async function get<T>(path: string): Promise<T> {

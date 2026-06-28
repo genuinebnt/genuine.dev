@@ -93,7 +93,10 @@ impl ContentRepository for PgContentRepository {
                body_markdown = excluded.body_markdown, body_html = excluded.body_html, \
                reading_min = excluded.reading_min, status = excluded.status, \
                cover_image = excluded.cover_image, metadata = excluded.metadata, \
-               published_at = coalesce(documents.published_at, excluded.published_at), \
+               published_at = case
+                 when excluded.status = 'published' then coalesce(documents.published_at, excluded.published_at, now())
+                 else null
+               end, \
                updated_at = now()",
         )
         .bind(doc.id)
@@ -225,6 +228,64 @@ pub async fn get_adjacent_posts(
          where status = 'published' and kind = 'post' \
            and published_at > (select published_at from documents where slug = $1 and status = 'published') \
          order by published_at asc limit 1",
+    )
+    .bind(slug)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok((prev, next))
+}
+
+/// Up to four published posts sharing at least one tag with the given slug.
+pub async fn get_related_posts(
+    pool: &PgPool,
+    slug: &str,
+    limit: i64,
+) -> Result<Vec<AdjacentPost>, AppError> {
+    let rows = sqlx::query_as::<_, AdjacentPost>(
+        "select d.slug, d.title from documents d \
+         where d.status = 'published' and d.kind = 'post' and d.slug != $1 \
+           and exists ( \
+             select 1 from jsonb_array_elements_text(d.metadata->'tags') dt(tag) \
+             where dt.tag in ( \
+               select jsonb_array_elements_text(coalesce(src.metadata->'tags', '[]'::jsonb)) \
+               from documents src where src.slug = $1 \
+             ) \
+           ) \
+         order by d.published_at desc nulls last \
+         limit $2",
+    )
+    .bind(slug)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// Previous/next posts in the same series (by metadata.series.name + part).
+pub async fn get_series_neighbors(
+    pool: &PgPool,
+    slug: &str,
+) -> Result<(Option<AdjacentPost>, Option<AdjacentPost>), AppError> {
+    let prev = sqlx::query_as::<_, AdjacentPost>(
+        "select d.slug, d.title from documents d \
+         join documents cur on cur.slug = $1 \
+         where d.status = 'published' and d.kind = 'post' \
+           and d.metadata->'series'->>'name' = cur.metadata->'series'->>'name' \
+           and (d.metadata->'series'->>'part')::int < (cur.metadata->'series'->>'part')::int \
+         order by (d.metadata->'series'->>'part')::int desc limit 1",
+    )
+    .bind(slug)
+    .fetch_optional(pool)
+    .await?;
+
+    let next = sqlx::query_as::<_, AdjacentPost>(
+        "select d.slug, d.title from documents d \
+         join documents cur on cur.slug = $1 \
+         where d.status = 'published' and d.kind = 'post' \
+           and d.metadata->'series'->>'name' = cur.metadata->'series'->>'name' \
+           and (d.metadata->'series'->>'part')::int > (cur.metadata->'series'->>'part')::int \
+         order by (d.metadata->'series'->>'part')::int asc limit 1",
     )
     .bind(slug)
     .fetch_optional(pool)

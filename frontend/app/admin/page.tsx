@@ -1,28 +1,47 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { adminDelete, adminList, adminSetStatus, getToken, type AdminItem } from "../../lib/auth";
-import { isAdminEditable, publicDocPath } from "../../lib/cmsPages";
+import {
+  adminRowAccent,
+  adminRowDateDisplay,
+  adminRowTags,
+  adminRowTopic,
+  adminTagsInUse,
+  applyAdminSearch,
+  applyTagFilter,
+  effectiveStatus,
+  filterAdminRows,
+  filterFromSearchParams,
+  statusBadgeClass,
+  summarizeAdminStats,
+  type AdminFilter,
+} from "../../lib/adminDocs";
+import { topicColor } from "../../lib/topic";
+import {
+  ADMIN_PAGE_SIZE,
+  clampPage,
+  paginateSlice,
+  parsePageParam,
+  writePageQuery,
+} from "../../lib/pagination";
+import AdminLogout from "../../components/AdminLogout";
+import UiCheckbox from "../../components/ui/UiCheckbox";
+import Pagination from "../../components/ui/Pagination";
+import { isAdminEditable, isStaticCaseStudyRow, publicDocPath } from "../../lib/cmsPages";
 import { PageHeader } from "../../components/ui/PageHeader";
-
-const FILTERS = ["all", "posts", "projects", "pages", "drafts", "published"] as const;
-type Filter = (typeof FILTERS)[number];
-
-function statusBadgeClass(status: string): string {
-  switch (status.toLowerCase()) {
-    case "published": return "published";
-    case "draft": return "draft";
-    case "scheduled": return "scheduled";
-    default: return "draft";
-  }
-}
 
 export default function Admin() {
   const router = useRouter();
   const [rows, setRows] = useState<AdminItem[] | null>(null);
-  const [activeFilter, setActiveFilter] = useState<Filter>("all");
+  const [activeFilter, setActiveFilter] = useState<AdminFilter>("all");
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const skipFilterReset = useRef(true);
 
   function load() {
     adminList().then(setRows).catch(() => router.push("/admin/login"));
@@ -37,39 +56,133 @@ export default function Admin() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = filterFromSearchParams(params);
+    if (fromUrl) setActiveFilter(fromUrl);
+    const topic = params.get("topic");
+    const tag = params.get("tag");
+    if (tag) setActiveTag(tag);
+    else if (topic) setActiveTag(topic);
+    setPage(parsePageParam(params.get("page")));
+  }, []);
+
+  useEffect(() => {
+    if (skipFilterReset.current) {
+      skipFilterReset.current = false;
+      return;
+    }
+    setPage(1);
+    setSelected(new Set());
+    writePageQuery(1);
+  }, [activeFilter, activeTag, search]);
+
   async function del(slug: string) {
     if (!confirm(`Delete "${slug}"? This cannot be undone.`)) return;
-    try { await adminDelete(slug); load(); }
-    catch { router.push("/admin/login"); }
+    try {
+      await adminDelete(slug);
+      load();
+    } catch {
+      router.push("/admin/login");
+    }
   }
 
   async function setStatus(slug: string, status: string) {
-    try { await adminSetStatus(slug, status); load(); }
-    catch { router.push("/admin/login"); }
+    try {
+      await adminSetStatus(slug, status);
+      load();
+    } catch {
+      router.push("/admin/login");
+    }
   }
 
   const filtered = useMemo(() => {
     if (!rows) return [];
-    switch (activeFilter) {
-      case "posts": return rows.filter((r) => r.kind === "post");
-      case "projects": return rows.filter((r) => r.kind === "project");
-      case "pages": return rows.filter((r) => r.kind === "page");
-      case "drafts": return rows.filter((r) => r.status === "draft");
-      case "published": return rows.filter((r) => r.status === "published");
-      default: return rows;
-    }
-  }, [rows, activeFilter]);
+    let list = filterAdminRows(rows, activeFilter);
+    list = applyTagFilter(list, activeTag);
+    return applyAdminSearch(list, search);
+  }, [rows, activeFilter, activeTag, search]);
 
-  const stats = useMemo(() => {
-    if (!rows) return { total: 0, published: 0, drafts: 0, projects: 0, pages: 0 };
-    return {
-      total: rows.length,
-      published: rows.filter((r) => r.status === "published").length,
-      drafts: rows.filter((r) => r.status === "draft").length,
-      projects: rows.filter((r) => r.kind === "project").length,
-      pages: rows.filter((r) => r.kind === "page").length,
-    };
-  }, [rows]);
+  const pageRows = useMemo(
+    () => paginateSlice(filtered, page, ADMIN_PAGE_SIZE),
+    [filtered, page],
+  );
+
+  useEffect(() => {
+    setPage((current) => clampPage(current, filtered.length, ADMIN_PAGE_SIZE));
+  }, [filtered.length]);
+
+  function goToPage(next: number) {
+    const clamped = clampPage(next, filtered.length, ADMIN_PAGE_SIZE);
+    setPage(clamped);
+    writePageQuery(clamped);
+    setSelected(new Set());
+  }
+
+  const stats = useMemo(
+    () => (rows ? summarizeAdminStats(rows) : { total: 0, published: 0, drafts: 0, scheduled: 0, projects: 0, pages: 0 }),
+    [rows],
+  );
+
+  const tagsInUse = useMemo(() => (rows ? adminTagsInUse(rows) : []), [rows]);
+
+  const selectableOnPage = useMemo(
+    () => pageRows.filter((r) => !isStaticCaseStudyRow(r)),
+    [pageRows],
+  );
+
+  const statCards: { filter: AdminFilter; value: number; valueClass: string; label: string }[] = [
+    { filter: "published", value: stats.published, valueClass: "acc", label: "published" },
+    { filter: "drafts", value: stats.drafts, valueClass: "warn", label: "drafts" },
+    { filter: "scheduled", value: stats.scheduled, valueClass: "blue", label: "scheduled" },
+    { filter: "all", value: stats.total, valueClass: "", label: "total docs" },
+    { filter: "projects", value: stats.projects, valueClass: "blue", label: "projects" },
+    { filter: "pages", value: stats.pages, valueClass: "blue", label: "pages" },
+  ];
+
+  function toggleSelect(slug: string) {
+    const row = rows?.find((r) => r.slug === slug);
+    if (row && isStaticCaseStudyRow(row)) return;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selected.size === selectableOnPage.length && selectableOnPage.length > 0) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(selectableOnPage.map((r) => r.slug)));
+    }
+  }
+
+  async function bulkSetStatus(status: string) {
+    for (const slug of selected) {
+      try {
+        await adminSetStatus(slug, status);
+      } catch {
+        /* continue */
+      }
+    }
+    setSelected(new Set());
+    load();
+  }
+
+  async function bulkDelete() {
+    if (!confirm(`Delete ${selected.size} item(s)?`)) return;
+    for (const slug of selected) {
+      try {
+        await adminDelete(slug);
+      } catch {
+        /* continue */
+      }
+    }
+    setSelected(new Set());
+    load();
+  }
 
   return (
     <div className="admin-page">
@@ -77,14 +190,19 @@ export default function Admin() {
         eyebrow="Admin"
         title="Content"
         action={
-          <>
-            <Link className="btn" href="/admin/settings/theme" style={{ marginRight: "8px" }}>
-              ◑ Theme
+          <div className="admin-toolbar">
+            <div className="searchbar">
+              <span style={{ color: "var(--faint)", fontFamily: "var(--mono)", fontSize: "12px" }}>⌕</span>
+              <input placeholder="search content…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+            <Link className="btn" href="/admin/settings">
+              ⚙ Settings
             </Link>
             <Link className="btn" href="/admin/new">
               + New
             </Link>
-          </>
+            <AdminLogout />
+          </div>
         }
       />
 
@@ -92,108 +210,183 @@ export default function Admin() {
         <p className="muted">Loading…</p>
       ) : (
         <>
-          {/* Stat cards */}
           <div className="stat-cards">
-            <div className="scard">
-              <div className="sc-val">{stats.total}</div>
-              <div className="sc-lab">total docs</div>
-            </div>
-            <div className="scard">
-              <div className="sc-val acc">{stats.published}</div>
-              <div className="sc-lab">published</div>
-            </div>
-            <div className="scard">
-              <div className="sc-val warn">{stats.drafts}</div>
-              <div className="sc-lab">drafts</div>
-            </div>
-            <div className="scard">
-              <div className="sc-val blue">{stats.projects}</div>
-              <div className="sc-lab">projects</div>
-            </div>
-            <div className="scard">
-              <div className="sc-val blue">{stats.pages}</div>
-              <div className="sc-lab">pages</div>
-            </div>
-          </div>
-
-          {/* Filter chips */}
-          <div className="admin-filter-row">
-            {FILTERS.map((f) => (
-              <span
-                key={f}
-                className={`chip clickable${activeFilter === f ? " active" : ""}`}
-                onClick={() => setActiveFilter(f)}
+            {statCards.map((card) => (
+              <button
+                key={card.filter}
+                type="button"
+                className={`scard clickable${activeFilter === card.filter ? " active" : ""}`}
+                onClick={() => setActiveFilter(card.filter)}
               >
-                {f}
-              </span>
+                <div className={`sc-val ${card.valueClass}`.trim()}>{card.value}</div>
+                <div className="sc-lab">{card.label}</div>
+              </button>
             ))}
           </div>
 
-          {/* Post table */}
-          <div className="table-scroll">
-          <table className="post-table">
-            <thead>
-              <tr>
-                <th>title / slug</th>
-                <th>kind</th>
-                <th>status</th>
-                <th style={{ textAlign: "right" }}>actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r) => (
-                <tr key={r.slug}>
-                  <td>
-                    <div className="pt-title">{r.title}</div>
-                    <div className="pt-tags">
-                      <span className="pt-tag">{r.slug}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="muted" style={{ fontFamily: "var(--mono)", fontSize: "11px" }}>
-                      {r.kind}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`status-badge ${statusBadgeClass(r.status)}`}>
-                      {r.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="row-actions">
-                      {isAdminEditable(r) ? (
-                        <Link className="ra" href={`/admin/edit/${r.slug}`}>edit</Link>
-                      ) : (
-                        <span className="muted" style={{ fontFamily: "var(--mono)", fontSize: "11px" }}>
-                          static case study
-                        </span>
-                      )}
-                      {(() => {
-                        const live = publicDocPath(r);
-                        if (!live) return null;
-                        if (r.status === "draft") {
-                          return (
-                            <Link className="ra" href={live} target="_blank">preview</Link>
-                          );
-                        }
-                        return (
-                          <Link className="ra" href={live} target="_blank">view</Link>
-                        );
-                      })()}
-                      {r.status === "published" && (
-                        <button className="ra" onClick={() => setStatus(r.slug, "draft")}>unpublish</button>
-                      )}
-                      {r.status === "scheduled" && (
-                        <button className="ra" onClick={() => setStatus(r.slug, "draft")}>unschedule</button>
-                      )}
-                      <button className="ra del" onClick={() => del(r.slug)}>delete</button>
-                    </div>
-                  </td>
-                </tr>
+          {tagsInUse.length > 0 && (
+            <div className="admin-filter-row">
+              {tagsInUse.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className={`chip clickable${activeTag === t ? " active" : ""}`}
+                  onClick={() => setActiveTag(activeTag === t ? null : t)}
+                >
+                  {t}
+                </button>
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
+
+          {selected.size > 0 && (
+            <div className="admin-bulk-bar">
+              <span className="admin-bulk-count">{selected.size} selected</span>
+              <button type="button" className="ts-btn" onClick={() => void bulkSetStatus("published")}>
+                Publish
+              </button>
+              <button type="button" className="ts-btn" onClick={() => void bulkSetStatus("draft")}>
+                Unpublish
+              </button>
+              <button type="button" className="ts-btn" onClick={() => void bulkDelete()}>
+                Delete
+              </button>
+              <button type="button" className="ts-btn ts-ghost-inline" onClick={() => setSelected(new Set())}>
+                Clear
+              </button>
+            </div>
+          )}
+
+          <div className="table-scroll">
+            <table className="post-table">
+              <thead>
+                <tr>
+                  <th className="post-table-check">
+                    <UiCheckbox
+                      checked={selectableOnPage.length > 0 && selected.size === selectableOnPage.length}
+                      onChange={() => toggleSelectAll()}
+                      aria-label="Select all on page"
+                    />
+                  </th>
+                  <th>title / tags</th>
+                  <th>topic</th>
+                  <th>kind</th>
+                  <th>status</th>
+                  <th>date</th>
+                  <th style={{ textAlign: "right" }}>actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.map((r) => {
+                  const topic = adminRowTopic(r);
+                  const tags = adminRowTags(r);
+                  const displayStatus = effectiveStatus(r);
+                  const date = adminRowDateDisplay(r);
+                  const accent = adminRowAccent(r);
+                  const staticRow = isStaticCaseStudyRow(r);
+                  const editable = isAdminEditable(r);
+                  const live = publicDocPath(r);
+                  return (
+                    <tr key={r.slug} className={selected.has(r.slug) ? "row-selected" : undefined}>
+                      <td className="post-table-check">
+                        <UiCheckbox
+                          checked={selected.has(r.slug)}
+                          onChange={() => toggleSelect(r.slug)}
+                          disabled={staticRow}
+                          aria-label={`Select ${r.slug}`}
+                        />
+                      </td>
+                      <td className="pt-cell">
+                        <span
+                          className={`admin-row-bar topic-bar${accent.cssClass ? ` ${accent.cssClass}` : ""}`}
+                          style={accent.cssClass ? undefined : { background: accent.color }}
+                          aria-hidden
+                        />
+                        <div className="pt-cell-inner">
+                          <div className="pt-title">{r.title}</div>
+                          <div className="pt-slug">{r.slug}</div>
+                          {tags.length > 0 && (
+                            <div className="pt-tags">
+                              {tags.map((t) => (
+                                <button
+                                  key={t}
+                                  type="button"
+                                  className={`pt-tag clickable${activeTag === t ? " active" : ""}`}
+                                  onClick={() => setActiveTag(activeTag === t ? null : t)}
+                                >
+                                  {t}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        {topic ? (
+                          <span className="admin-topic" style={{ color: topicColor(topic) }}>
+                            {topic}
+                          </span>
+                        ) : (
+                          <span className="admin-topic empty">—</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className="admin-kind">{r.kind}</span>
+                        {staticRow && <span className="kind-badge static">static</span>}
+                      </td>
+                      <td>
+                        <span className={`status-badge ${statusBadgeClass(displayStatus)}`}>{displayStatus}</span>
+                      </td>
+                      <td>
+                        <span className={`admin-date ${date.tone}`}>{date.label}</span>
+                      </td>
+                      <td>
+                        <div className="row-actions">
+                          {editable && (
+                            <Link className="ra" href={`/admin/edit/${r.slug}`}>
+                              edit
+                            </Link>
+                          )}
+                          {live &&
+                            (displayStatus === "draft" || displayStatus === "scheduled" ? (
+                              <Link className="ra" href={live} target="_blank">
+                                preview
+                              </Link>
+                            ) : (
+                              <Link className="ra" href={live} target="_blank">
+                                view
+                              </Link>
+                            ))}
+                          {editable && displayStatus === "published" && (
+                            <button className="ra" type="button" onClick={() => setStatus(r.slug, "draft")}>
+                              unpublish
+                            </button>
+                          )}
+                          {editable && displayStatus === "scheduled" && (
+                            <button className="ra" type="button" onClick={() => setStatus(r.slug, "draft")}>
+                              unschedule
+                            </button>
+                          )}
+                          {editable && (
+                            <button className="ra del" type="button" onClick={() => del(r.slug)}>
+                              delete
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
+
+          <Pagination
+            page={page}
+            totalItems={filtered.length}
+            pageSize={ADMIN_PAGE_SIZE}
+            onPageChange={goToPage}
+          />
 
           {filtered.length === 0 && (
             <p className="muted" style={{ padding: "16px 0", fontFamily: "var(--mono)", fontSize: "12px" }}>

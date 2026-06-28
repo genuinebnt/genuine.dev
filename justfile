@@ -55,6 +55,11 @@ check:
     cargo fmt --manifest-path backend/Cargo.toml --all -- --check
     cargo clippy --manifest-path backend/Cargo.toml -- -D warnings
     cargo test --manifest-path backend/Cargo.toml
+    cd frontend && npm run test
+
+# Unit tests for frontend lib (Vitest)
+test-frontend:
+    cd frontend && npm run test
 
 # Next.js production build check
 build-frontend:

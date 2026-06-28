@@ -1,19 +1,17 @@
 import "../styles/globals.scss";
 import type { Metadata } from "next";
-import Script from "next/script";
 import Nav from "../components/Nav";
 import AppChrome from "../components/AppChrome";
 import CommandPalette from "../components/CommandPalette";
 import ThemeRoute from "../components/ThemeRoute";
-import { themeBootScript } from "../lib/theme";
+import ThemeBootScript from "../components/ThemeBootScript";
+import SiteEnhancements from "../components/SiteEnhancements";
+import KeyboardShortcuts from "../components/KeyboardShortcuts";
 
 export const metadata: Metadata = {
   title: "genuine.dev",
   description: "Writing on Rust, systems, and security.",
 };
-
-// Applies saved site theme + per-page overrides before first paint.
-const THEME_JS = themeBootScript();
 
 export default function RootLayout({
   children,
@@ -30,15 +28,13 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <Script
-          id="theme-boot"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: THEME_JS }}
-        />
+        <ThemeBootScript />
         <ThemeRoute />
+        <SiteEnhancements />
         <Nav />
         <AppChrome>{children}</AppChrome>
         <CommandPalette />
+        <KeyboardShortcuts />
       </body>
     </html>
   );

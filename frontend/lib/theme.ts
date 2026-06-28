@@ -20,7 +20,7 @@ export const PAGE_OVERRIDE_DEFS: Array<{
     key: "projects",
     page: "Projects",
     url: "genuine.dev/projects",
-    defaultOverride: { theme: "midnight", accent: "#7c8cff" },
+    defaultOverride: { accent: "#7c8cff" },
   },
   { key: "about", page: "About", url: "genuine.dev/about" },
   {
@@ -181,6 +181,54 @@ export function clearPostTopic() {
   document.documentElement.removeAttribute("data-topic");
 }
 
+function accentAlpha(hex: string, alpha: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
+
+/** Live preview only — does not touch localStorage (admin theme settings). */
+export function previewTheme(theme: ThemeKey) {
+  document.documentElement.setAttribute("data-theme", theme);
+}
+
+/** Live preview only — does not touch localStorage (admin theme settings). */
+export function previewAccent(hex: string) {
+  const root = document.documentElement;
+  root.style.setProperty("--acc", hex);
+  root.style.setProperty("--acc-bg", accentAlpha(hex, 0.08));
+  root.style.setProperty("--acc-border", accentAlpha(hex, 0.25));
+}
+
+/** Persist site theme + accent to localStorage and the DOM (public chrome). */
+export function persistSiteTheme(theme: ThemeKey, accent: string) {
+  localStorage.setItem(STORAGE.theme, theme);
+  localStorage.setItem(STORAGE.accent, accent);
+  window.__setTheme?.(theme);
+  window.__setAccent?.(accent);
+}
+
+export type ThemeBundle = {
+  version: 1;
+  theme: ThemeKey;
+  accent: string;
+  pageOverrides: Partial<Record<PageOverrideKey, PageOverride | null>>;
+};
+
+export function exportThemeBundle(): ThemeBundle {
+  return {
+    version: 1,
+    theme: (localStorage.getItem(STORAGE.theme) as ThemeKey) || "dark",
+    accent: localStorage.getItem(STORAGE.accent) ?? "#00d4a4",
+    pageOverrides: readStoredOverrides(),
+  };
+}
+
+export function importThemeBundle(bundle: ThemeBundle) {
+  if (!isThemeKey(bundle.theme)) throw new Error("Invalid theme in bundle");
+  persistSiteTheme(bundle.theme, bundle.accent);
+  writePageOverrides(bundle.pageOverrides ?? {});
+}
+
 /** Inline boot script — keeps theme/accent/page overrides in sync before first paint. */
 export function themeBootScript(): string {
   return `(function(){
@@ -200,10 +248,10 @@ function __readOverrides(){
   try{
     var raw=localStorage.getItem('pageThemeOverrides');
     if(!raw){
-      return {projects:{theme:'midnight',accent:'#7c8cff'},posts:{accent:'per-topic'}};
+      return {projects:{accent:'#7c8cff'},posts:{accent:'per-topic'}};
     }
     var stored=JSON.parse(raw);
-    var defs={projects:{theme:'midnight',accent:'#7c8cff'},posts:{accent:'per-topic'}};
+    var defs={projects:{accent:'#7c8cff'},posts:{accent:'per-topic'}};
     var out={};
     for(var k in defs){if(defs.hasOwnProperty(k))out[k]=defs[k];}
     for(var k2 in stored){
@@ -211,7 +259,7 @@ function __readOverrides(){
       if(stored[k2]===null){delete out[k2];}else{out[k2]=stored[k2];}
     }
     return out;
-  }catch(e){return {projects:{theme:'midnight',accent:'#7c8cff'},posts:{accent:'per-topic'}};}
+  }catch(e){return {projects:{accent:'#7c8cff'},posts:{accent:'per-topic'}};}
 }
 function __applyRouteTheme(path){
   if(path.indexOf('/admin')===0)return;

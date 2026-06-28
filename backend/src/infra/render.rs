@@ -8,8 +8,9 @@
 //! Directives supported (mirrors `ui_mockups.html` + `notiq_portfolio.html`):
 //!   aside, callout, cards (+ card), matrix (+ mrow), accordion (+ phase),
 //!   grid (+ gitem), signals (+ signal), tabs (+ tab, tab-panel), timeline (+ tl),
-//!   uses-section, now-status, now-chips, now-reading, portfolio-projects,
-//!   eyebrow, meta-pills, home-divider, featured-articles, featured-projects.
+//!   uses-section, now-status, now-progress, now-chips, now-reading, portfolio-projects,
+//!   eyebrow, meta-pills, home-divider, featured-articles, featured-projects,
+//!   mermaid, math (display math block for client KaTeX).
 //!
 //! Fenced code blocks are highlighted with syntect *before* the comrak pass and
 //! emitted as raw `.code` HTML (filename header, copy button, per-line numbers,
@@ -133,6 +134,7 @@ fn render_directive(name: &str, arg: &str, body: &str) -> String {
         "timeline" => render_timeline(body),
         "uses-section" => render_uses_section(arg, body),
         "now-status" => render_now_status(body),
+        "now-progress" => render_now_progress(body),
         "now-chips" => render_now_chips(body),
         "now-reading" => render_now_reading(body),
         "portfolio-projects" => {
@@ -144,6 +146,14 @@ fn render_directive(name: &str, arg: &str, body: &str) -> String {
         "home-divider" => render_home_divider(),
         "featured-articles" => render_featured_slot("articles", arg, "featured articles"),
         "featured-projects" => render_featured_slot("projects", arg, "selected projects"),
+        "mermaid" => format!(
+            r#"<div class="mermaid-wrap"><pre class="mermaid">{}</pre></div>"#,
+            escape_html(body.trim())
+        ),
+        "math" => format!(
+            r#"<div class="math-block" data-math="display">{}</div>"#,
+            escape_html(body.trim())
+        ),
         _ => {
             // Unknown directive — pass through as a blockquote so nothing is lost.
             format!("<blockquote><p><strong>{name}</strong>: {body}</p></blockquote>")
@@ -322,9 +332,7 @@ fn render_timeline(body: &str) -> String {
             r#"<div class="tl"><div class="ty">{year}</div><div class="tt"><b>{title}</b> <span>— {desc}</span></div></div>"#
         ));
     }
-    format!(
-        r#"<div class="section-label">timeline</div><div class="timeline">{items}</div>"#
-    )
+    format!(r#"<div class="section-label">timeline</div><div class="timeline">{items}</div>"#)
 }
 
 /// `:::uses-section #f0703c Languages` — gear list for `/uses`.
@@ -371,6 +379,7 @@ fn render_now_status(body: &str) -> String {
             _ => continue,
         };
         let val_class = match variant {
+            "acc" => " nsc-val-acc",
             "purple" => " nsc-val-purple",
             "warn" => " nsc-val-warn",
             _ => "",
@@ -380,6 +389,52 @@ fn render_now_status(body: &str) -> String {
         ));
     }
     format!(r#"<div class="now-status-grid">{cards}</div>"#)
+}
+
+/// `:::now-progress` — roadmap progress bars on `/now`.
+/// Lines: `label | percent | acc|blue|purple|warn`. Optional first line `# title` overrides the section label.
+fn render_now_progress(body: &str) -> String {
+    let mut lines: Vec<&str> = body
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect();
+    let mut title = "roadmap progress";
+    if let Some(first) = lines.first()
+        && let Some(rest) = first.strip_prefix('#')
+    {
+        title = rest.trim();
+        lines.remove(0);
+    }
+
+    let mut items = String::new();
+    for line in lines {
+        let parts: Vec<&str> = line.splitn(3, '|').map(str::trim).collect();
+        if parts.len() < 2 {
+            continue;
+        }
+        let label = parts[0];
+        let pct = parts[1]
+            .trim_end_matches('%')
+            .parse::<u32>()
+            .unwrap_or(0)
+            .min(100);
+        let color = match parts.get(2).copied().unwrap_or("acc") {
+            "blue" => "var(--blue)",
+            "purple" => "var(--purple)",
+            "warn" => "var(--warn)",
+            _ => "var(--acc)",
+        };
+        items.push_str(&format!(
+            r#"<div class="now-prog-item"><span class="npi-label">{label}</span><div class="npi-bar-wrap"><div class="npi-bar" style="width:{pct}%;background:{color};"></div></div><span class="npi-pct">{pct}%</span></div>"#,
+            label = escape_html(label),
+        ));
+    }
+
+    format!(
+        r#"<div class="now-prog-block"><div class="now-prog-label">{title}</div><div class="now-prog-list">{items}</div></div>"#,
+        title = escape_html(title),
+    )
 }
 
 /// `:::now-chips` — pill row; prefix line with `*` for accent styling.
@@ -425,7 +480,10 @@ fn render_now_reading(body: &str) -> String {
             escape_html(parts[3]),
         ));
     }
-    items
+    if items.is_empty() {
+        return items;
+    }
+    format!(r#"<div class="now-reading-list">{items}</div>"#)
 }
 
 /// `:::meta-pills` — label | value rows rendered as `.meta-pill` spans.
@@ -455,9 +513,7 @@ fn render_home_divider() -> String {
 
 fn render_featured_slot(slot: &str, arg: &str, default_label: &str) -> String {
     let label = if arg.is_empty() { default_label } else { arg };
-    format!(
-        r#"<div class="home-featured-slot" data-slot="{slot}" data-label="{label}"></div>"#
-    )
+    format!(r#"<div class="home-featured-slot" data-slot="{slot}" data-label="{label}"></div>"#)
 }
 
 // ── Sub-directive helper ──────────────────────────────────────────────────────
@@ -553,40 +609,57 @@ impl MarkdownRenderer {
             .unwrap_or_else(|| self.syntax_set.find_syntax_plain_text());
         let mut highlighter = HighlightLines::new(syntax, &self.theme);
 
+        let code = code.trim_end_matches('\n');
+        let line_count = code.lines().count().max(1);
+        let ln_width = line_count.to_string().len().max(2);
+
         let mut pre = String::new();
         for (i, raw_line) in LinesWithEndings::from(code).enumerate() {
             let line_no = i + 1;
-            let mut line_html = format!(r#"<span class="ln">{line_no}</span>"#);
+            let hl = if highlight.contains(&line_no) {
+                " hl"
+            } else {
+                ""
+            };
+            let mut line_html = format!(
+                r#"<span class="code-line{hl}" data-line="{line_no}"><span class="ln">{line_no}</span><span class="code-txt">"#
+            );
 
             let regions = highlighter
                 .highlight_line(raw_line, &self.syntax_set)
                 .unwrap_or_default();
+            let mut has_visible = false;
             for (style, text) in regions {
+                let chunk = text.trim_end_matches('\n');
+                if !chunk.is_empty() {
+                    has_visible = true;
+                }
                 let color = style.foreground;
                 line_html.push_str(&format!(
                     r#"<span style="color:#{:02x}{:02x}{:02x}">{}</span>"#,
                     color.r,
                     color.g,
                     color.b,
-                    escape_html(text.trim_end_matches('\n')),
+                    escape_html(chunk),
                 ));
             }
-
-            if highlight.contains(&line_no) {
-                pre.push_str(&format!(r#"<span class="hl">{line_html}</span>"#));
-            } else {
-                pre.push_str(&line_html);
+            if !has_visible {
+                line_html.push_str(r#"<span style="color:#c0c5ce">&nbsp;</span>"#);
             }
-            pre.push('\n');
+
+            line_html.push_str("</span></span>");
+            pre.push_str(&line_html);
         }
         let pre = pre.trim_end_matches('\n');
 
         let label = filename.unwrap_or(language);
         // Raw source lives in `data-copy` so the copy button never grabs line numbers.
+        // Newlines must be entity-encoded — literal breaks in attributes split comrak's HTML pass.
         format!(
-            r#"<div class="code"><div class="chead"><span class="cfile">{label}</span><button class="ccopy" data-copy="{copy}">copy</button></div><pre>{pre}</pre></div>"#,
+            r#"<div class="code"><div class="chead"><span class="cfile">{label}</span><button class="ccopy" data-copy="{copy}">copy</button></div><pre style="--code-ln-col:{ln_width}ch">{pre}</pre></div>"#,
             label = escape_html(&label),
-            copy = escape_html(code),
+            copy = encode_attr_value(code),
+            ln_width = ln_width,
         )
     }
 }
@@ -652,6 +725,11 @@ fn escape_html(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
+/// HTML attribute value: escape + keep newlines off the wire as `&#10;`.
+fn encode_attr_value(s: &str) -> String {
+    escape_html(s).replace('\r', "").replace('\n', "&#10;")
+}
+
 fn slug_id(s: &str) -> String {
     s.to_lowercase()
         .chars()
@@ -687,13 +765,30 @@ mod tests {
         let md = "```rust filename=\"queue.rs\" highlight=\"2\"\nlet a = 1;\nlet b = 2;\n```";
         let out = MarkdownRenderer::new().render(md);
         assert!(out.html.contains(r#"<span class="cfile">queue.rs</span>"#));
-        // Only the second line is wrapped for highlight.
-        assert_eq!(out.html.matches("class=\"hl\"").count(), 1);
-        // The copy payload carries the raw source, not the line-numbered markup.
-        assert!(out.html.contains(
-            r#"data-copy="let a = 1;
-let b = 2;""#
-        ));
+        assert!(out.html.contains(r#"class="code-line hl""#));
+        assert!(out.html.contains(r#"class="code-txt""#));
+        assert!(!out.html.contains("</div></p>"));
+        assert!(
+            out.html
+                .contains(r#"data-copy="let a = 1;&#10;let b = 2;""#)
+        );
+    }
+
+    #[test]
+    fn code_fence_blank_line_does_not_break_html() {
+        let md = r#"```rust filename="handoff.rs" highlight="4-5"
+data.write(payload);
+ready.store(true, Ordering::Release);
+
+if ready.load(Ordering::Acquire) {
+    let v = data.read();
+}
+```"#;
+        let out = MarkdownRenderer::new().render(md);
+        assert!(!out.html.contains("<p>if"));
+        assert!(!out.html.contains("</div></p>"));
+        assert!(out.html.contains("Ordering::Acquire"));
+        assert!(out.html.contains("code-line hl"));
     }
 
     #[test]
@@ -756,8 +851,7 @@ let b = 2;""#
 
     #[test]
     fn timeline_directive_renders_entries() {
-        let md =
-            ":::timeline\n2026 genuine.dev — built this site\n2025 NotiQ — Rust platform\n:::";
+        let md = ":::timeline\n2026 genuine.dev — built this site\n2025 NotiQ — Rust platform\n:::";
         let out = MarkdownRenderer::new().render(md);
         assert!(out.html.contains("class=\"section-label\">timeline</div>"));
         assert!(out.html.contains("class=\"timeline\""));
@@ -782,5 +876,32 @@ let b = 2;""#
         assert!(out.html.contains("data-slot=\"articles\""));
         assert!(out.html.contains("data-slot=\"projects\""));
         assert!(out.html.contains("data-label=\"selected projects\""));
+    }
+
+    #[test]
+    fn now_progress_directive_renders_roadmap_bars() {
+        let md = ":::now-progress\nNotiQ | 100 | acc\ngenuine.dev | 70 | blue\n:::";
+        let out = MarkdownRenderer::new().render(md);
+        assert!(out.html.contains("class=\"now-prog-block\""));
+        assert!(out.html.contains("roadmap progress"));
+        assert!(out.html.contains("width:100%"));
+        assert!(out.html.contains("width:70%"));
+        assert!(out.html.contains("NotiQ"));
+    }
+
+    #[test]
+    fn now_status_accent_variant_gets_acc_class() {
+        let md = ":::now-status\ncurrent project | genuine.dev | this site | acc\n:::";
+        let out = MarkdownRenderer::new().render(md);
+        assert!(out.html.contains("nsc-val-acc"));
+        assert!(out.html.contains("genuine.dev"));
+    }
+
+    #[test]
+    fn now_reading_directive_wraps_rows_in_spaced_list() {
+        let md = ":::now-reading\nvar(--acc) | Database Internals | Alex Petrov | ch. 4\nvar(--purple) | Rust Atomics | Mara Bos | done\n:::";
+        let out = MarkdownRenderer::new().render(md);
+        assert!(out.html.contains("now-reading-list"));
+        assert_eq!(out.html.matches("class=\"now-reading\"").count(), 2);
     }
 }

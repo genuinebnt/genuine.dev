@@ -1,6 +1,6 @@
 import type { PostDetail } from "../lib/api";
 import { DocInteractive } from "./DocInteractive";
-import { Comments } from "./Comments";
+import { Comments, CommentMeta, PostCommentsProvider } from "./PostComments";
 import { SeriesBanner } from "./SeriesBanner";
 import { EditButton } from "./EditButton";
 import { ReadingProgress } from "./ReadingProgress";
@@ -49,8 +49,10 @@ export default function DocArticle({
         <ReadingProgress targetId="reading-target" />
         <div className="article-solo">
           <article id="reading-target" className="article">
-          {series && <SeriesBanner series={series} />}
-          <h1 style={{ fontSize: "32px", fontWeight: 500, letterSpacing: "-0.025em", lineHeight: 1.15, marginBottom: "16px" }}>
+          {series && (
+            <SeriesBanner series={series} prev={doc.series_prev} next={doc.series_next} />
+          )}
+          <h1 className="art-h1" style={{ fontSize: "32px", lineHeight: 1.15, marginBottom: "16px" }}>
             {doc.title}
           </h1>
           <div className="prose" dangerouslySetInnerHTML={{ __html: doc.body_html }} />
@@ -114,58 +116,79 @@ export default function DocArticle({
 
       {/* Right: article body */}
       <div id="reading-target" className="article-col" data-scroll-root>
-        {series && <SeriesBanner series={series} />}
+        {series && (
+          <SeriesBanner series={series} prev={doc.series_prev} next={doc.series_next} />
+        )}
 
         {eyebrow && <div className="art-eyebrow">{eyebrow}</div>}
 
         <h1 className="art-h1">{doc.title}</h1>
 
-        <div className="art-meta">
-          {doc.date && <span>{doc.date}</span>}
-          <span>{doc.reading_min} min read</span>
-          {topic && (
-            <span
-              className="art-topic-pill"
-              style={{
-                background: `color-mix(in srgb, ${topicClr} 10%, transparent)`,
-                border: `1px solid color-mix(in srgb, ${topicClr} 30%, transparent)`,
-                color: topicClr,
-              }}
-            >
-              {topic}
-            </span>
-          )}
-        </div>
-
-        {doc.cover_image && (
-          <div style={{ marginBottom: "24px", borderRadius: "var(--radius)", overflow: "hidden" }}>
-            <img src={doc.cover_image} alt="Cover" style={{ width: "100%", height: "auto", display: "block" }} />
+        <PostCommentsProvider slug={doc.slug}>
+          <div className="art-meta">
+            {doc.date && <span>{doc.date}</span>}
+            <span>{doc.reading_min} min read</span>
+            <CommentMeta />
+            {topic && (
+              <span
+                className="art-topic-pill"
+                style={{
+                  background: `color-mix(in srgb, ${topicClr} 10%, transparent)`,
+                  border: `1px solid color-mix(in srgb, ${topicClr} 30%, transparent)`,
+                  color: topicClr,
+                }}
+              >
+                {topic}
+              </span>
+            )}
           </div>
-        )}
 
-        <div className="prose" dangerouslySetInnerHTML={{ __html: doc.body_html }} />
-
-        <div className="art-prevnext">
-          {doc.prev ? (
-            <Link href={`/blog/${doc.prev.slug}`} className="art-pn">
-              <div className="art-pn-dir">← prev</div>
-              <div className="art-pn-title">{doc.prev.title}</div>
-            </Link>
-          ) : (
-            <Link href="/blog" className="art-pn">
-              <div className="art-pn-dir">← index</div>
-              <div className="art-pn-title">Back to articles</div>
-            </Link>
+          {doc.cover_image && (
+            <div
+              className="read-measure"
+              style={{ marginBottom: "24px", borderRadius: "var(--radius)", overflow: "hidden" }}
+            >
+              <img src={doc.cover_image} alt="Cover" style={{ width: "100%", height: "auto", display: "block" }} />
+            </div>
           )}
-          {doc.next && (
-            <Link href={`/blog/${doc.next.slug}`} className="art-pn art-pn-right">
-              <div className="art-pn-dir">next →</div>
-              <div className="art-pn-title">{doc.next.title}</div>
-            </Link>
-          )}
-        </div>
 
-        <Comments slug={doc.slug} />
+          <div className="prose" dangerouslySetInnerHTML={{ __html: doc.body_html }} />
+
+          {doc.related && doc.related.length > 0 && (
+            <section className="related-posts" aria-label="Related posts">
+              <div className="related-posts-h">Related</div>
+              <div className="related-posts-list">
+                {doc.related.map((r) => (
+                  <Link key={r.slug} href={`/blog/${r.slug}`} className="related-post-card">
+                    <span className="related-post-title">{r.title}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <div className="art-prevnext">
+            {doc.prev ? (
+              <Link href={`/blog/${doc.prev.slug}`} className="art-pn">
+                <div className="art-pn-dir">← prev</div>
+                <div className="art-pn-title">{doc.prev.title}</div>
+              </Link>
+            ) : (
+              <Link href="/blog" className="art-pn">
+                <div className="art-pn-dir">← index</div>
+                <div className="art-pn-title">Back to articles</div>
+              </Link>
+            )}
+            {doc.next && (
+              <Link href={`/blog/${doc.next.slug}`} className="art-pn art-pn-right">
+                <div className="art-pn-dir">next →</div>
+                <div className="art-pn-title">{doc.next.title}</div>
+              </Link>
+            )}
+          </div>
+
+          <Comments />
+        </PostCommentsProvider>
       </div>
       </div>
 

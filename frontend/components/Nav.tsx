@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getToken } from "../lib/auth";
+import NavPolybar from "./NavPolybar";
 import { TypewriterBrand } from "./TypewriterBrand";
 
 export default function Nav() {
   const path = usePathname();
-  // "Articles" is only active on the blog index / individual posts, not the home page.
   const onArticles = path.startsWith("/blog");
   const onProjects = path.startsWith("/projects");
   const onAbout = path.startsWith("/about") || path === "/now" || path === "/uses";
@@ -25,10 +25,6 @@ export default function Nav() {
       window.removeEventListener("storage", sync);
     };
   }, [path]);
-
-  function openCmdk() {
-    window.dispatchEvent(new CustomEvent("open-cmdk"));
-  }
 
   return (
     <header className="nav">
@@ -53,10 +49,7 @@ export default function Nav() {
           )}
         </div>
         <div className="nav-spacer" />
-        {/* ⌘K — keyboard shortcut badge; also clickable to open the palette */}
-        <button className="kbd" onClick={openCmdk} type="button" aria-label="Open command palette">
-          ⌘K
-        </button>
+        <NavPolybar />
       </nav>
     </header>
   );

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { CODE_LANGUAGES } from "./CodeBlockMeta";
 import { directiveAttrsFromSource } from "./Directive";
 import { DIRECTIVE_TEMPLATES } from "./insertTemplates";
 import { uploadImage } from "../../lib/auth";
@@ -115,6 +116,42 @@ export function Toolbar({
           </div>
         )}
       </div>
+
+      {editor.isActive("codeBlock") && (
+        <>
+          <span className="tb-sep" />
+          <div className="tb-group tb-code-meta">
+            <select
+              className="tb-code-lang"
+              title="Language"
+              value={editor.getAttributes("codeBlock").language || "plaintext"}
+              onChange={(e) =>
+                editor.chain().focus().updateAttributes("codeBlock", { language: e.target.value }).run()
+              }
+            >
+              {CODE_LANGUAGES.map((lang) => (
+                <option key={lang} value={lang}>
+                  {lang}
+                </option>
+              ))}
+            </select>
+            <input
+              className="tb-code-file"
+              type="text"
+              placeholder="filename.rs"
+              title="Optional filename"
+              value={editor.getAttributes("codeBlock").filename || ""}
+              onChange={(e) =>
+                editor
+                  .chain()
+                  .focus()
+                  .updateAttributes("codeBlock", { filename: e.target.value || null })
+                  .run()
+              }
+            />
+          </div>
+        </>
+      )}
 
       <div className="tb-right">
         {onTogglePreview !== undefined && (

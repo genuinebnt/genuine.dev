@@ -41,7 +41,10 @@ pub struct PostNavItem {
 
 impl From<AdjacentPost> for PostNavItem {
     fn from(a: AdjacentPost) -> Self {
-        PostNavItem { slug: a.slug, title: a.title }
+        PostNavItem {
+            slug: a.slug,
+            title: a.title,
+        }
     }
 }
 
@@ -58,6 +61,9 @@ pub struct PostDetail {
     metadata: JsonValue,
     prev: Option<PostNavItem>,
     next: Option<PostNavItem>,
+    related: Vec<PostNavItem>,
+    series_prev: Option<PostNavItem>,
+    series_next: Option<PostNavItem>,
 }
 
 fn item(d: Document) -> PostItem {
@@ -71,7 +77,14 @@ fn item(d: Document) -> PostItem {
     }
 }
 
-fn detail(d: Document, prev: Option<AdjacentPost>, next: Option<AdjacentPost>) -> PostDetail {
+fn detail(
+    d: Document,
+    prev: Option<AdjacentPost>,
+    next: Option<AdjacentPost>,
+    related: Vec<AdjacentPost>,
+    series_prev: Option<AdjacentPost>,
+    series_next: Option<AdjacentPost>,
+) -> PostDetail {
     PostDetail {
         slug: d.slug.clone(),
         title: d.title,
@@ -84,6 +97,9 @@ fn detail(d: Document, prev: Option<AdjacentPost>, next: Option<AdjacentPost>) -
         metadata: d.metadata,
         prev: prev.map(PostNavItem::from),
         next: next.map(PostNavItem::from),
+        related: related.into_iter().map(PostNavItem::from).collect(),
+        series_prev: series_prev.map(PostNavItem::from),
+        series_next: series_next.map(PostNavItem::from),
     }
 }
 
@@ -107,13 +123,23 @@ pub async fn get_doc(
     let doc = published_doc(&pool, &slug).await?;
 
     // Adjacent navigation is only meaningful for posts.
-    let (prev, next) = if doc.kind == crate::domain::Kind::Post {
-        repo::get_adjacent_posts(&pool, &slug).await?
+    let (prev, next, related, series_prev, series_next) = if doc.kind == crate::domain::Kind::Post {
+        let (prev, next) = repo::get_adjacent_posts(&pool, &slug).await?;
+        let related = repo::get_related_posts(&pool, &slug, 4).await?;
+        let (series_prev, series_next) = repo::get_series_neighbors(&pool, &slug).await?;
+        (prev, next, related, series_prev, series_next)
     } else {
-        (None, None)
+        (None, None, vec![], None, None)
     };
 
-    Ok(Json(detail(doc, prev, next)))
+    Ok(Json(detail(
+        doc,
+        prev,
+        next,
+        related,
+        series_prev,
+        series_next,
+    )))
 }
 
 #[derive(Deserialize)]

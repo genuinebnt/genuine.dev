@@ -12,7 +12,7 @@ name = "seed"
 path = "src/bin/seed.rs"
 
 [dependencies]
-axum = { version = "0.8", features = ["multipart"] }
+axum = { version = "0.8", features = ["multipart", "ws"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "fs"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["trace", "compression-gzip", "cors", "fs"] }

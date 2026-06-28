@@ -1,8 +1,15 @@
 import type { PostItem } from "./api";
+import type { AdminItem } from "./admin/types";
+
+type WithMetadata = { metadata?: Record<string, unknown> | null };
 
 /** Typed access to document metadata JSON. */
-export function docMetadata(doc: Pick<PostItem, "metadata">): Record<string, unknown> {
+export function docMetadata(doc: Pick<PostItem, "metadata"> | WithMetadata): Record<string, unknown> {
   return (doc.metadata ?? {}) as Record<string, unknown>;
+}
+
+export function adminMetadata(row: Pick<AdminItem, "metadata">): Record<string, unknown> {
+  return docMetadata(row);
 }
 
 export function projectTech(metadata?: Record<string, unknown>): string[] {

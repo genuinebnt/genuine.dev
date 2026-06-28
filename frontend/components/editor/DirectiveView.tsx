@@ -13,7 +13,7 @@ import {
  * families with a dedicated editor, and a raw-source textarea for the rest.
  * Every edit re-serializes to directive markdown stored on the node.
  */
-export function DirectiveView({ node, updateAttributes }: any) {
+export function DirectiveView({ node, updateAttributes, deleteNode, selected }: any) {
   const name: string = node.attrs.name || "block";
   const source: string = node.attrs.source || "";
   const model = useMemo(() => parseDirective(name, source), [name, source]);
@@ -22,9 +22,19 @@ export function DirectiveView({ node, updateAttributes }: any) {
     updateAttributes({ source: serializeDirective(next), name });
 
   return (
-    <NodeViewWrapper className="tt-dir" data-name={name}>
+    <NodeViewWrapper className={`tt-dir${selected ? " tt-dir-selected" : ""}`} data-name={name}>
       <div className="tt-dir-head">
         <span className="tt-dir-badge">{name}</span>
+        <span className="tt-dir-spacer" />
+        <button
+          type="button"
+          className="tt-dir-remove"
+          title="Remove block"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => deleteNode()}
+        >
+          Remove
+        </button>
       </div>
       <div className="tt-dir-body">
         <DirectiveForm model={model} commit={commit} rawSource={source} onRaw={(s) => updateAttributes({ source: s, name })} />

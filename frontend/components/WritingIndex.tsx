@@ -1,20 +1,18 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { PostItem } from "../lib/api";
 import { searchPosts } from "../lib/api";
-import { deriveTopic, topicCssClass, topicColor } from "../lib/topic";
-
-const TOPICS = ["rust", "infosec", "distributed", "systems", "performance", "ctf"];
-const TOPIC_DOTS: Record<string, string> = {
-  rust: "#f0703c",
-  infosec: "var(--acc)",
-  distributed: "var(--blue)",
-  systems: "var(--purple)",
-  performance: "#d957d4",
-  ctf: "#ef5350",
-};
+import { deriveTopic, topicCssClass, topicColor, TOPIC_KEYS } from "../lib/topic";
+import {
+  WRITING_PAGE_SIZE,
+  clampPage,
+  paginateSlice,
+  parsePageParam,
+} from "../lib/pagination";
+import Pagination from "./ui/Pagination";
 
 function isNew(dateStr: string | null): boolean {
   if (!dateStr) return false;
@@ -30,6 +28,9 @@ interface Props {
 }
 
 export default function WritingIndex({ initialPosts }: Props) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const skipFilterReset = useRef(true);
   const [q, setQ] = useState("");
   const [searchResults, setSearchResults] = useState<PostItem[] | null>(null);
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
@@ -69,6 +70,16 @@ export default function WritingIndex({ initialPosts }: Props) {
     try { setSearchResults(await searchPosts(value)); } catch { setSearchResults([]); }
   }
 
+  useEffect(() => {
+    const topic = searchParams.get("topic");
+    const tag = searchParams.get("tag");
+    const query = searchParams.get("q");
+    if (topic) setActiveTopic(topic);
+    if (tag) setActiveTag(tag);
+    if (query) void onSearch(query);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const basePosts = searchResults ?? initialPosts;
   const filtered = basePosts.filter((p) => {
     if (activeTopic) {
@@ -88,16 +99,43 @@ export default function WritingIndex({ initialPosts }: Props) {
     return sort === "newest" ? db - da : da - db;
   });
 
-  // Group by year
+  const page = parsePageParam(searchParams.get("page"));
+  const pagedPosts = useMemo(
+    () => paginateSlice(sorted, page, WRITING_PAGE_SIZE),
+    [sorted, page],
+  );
+
+  function goToPage(next: number) {
+    const clamped = clampPage(next, sorted.length, WRITING_PAGE_SIZE);
+    const params = new URLSearchParams(searchParams.toString());
+    if (clamped <= 1) params.delete("page");
+    else params.set("page", String(clamped));
+    const qs = params.toString();
+    router.replace(qs ? `/blog?${qs}` : "/blog", { scroll: false });
+  }
+
+  useEffect(() => {
+    if (skipFilterReset.current) {
+      skipFilterReset.current = false;
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    params.delete("page");
+    const qs = params.toString();
+    router.replace(qs ? `/blog?${qs}` : "/blog", { scroll: false });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTopic, activeTag, sort, q]);
+
+  // Group by year (current page only)
   const byYear = useMemo(() => {
     const map = new Map<number, PostItem[]>();
-    sorted.forEach((p) => {
+    pagedPosts.forEach((p) => {
       const yr = p.date ? new Date(p.date).getFullYear() : 0;
       if (!map.has(yr)) map.set(yr, []);
       map.get(yr)!.push(p);
     });
     return [...map.entries()].sort(([a], [b]) => (sort === "newest" ? b - a : a - b));
-  }, [sorted, sort]);
+  }, [pagedPosts, sort]);
 
   return (
     <div className="wri-shell">
@@ -127,7 +165,7 @@ export default function WritingIndex({ initialPosts }: Props) {
               <span className="fi-label">all</span>
               <span className="fi-count">{initialPosts.length}</span>
             </div>
-            {TOPICS.filter((t) => topicCounts[t] !== undefined).map((t) => {
+            {TOPIC_KEYS.filter((t) => topicCounts[t] !== undefined).map((t) => {
               const topicClass = topicCssClass(t);
               return (
               <div
@@ -136,7 +174,7 @@ export default function WritingIndex({ initialPosts }: Props) {
                 onClick={() => { setActiveTopic(t); setActiveTag(null); }}
               >
                 <span className={`fi-dot${topicClass ? ` ${topicClass}` : ""}`}
-                  style={!topicClass ? { background: TOPIC_DOTS[t] } : undefined}
+                  style={!topicClass ? { background: topicColor(t) } : undefined}
                 />
                 <span className="fi-label">{t}</span>
                 <span className="fi-count">{topicCounts[t] ?? 0}</span>
@@ -243,6 +281,14 @@ export default function WritingIndex({ initialPosts }: Props) {
             </div>
           )}
         </div>
+
+        <Pagination
+          className="wri-pagination"
+          page={page}
+          totalItems={sorted.length}
+          pageSize={WRITING_PAGE_SIZE}
+          onPageChange={goToPage}
+        />
       </div>
     </div>
   );

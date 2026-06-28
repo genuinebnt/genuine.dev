@@ -7,6 +7,9 @@ export const TOPIC_COLORS: Record<string, string> = {
   ctf: "#ef5350",
 };
 
+/** Canonical topic keys — use everywhere instead of duplicating arrays. */
+export const TOPIC_KEYS = Object.keys(TOPIC_COLORS) as (keyof typeof TOPIC_COLORS)[];
+
 export const TOPIC_CSS_CLASSES: Record<string, string> = {
   rust: "t-rust",
   infosec: "t-infosec",

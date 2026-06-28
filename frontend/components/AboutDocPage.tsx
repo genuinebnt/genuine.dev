@@ -1,5 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import type { PostDetail } from "../lib/api";
+import { extractPanelSections } from "../lib/pageToc";
+import { useScrollSpy } from "../hooks/useScrollSpy";
+import { scrollToHashTarget } from "../lib/scrollRoot";
+import { DocInteractive } from "./DocInteractive";
 import { EditButton } from "./EditButton";
 
 const SKILLS = [
@@ -11,11 +18,20 @@ const SKILLS = [
   "Bug bounty",
 ];
 
-/**
- * About page layout from the mockup: avatar column + bio / timeline / skills.
- * Timeline section label is emitted by the backend renderer with the directive HTML.
- */
-export default function AboutShell({ doc }: { doc: PostDetail }) {
+/** About page — profile rail + on-page TOC + CMS prose. */
+export default function AboutDocPage({ doc }: { doc: PostDetail }) {
+  const sections = useMemo(() => extractPanelSections(doc.body_html), [doc.body_html]);
+  const [active, setActive] = useState(sections[0]?.label ?? "");
+
+  useScrollSpy(sections, setActive, "about-scroll-root");
+
+  function scrollToSection(id: string, label: string) {
+    setActive(label);
+    const target = document.getElementById(id);
+    const root = document.getElementById("about-scroll-root");
+    if (target && root) scrollToHashTarget(root, target);
+  }
+
   return (
     <>
       <div className="about-page">
@@ -72,9 +88,31 @@ export default function AboutShell({ doc }: { doc: PostDetail }) {
                 </span>
               ))}
             </div>
+
+            {sections.length > 0 && (
+              <>
+                <hr className="now-toc-divider" />
+                <div className="now-toc-h">On this page</div>
+                {sections.map((section) => (
+                  <a
+                    key={section.id}
+                    href={`#${section.id}`}
+                    className={`now-toc-link${active === section.label ? " now-cur" : ""}${
+                      section.level === 3 ? " now-toc-sub" : ""
+                    }`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      scrollToSection(section.id, section.label);
+                    }}
+                  >
+                    {section.label}
+                  </a>
+                ))}
+              </>
+            )}
           </aside>
 
-          <div className="about-body">
+          <div id="about-scroll-root" className="about-body" data-scroll-root>
             <div className="about-right">
               {doc.body_html && (
                 <div className="prose" dangerouslySetInnerHTML={{ __html: doc.body_html }} />
@@ -83,6 +121,7 @@ export default function AboutShell({ doc }: { doc: PostDetail }) {
           </div>
         </div>
       </div>
+      <DocInteractive />
       <EditButton slug={doc.slug} />
     </>
   );

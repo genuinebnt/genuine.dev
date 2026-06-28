@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import AdminSettingsShell from "../../../../components/admin/AdminSettingsShell";
 import {
   PAGE_OVERRIDE_DEFS,
   STORAGE,
@@ -10,9 +10,15 @@ import {
   type ThemeKey,
   applyThemeForPath,
   isThemeKey,
+  persistSiteTheme,
+  previewAccent,
+  previewTheme,
   readPageOverrides,
   themeLabel,
   writePageOverrides,
+  exportThemeBundle,
+  importThemeBundle,
+  type ThemeBundle,
 } from "../../../../lib/theme";
 
 // ── Theme preset definitions ──────────────────────────────────────────────────
@@ -75,13 +81,19 @@ const ACCENT_PRESETS = [
   { color: "#f59e0b", title: "amber" },
 ];
 
-function applyTheme(key: string) {
-  window.__setTheme?.(key);
+function applyThemePreview(key: ThemeKey) {
+  previewTheme(key);
 }
 
-function applyAccent(hex: string) {
-  window.__setAccent?.(hex);
+function applyAccentPreview(hex: string) {
+  previewAccent(hex);
 }
+
+type SavedSnapshot = {
+  theme: ThemeKey;
+  accent: string;
+  overrides: Partial<Record<PageOverrideKey, PageOverride | null>>;
+};
 
 function readStoredOverridesRaw(): Partial<Record<PageOverrideKey, PageOverride | null>> {
   try {
@@ -105,26 +117,33 @@ export default function ThemeSettingsPage() {
   const [selectedTheme, setSelectedTheme] = useState<ThemeKey>("dark");
   const [accent, setAccent] = useState("#00d4a4");
   const [pageDraft, setPageDraft] = useState<Partial<Record<PageOverrideKey, PageOverride | null>>>({});
+  const [savedSnapshot, setSavedSnapshot] = useState<SavedSnapshot | null>(null);
   const [saved, setSaved] = useState(false);
+  const [editingOverride, setEditingOverride] = useState<PageOverrideKey | null>(null);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem(STORAGE.theme) ?? "dark";
     const storedAccent = localStorage.getItem(STORAGE.accent) ?? "#00d4a4";
-    if (isThemeKey(storedTheme)) setSelectedTheme(storedTheme);
+    const overrides = readStoredOverridesRaw();
+    const theme: ThemeKey = isThemeKey(storedTheme) ? storedTheme : "dark";
+    setSelectedTheme(theme);
     setAccent(storedAccent);
-    setPageDraft(readStoredOverridesRaw());
+    setPageDraft(overrides);
+    setSavedSnapshot({ theme, accent: storedAccent, overrides });
+    applyThemePreview(theme);
+    applyAccentPreview(storedAccent);
   }, []);
 
   function pickTheme(key: ThemeKey) {
     setSelectedTheme(key);
     setSaved(false);
-    applyTheme(key);
+    applyThemePreview(key);
   }
 
   function pickAccent(hex: string) {
     setAccent(hex);
     setSaved(false);
-    applyAccent(hex);
+    applyAccentPreview(hex);
   }
 
   function customizePage(key: PageOverrideKey) {
@@ -142,24 +161,71 @@ export default function ThemeSettingsPage() {
   }
 
   function save() {
-    localStorage.setItem(STORAGE.theme, selectedTheme);
-    localStorage.setItem(STORAGE.accent, accent);
+    persistSiteTheme(selectedTheme, accent);
     writePageOverrides(pageDraft);
+    setSavedSnapshot({ theme: selectedTheme, accent, overrides: pageDraft });
     applyThemeForPath(window.location.pathname);
+    window.dispatchEvent(new Event("theme-updated"));
     setSaved(true);
   }
 
   function discard() {
-    const t = localStorage.getItem(STORAGE.theme) ?? "dark";
-    const a = localStorage.getItem(STORAGE.accent) ?? "#00d4a4";
-    const overrides = readStoredOverridesRaw();
-    if (isThemeKey(t)) setSelectedTheme(t);
-    setAccent(a);
-    setPageDraft(overrides);
-    applyTheme(t);
-    applyAccent(a);
+    if (!savedSnapshot) return;
+    setSelectedTheme(savedSnapshot.theme);
+    setAccent(savedSnapshot.accent);
+    setPageDraft(savedSnapshot.overrides);
+    persistSiteTheme(savedSnapshot.theme, savedSnapshot.accent);
+    writePageOverrides(savedSnapshot.overrides);
+    applyThemePreview(savedSnapshot.theme);
+    applyAccentPreview(savedSnapshot.accent);
     applyThemeForPath(window.location.pathname);
-    setSaved(false);
+    setSaved(true);
+  }
+
+  function exportTheme() {
+    const bundle = exportThemeBundle();
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "genuine-theme.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importTheme() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json,.json";
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const bundle = JSON.parse(String(reader.result)) as ThemeBundle;
+          importThemeBundle(bundle);
+          const theme: ThemeKey = isThemeKey(bundle.theme) ? bundle.theme : "dark";
+          setSelectedTheme(theme);
+          setAccent(bundle.accent);
+          setPageDraft(bundle.pageOverrides ?? {});
+          setSavedSnapshot({ theme, accent: bundle.accent, overrides: bundle.pageOverrides ?? {} });
+          applyThemePreview(theme);
+          applyAccentPreview(bundle.accent);
+          setSaved(true);
+        } catch {
+          alert("Invalid theme file.");
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
+  function saveOverrideModal() {
+    if (!editingOverride) return;
+    customizePage(editingOverride);
+    setEditingOverride(null);
   }
 
   const themeObj = THEMES.find((t) => t.key === selectedTheme) ?? THEMES[0];
@@ -167,32 +233,7 @@ export default function ThemeSettingsPage() {
   const previewBorderColor = accent + "40";
 
   return (
-    <div className="ts-admin-shell">
-      <div className="ts-admin-nav">
-        <div className="ts-an-section">
-          <span className="ts-an-label">content</span>
-          <Link href="/admin" className="ts-an-item">
-            <span>✎</span> Posts
-          </Link>
-          <Link href="/admin?kind=project" className="ts-an-item">
-            <span>⊞</span> Projects
-          </Link>
-          <Link href="/admin?status=scheduled" className="ts-an-item">
-            <span>◷</span> Scheduled
-          </Link>
-        </div>
-        <div className="ts-an-section">
-          <span className="ts-an-label">site</span>
-          <div className="ts-an-item ts-active">
-            <span>◑</span> Theme
-          </div>
-          <div className="ts-an-item">
-            <span>⚙</span> Settings
-          </div>
-        </div>
-      </div>
-
-      <div className="ts-main">
+    <AdminSettingsShell active="theme">
         <div className="ts-page-title">Theme</div>
         <div className="ts-page-sub">
           Controls appearance for all public-facing pages. Per-page overrides available below.
@@ -396,7 +437,7 @@ export default function ThemeSettingsPage() {
                       <button
                         type="button"
                         className="ts-btn ts-edit"
-                        onClick={() => customizePage(def.key)}
+                        onClick={() => setEditingOverride(def.key)}
                       >
                         customize
                       </button>
@@ -418,6 +459,12 @@ export default function ThemeSettingsPage() {
               </>
             )}
           </span>
+          <button type="button" className="ts-btn-lg ts-ghost" onClick={exportTheme}>
+            Export JSON
+          </button>
+          <button type="button" className="ts-btn-lg ts-ghost" onClick={importTheme}>
+            Import JSON
+          </button>
           <button type="button" className="ts-btn-lg ts-ghost" onClick={discard}>
             Discard
           </button>
@@ -425,7 +472,25 @@ export default function ThemeSettingsPage() {
             Save site theme
           </button>
         </div>
-      </div>
-    </div>
+
+        {editingOverride && (
+          <div className="ts-override-modal" onClick={() => setEditingOverride(null)}>
+            <div className="ts-override-panel" onClick={(e) => e.stopPropagation()}>
+              <div className="ts-page-title" style={{ fontSize: "15px" }}>
+                Override — {PAGE_OVERRIDE_DEFS.find((d) => d.key === editingOverride)?.page}
+              </div>
+              <p className="ts-page-sub">Uses current preset and accent selections for this page.</p>
+              <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
+                <button type="button" className="ts-btn-lg ts-ghost" onClick={() => setEditingOverride(null)}>
+                  Cancel
+                </button>
+                <button type="button" className="ts-btn-lg ts-primary" onClick={saveOverrideModal}>
+                  Apply override
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+    </AdminSettingsShell>
   );
 }
