@@ -1,0 +1,21 @@
+# Local development — Postgres only. (App + Caddy added at Phase 3 / deploy.)
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: folio_postgres
+    environment:
+      POSTGRES_USER: folio
+      POSTGRES_PASSWORD: folio
+      POSTGRES_DB: folio
+    ports:
+      - "5432:5432"
+    volumes:
+      - folio_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U folio -d folio"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  folio_pgdata:

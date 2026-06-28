@@ -1,0 +1,17 @@
+{$DOMAIN} {
+	encode gzip zstd
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# Backend-served routes: JSON API, feeds, newsletter email links, health.
+	@backend path /api/* /feed.xml /sitemap.xml /newsletter/* /healthz
+	reverse_proxy @backend backend:3001
+
+	# Everything else → Next.js frontend.
+	reverse_proxy frontend:3000
+}

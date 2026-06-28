@@ -1,0 +1,65 @@
+# Production stack: postgres + Rust API (backend) + Next.js (frontend) + Caddy (TLS).
+# Host `.env`: POSTGRES_PASSWORD, SITE_URL, DOMAIN, JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: folio
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: folio
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U folio -d folio"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    image: ghcr.io/OWNER/genuine-folio-backend:latest
+    environment:
+      DATABASE_URL: postgres://folio:${POSTGRES_PASSWORD}@postgres:5432/folio
+      SITE_URL: ${SITE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      BIND_ADDR: 0.0.0.0:3001
+      RUST_LOG: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    image: ghcr.io/OWNER/genuine-folio-frontend:latest
+    environment:
+      API_INTERNAL_URL: http://backend:3001 # server-side (SSR) reaches the API directly
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>genuine-folio — UI/UX Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─────────────────────────────────────────────────────────────
+   THEME TOKENS — light/dark driven entirely by CSS variables.
+   This is the exact mechanism the real site uses: swap [data-theme]
+   on <html>, every component re-themes for free.
+   ───────────────────────────────────────────────────────────── */
+:root, [data-theme="dark"] {
+  --bg: #0d0f12;
+  --surface: #13161b;
+  --surface2: #1a1e25;
+  --border: #232830;
+  --border2: #2e3540;
+  --text: #e2e6ee;
+  --muted: #6b7280;
+  --faint: #3a4050;
+  --acc: #00d4a4;
+  --acc-bg: rgba(0,212,164,0.07);
+  --acc-border: rgba(0,212,164,0.18);
+  --warn: #f59e0b;  --warn-bg: rgba(245,158,11,0.08);
+  --blue: #60a5fa;  --blue-bg: rgba(96,165,250,0.08);
+  --purple:#a78bfa; --purple-bg: rgba(167,139,250,0.08);
+  --pink: #e879f9;  --pink-bg: rgba(232,121,249,0.07);
+  --green:#34d399;  --green-bg: rgba(52,211,153,0.07);
+  --shadow: 0 1px 2px rgba(0,0,0,0.4);
+  /* code tokens */
+  --c-kw:#a78bfa; --c-fn:#60a5fa; --c-str:#34d399; --c-num:#f59e0b; --c-com:#3a4050; --c-punct:#6b7280;
+}
+[data-theme="light"] {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface2: #f0f2f5;
+  --border: #e4e8ee;
+  --border2: #d3dae3;
+  --text: #1a1e25;
+  --muted: #5b6573;
+  --faint: #9aa4b2;
+  --acc: #008f6f;
+  --acc-bg: rgba(0,143,111,0.07);
+  --acc-border: rgba(0,143,111,0.22);
+  --warn: #c2740a;  --warn-bg: rgba(194,116,10,0.08);
+  --blue: #2563eb;  --blue-bg: rgba(37,99,235,0.07);
+  --purple:#7c3aed; --purple-bg: rgba(124,58,237,0.07);
+  --pink: #c026d3;  --pink-bg: rgba(192,38,211,0.06);
+  --green:#059669;  --green-bg: rgba(5,150,105,0.07);
+  --shadow: 0 1px 2px rgba(16,24,40,0.06);
+  --c-kw:#7c3aed; --c-fn:#2563eb; --c-str:#059669; --c-num:#c2740a; --c-com:#9aa4b2; --c-punct:#5b6573;
+}
+/* extra preset themes — each is just a token map (the "saved theme" concept) */
+[data-theme="midnight"] {
+  --bg:#0b0c1a; --surface:#12132a; --surface2:#1a1c3a; --border:#242648; --border2:#33365e;
+  --text:#e6e7f5; --muted:#7a7da6; --faint:#44476e;
+  --acc:#7c8cff; --acc-bg:rgba(124,140,255,0.10); --acc-border:rgba(124,140,255,0.28);
+  --warn:#f5b942; --warn-bg:rgba(245,185,66,0.08); --blue:#5e9bff; --blue-bg:rgba(94,155,255,0.08);
+  --purple:#b08cff; --purple-bg:rgba(176,140,255,0.10); --pink:#ff7bd5; --pink-bg:rgba(255,123,213,0.08);
+  --green:#4fd6a3; --green-bg:rgba(79,214,163,0.08); --shadow:0 1px 2px rgba(0,0,0,0.5);
+  --c-kw:#b08cff; --c-fn:#5e9bff; --c-str:#4fd6a3; --c-num:#f5b942; --c-com:#44476e; --c-punct:#7a7da6;
+}
+[data-theme="sepia"] {
+  --bg:#f4ecd8; --surface:#fbf5e6; --surface2:#efe5cc; --border:#e0d4b4; --border2:#cdbf99;
+  --text:#3a2f1d; --muted:#7a6a4f; --faint:#a89a78;
+  --acc:#9c6b1f; --acc-bg:rgba(156,107,31,0.09); --acc-border:rgba(156,107,31,0.28);
+  --warn:#b06a14; --warn-bg:rgba(176,106,20,0.10); --blue:#3f6ea5; --blue-bg:rgba(63,110,165,0.09);
+  --purple:#7a5aa0; --purple-bg:rgba(122,90,160,0.09); --pink:#a8497e; --pink-bg:rgba(168,73,126,0.08);
+  --green:#5f7d3a; --green-bg:rgba(95,125,58,0.09); --shadow:0 1px 2px rgba(58,47,29,0.10);
+  --c-kw:#7a5aa0; --c-fn:#3f6ea5; --c-str:#5f7d3a; --c-num:#b06a14; --c-com:#a89a78; --c-punct:#7a6a4f;
+}
+[data-theme="matrix"] {
+  --bg:#040806; --surface:#0a120c; --surface2:#0f1a12; --border:#16271a; --border2:#1f3a26;
+  --text:#c8f5d4; --muted:#4f8a63; --faint:#2a4a33;
+  --acc:#22e06a; --acc-bg:rgba(34,224,106,0.08); --acc-border:rgba(34,224,106,0.25);
+  --warn:#c8e022; --warn-bg:rgba(200,224,34,0.08); --blue:#22c8e0; --blue-bg:rgba(34,200,224,0.08);
+  --purple:#7ce022; --purple-bg:rgba(124,224,34,0.08); --pink:#22e0a0; --pink-bg:rgba(34,224,160,0.08);
+  --green:#22e06a; --green-bg:rgba(34,224,106,0.08); --shadow:0 1px 2px rgba(0,0,0,0.6);
+  --c-kw:#7ce022; --c-fn:#22c8e0; --c-str:#c8f5d4; --c-num:#c8e022; --c-com:#2a4a33; --c-punct:#4f8a63;
+}
+
+/* ── per-topic accents ── a topic just re-points --acc; it cascades to the
+   whole page (nav, links, TOC, code highlight, chips). Set on the page root
+   per content topic. Default (no data-topic) = the NotiQ green brand accent. */
+[data-topic="infosec"]    { --acc:#00c896; --acc-bg:rgba(0,200,150,0.09);  --acc-border:rgba(0,200,150,0.28); }
+[data-topic="rust"]       { --acc:#f0703c; --acc-bg:rgba(240,112,60,0.10);  --acc-border:rgba(240,112,60,0.30); }
+[data-topic="distributed"]{ --acc:#4a90e8; --acc-bg:rgba(74,144,232,0.10); --acc-border:rgba(74,144,232,0.30); }
+[data-topic="performance"]{ --acc:#d957d4; --acc-bg:rgba(217,87,212,0.10); --acc-border:rgba(217,87,212,0.30); }
+[data-topic="ctf"]        { --acc:#ef5350; --acc-bg:rgba(239,83,80,0.10);   --acc-border:rgba(239,83,80,0.30); }
+[data-topic="systems"]    { --acc:#9270e0; --acc-bg:rgba(146,112,224,0.10); --acc-border:rgba(146,112,224,0.30); }
+
+:root {
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Inter', sans-serif;
+  --radius: 6px;
+  --gap-card: 10px;
+  --pad-card: 14px 16px;
+}
+html { scroll-behavior: smooth; }
+body { background:var(--bg); color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.6; min-height:100vh; transition: background 0.2s, color 0.2s; }
+a { color:inherit; }
+code, .mono { font-family:var(--mono); }
+
+/* ── doc chrome (the mockup viewer itself) ── */
+.docbar { position:sticky; top:0; z-index:50; background:var(--surface); border-bottom:1px solid var(--border); padding:12px 24px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.docbar .brand { font-family:var(--mono); font-size:13px; font-weight:500; }
+.docbar .brand span { color:var(--acc); }
+.docbar .docsub { font-size:11px; color:var(--muted); font-family:var(--mono); }
+.docbar .spacer { flex:1; }
+.theme-toggle { font-family:var(--mono); font-size:11px; padding:6px 12px; border-radius:100px; border:1px solid var(--border2); background:var(--surface2); color:var(--text); cursor:pointer; display:flex; align-items:center; gap:7px; transition:all .15s; }
+.theme-toggle:hover { border-color:var(--acc-border); color:var(--acc); }
+.theme-picker { display:flex; gap:6px; align-items:center; }
+.tp-swatch { width:18px; height:18px; border-radius:50%; cursor:pointer; border:1px solid var(--border2); position:relative; transition:transform .12s; }
+.tp-swatch:hover { transform:scale(1.15); }
+.tp-swatch.sel { box-shadow:0 0 0 2px var(--bg), 0 0 0 3px var(--acc); }
+.tp-swatch[data-theme-name="dark"]    { background:#0d0f12; }
+.tp-swatch[data-theme-name="light"]   { background:#f6f7f9; }
+.tp-swatch[data-theme-name="midnight"]{ background:#0b0c1a; }
+.tp-swatch[data-theme-name="sepia"]   { background:#f4ecd8; }
+.tp-swatch[data-theme-name="matrix"]  { background:#040806; }
+.accent-pick { position:relative; width:20px; height:20px; cursor:pointer; display:inline-flex; }
+.accent-pick input[type=color] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.ap-dot { width:18px; height:18px; border-radius:5px; border:1px solid var(--border2); background:var(--acc); }
+.reset-accent { font-family:var(--mono); font-size:10px; color:var(--muted); background:none; border:none; cursor:pointer; text-decoration:underline; display:none; padding:0; }
+.reset-accent.show { display:inline; }
+.reset-accent:hover { color:var(--acc); }
+.grp-label { font-family:var(--mono); font-size:9px; color:var(--faint); text-transform:uppercase; letter-spacing:.1em; }
+.accent-presets { display:flex; gap:5px; align-items:center; }
+.ac-sw { width:15px; height:15px; border-radius:50%; cursor:pointer; border:1px solid var(--border2); transition:transform .12s; }
+.ac-sw:hover { transform:scale(1.18); }
+.ac-sw.def { box-shadow:0 0 0 2px var(--bg), 0 0 0 3px var(--acc); }
+
+.wrap { max-width:1080px; margin:0 auto; padding:28px 24px 120px; }
+
+/* ── screen tabs ── */
+.screen-tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:24px; position:sticky; top:53px; z-index:40; background:var(--bg); padding:10px 0; }
+.stab { font-family:var(--mono); font-size:11px; padding:6px 13px; border-radius:var(--radius); border:1px solid var(--border); background:var(--surface); color:var(--muted); cursor:pointer; transition:all .15s; }
+.stab:hover { border-color:var(--border2); color:var(--text); }
+.stab.active { background:var(--acc-bg); border-color:var(--acc-border); color:var(--acc); }
+.screen { display:none; }
+.screen.active { display:block; animation:fade .25s ease; }
+@keyframes fade { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+.screen-note { font-size:12px; color:var(--muted); margin-bottom:14px; padding-left:12px; border-left:2px solid var(--acc); line-height:1.7; }
+
+/* ── faux browser window ── */
+.win { border:1px solid var(--border2); border-radius:10px; overflow:hidden; background:var(--bg); box-shadow:var(--shadow); }
+.win-bar { background:var(--surface2); border-bottom:1px solid var(--border); padding:9px 14px; display:flex; align-items:center; gap:8px; }
+.dot { width:11px; height:11px; border-radius:50%; }
+.dot.r{background:#ff5f57;} .dot.y{background:#febc2e;} .dot.g{background:#28c840;}
+.win-url { flex:1; margin-left:10px; font-family:var(--mono); font-size:11px; color:var(--muted); background:var(--bg); border:1px solid var(--border); border-radius:100px; padding:4px 14px; }
+.win-body { padding:0; }
+
+/* ── shared site nav (inside mockups) ── */
+.snav { display:flex; align-items:center; gap:16px; padding:14px 28px; border-bottom:1px solid var(--border); }
+.snav .logo { font-family:var(--mono); font-weight:500; font-size:14px; }
+.snav .logo span { color:var(--acc); }
+.snav .nlinks { display:flex; gap:4px; }
+.snav .npill { font-family:var(--mono); font-size:11px; padding:5px 13px; border-radius:var(--radius); border:1px solid transparent; color:var(--muted); text-decoration:none; cursor:pointer; transition:all .15s; }
+.snav .npill:hover { color:var(--text); border-color:var(--border2); }
+.snav .npill.active { background:var(--acc-bg); border-color:var(--acc-border); color:var(--acc); }
+.snav .nspacer { flex:1; }
+.snav .kbd { font-family:var(--mono); font-size:10px; color:var(--muted); border:1px solid var(--border2); border-radius:5px; padding:3px 8px; background:var(--surface2); }
+.snav .mini-toggle { font-family:var(--mono); font-size:11px; color:var(--muted); border:1px solid var(--border); border-radius:100px; padding:4px 10px; background:var(--surface); cursor:pointer; }
+
+.page { padding:36px 28px 44px; }
+
+/* ── hero ── */
+.eyebrow { font-family:var(--mono); font-size:11px; color:var(--acc); letter-spacing:.12em; text-transform:uppercase; margin-bottom:14px; }
+.hero h1 { font-size:32px; font-weight:500; letter-spacing:-.025em; line-height:1.15; margin-bottom:14px; }
+.hero h1 span { color:var(--acc); }
+.hero .lead { color:var(--muted); font-size:15px; max-width:600px; line-height:1.75; margin-bottom:22px; }
+.meta-row { display:flex; gap:8px; flex-wrap:wrap; }
+.meta-pill { font-family:var(--mono); font-size:11px; color:var(--muted); background:var(--surface); border:1px solid var(--border); border-radius:100px; padding:4px 12px; }
+.meta-pill strong { color:var(--text); font-weight:500; }
+.divider5 { display:flex; height:3px; overflow:hidden; margin:30px 0; border-radius:2px; }
+.divider5 div { flex:1; }
+
+.section-label { font-family:var(--mono); font-size:10px; color:var(--faint); letter-spacing:.15em; text-transform:uppercase; margin:34px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+
+/* ── post cards / rows ── */
+.card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:var(--gap-card); }
+.pcard { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; transition:border-color .15s, transform .15s; cursor:pointer; }
+.pcard:hover { border-color:var(--acc-border); transform:translateY(-2px); }
+.pcard .ptag { font-family:var(--mono); font-size:10px; color:var(--acc); margin-bottom:8px; display:inline-block; }
+.pcard h3 { font-size:15px; font-weight:500; margin-bottom:7px; line-height:1.35; }
+.pcard p { font-size:12.5px; color:var(--muted); line-height:1.6; margin-bottom:12px; }
+.pcard .pmeta { font-family:var(--mono); font-size:10px; color:var(--faint); display:flex; gap:10px; }
+
+.post-row { display:flex; gap:18px; padding:18px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+.post-row:hover h3 { color:var(--acc); }
+.post-row .date { font-family:var(--mono); font-size:11px; color:var(--faint); width:92px; flex-shrink:0; padding-top:3px; }
+.post-row h3 { font-size:16px; font-weight:500; margin-bottom:6px; transition:color .15s; }
+.post-row p { font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:10px; }
+.chips { display:flex; gap:6px; flex-wrap:wrap; }
+.chip { font-family:var(--mono); font-size:10px; padding:2px 9px; border-radius:100px; background:var(--surface2); border:1px solid var(--border); color:var(--muted); }
+.chip.active { background:var(--acc-bg); border-color:var(--acc-border); color:var(--acc); }
+.chip.clickable { cursor:pointer; }
+
+/* ── search / filter bar ── */
+.searchbar { display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border2); border-radius:var(--radius); padding:11px 14px; margin-bottom:16px; }
+.searchbar .ic { color:var(--muted); }
+.searchbar input { flex:1; background:none; border:none; outline:none; color:var(--text); font-family:var(--sans); font-size:14px; }
+.searchbar input::placeholder { color:var(--faint); }
+
+/* ── post detail / article ── */
+.article-layout { display:grid; grid-template-columns:200px 1fr; gap:36px; }
+.toc { position:sticky; top:20px; align-self:start; font-size:12px; }
+.toc .toc-h { font-family:var(--mono); font-size:10px; color:var(--faint); letter-spacing:.12em; text-transform:uppercase; margin-bottom:12px; }
+.toc a { display:block; color:var(--muted); text-decoration:none; padding:4px 0 4px 12px; border-left:2px solid var(--border); }
+.toc a.cur { color:var(--acc); border-left-color:var(--acc); }
+.toc a.sub { padding-left:24px; font-size:11.5px; }
+.article h1 { font-size:26px; font-weight:500; letter-spacing:-.02em; line-height:1.2; margin-bottom:12px; }
+.article .ameta { font-family:var(--mono); font-size:11px; color:var(--faint); display:flex; gap:14px; margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid var(--border); }
+.article h2 { font-size:18px; font-weight:500; margin:28px 0 12px; }
+.article p { color:var(--text); opacity:.92; margin-bottom:16px; line-height:1.75; }
+.article p.dim { color:var(--muted); }
+
+/* code block */
+.code { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin:18px 0; overflow:hidden; }
+.code .chead { display:flex; align-items:center; justify-content:space-between; padding:7px 14px; border-bottom:1px solid var(--border); background:var(--surface2); }
+.code .cfile { font-family:var(--mono); font-size:11px; color:var(--muted); }
+.code .ccopy { font-family:var(--mono); font-size:10px; color:var(--faint); border:1px solid var(--border2); border-radius:5px; padding:2px 8px; cursor:pointer; }
+.code pre { padding:14px 16px; overflow-x:auto; font-family:var(--mono); font-size:12.5px; line-height:1.7; }
+.code .ln { color:var(--faint); user-select:none; margin-right:16px; }
+.code .hl { background:var(--acc-bg); display:block; margin:0 -16px; padding:0 16px; border-left:2px solid var(--acc); }
+.kw{color:var(--c-kw);} .fn{color:var(--c-fn);} .str{color:var(--c-str);} .num{color:var(--c-num);} .com{color:var(--c-com);} .pn{color:var(--c-punct);}
+
+/* character aside ("hot tip" persona) */
+.aside { display:flex; gap:14px; background:var(--purple-bg); border:1px solid var(--purple); border-left-width:3px; border-radius:var(--radius); padding:14px 16px; margin:20px 0; }
+.aside .avatar { width:38px; height:38px; border-radius:8px; background:var(--surface2); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.aside .who { font-family:var(--mono); font-size:11px; color:var(--purple); font-weight:500; margin-bottom:4px; }
+.aside .say { font-size:13px; color:var(--text); opacity:.9; line-height:1.6; }
+
+/* callout */
+.callout { border:1px solid var(--warn); border-left-width:3px; background:var(--warn-bg); border-radius:var(--radius); padding:12px 16px; margin:20px 0; }
+.callout .ctitle { font-family:var(--mono); font-size:11px; color:var(--warn); font-weight:500; margin-bottom:5px; display:flex; gap:7px; align-items:center; }
+.callout p { margin:0; font-size:13px; color:var(--text); opacity:.88; }
+
+.prevnext { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:30px 0; }
+.pn-card { border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; cursor:pointer; }
+.pn-card:hover { border-color:var(--acc-border); }
+.pn-card .dir { font-family:var(--mono); font-size:10px; color:var(--faint); margin-bottom:5px; }
+.pn-card .t { font-size:13px; font-weight:500; }
+.pn-card.next { text-align:right; }
+
+.comments { border-top:1px solid var(--border); margin-top:30px; padding-top:22px; }
+.comments .ch { font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:14px; }
+.comment { display:flex; gap:12px; margin-bottom:16px; }
+.comment .ca { width:32px; height:32px; border-radius:50%; background:var(--surface2); border:1px solid var(--border2); flex-shrink:0; }
+.comment .cb { font-size:12.5px; }
+.comment .cn { font-weight:500; margin-right:8px; }
+.comment .ct { color:var(--faint); font-family:var(--mono); font-size:10px; }
+.comment .cm { color:var(--muted); margin-top:3px; line-height:1.55; }
+
+/* ── project cards ── */
+.proj { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; border-left:2px solid var(--acc); }
+.proj.blue{border-left-color:var(--blue);} .proj.purple{border-left-color:var(--purple);} .proj.pink{border-left-color:var(--pink);}
+.proj h3 { font-family:var(--mono); font-size:14px; font-weight:500; margin-bottom:6px; }
+.proj.blue h3{color:var(--blue);} .proj h3{color:var(--acc);} .proj.purple h3{color:var(--purple);} .proj.pink h3{color:var(--pink);}
+.proj .pd { font-size:12.5px; color:var(--muted); line-height:1.6; margin-bottom:12px; }
+.proj .tstack { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px; }
+.proj .links { display:flex; gap:14px; font-family:var(--mono); font-size:11px; }
+.proj .links a { color:var(--acc); text-decoration:none; }
+
+/* about */
+.about-grid { display:grid; grid-template-columns:1fr 1.4fr; gap:32px; align-items:start; }
+.avatar-lg { width:96px; height:96px; border-radius:14px; background:var(--surface2); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:42px; margin-bottom:16px; }
+.timeline .tl { display:flex; gap:14px; padding:10px 0; }
+.timeline .ty { font-family:var(--mono); font-size:11px; color:var(--acc); width:54px; flex-shrink:0; }
+.timeline .tt { font-size:13px; }
+.timeline .tt b{font-weight:500;} .timeline .tt span{color:var(--muted);}
+
+/* ── components / design system screen ── */
+.ds-section { margin-bottom:28px; }
+.ds-h { font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:12px; text-transform:uppercase; letter-spacing:.1em; }
+.swatches { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px; }
+.sw { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.sw .chip-color { height:46px; }
+.sw .sl { font-family:var(--mono); font-size:10px; padding:6px 8px; color:var(--muted); background:var(--surface); }
+.btn-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.btn { font-family:var(--mono); font-size:12px; padding:8px 16px; border-radius:var(--radius); cursor:pointer; border:1px solid var(--border2); background:var(--surface); color:var(--text); }
+.btn.primary { background:var(--acc); border-color:var(--acc); color:#04130f; font-weight:500; }
+.btn.ghost { background:none; }
+
+/* ── cmd-k modal mock ── */
+.cmdk { background:var(--surface); border:1px solid var(--border2); border-radius:12px; overflow:hidden; max-width:520px; box-shadow:0 20px 60px rgba(0,0,0,.4); }
+.cmdk .ci { display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid var(--border); }
+.cmdk .ci input { flex:1; background:none; border:none; outline:none; color:var(--text); font-size:15px; font-family:var(--sans); }
+.cmdk .res { padding:8px; }
+.cmdk .ritem { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:var(--radius); font-size:13px; color:var(--muted); }
+.cmdk .ritem.sel { background:var(--acc-bg); color:var(--acc); }
+.cmdk .ritem .rk { margin-left:auto; font-family:var(--mono); font-size:10px; color:var(--faint); }
+
+@media(max-width:760px){
+  .article-layout{grid-template-columns:1fr;} .toc{display:none;}
+  .about-grid{grid-template-columns:1fr;} .prevnext{grid-template-columns:1fr;}
+  .post-row{flex-direction:column; gap:6px;} .post-row .date{width:auto;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── DOC CHROME ── -->
+<div class="docbar">
+  <div class="brand">genuine<span>·</span>folio</div>
+  <div class="docsub">UI/UX mockups — both themes live</div>
+  <div class="spacer"></div>
+  <span class="grp-label">theme</span>
+  <div class="theme-picker" id="theme-picker">
+    <span class="tp-swatch" data-theme-name="dark"     title="Dark (NotiQ default)" onclick="applyTheme('dark')"></span>
+    <span class="tp-swatch" data-theme-name="light"    title="Light"    onclick="applyTheme('light')"></span>
+    <span class="tp-swatch" data-theme-name="midnight" title="Midnight" onclick="applyTheme('midnight')"></span>
+    <span class="tp-swatch" data-theme-name="sepia"    title="Sepia"    onclick="applyTheme('sepia')"></span>
+    <span class="tp-swatch" data-theme-name="matrix"   title="Matrix"   onclick="applyTheme('matrix')"></span>
+  </div>
+  <span class="grp-label">accent</span>
+  <div class="accent-presets">
+    <span class="ac-sw def" style="background:#00d4a4" title="NotiQ green — default (click to reset)" onclick="resetAccent()"></span>
+    <span class="ac-sw" style="background:#f0703c" title="rust orange" onclick="setAccent('#f0703c')"></span>
+    <span class="ac-sw" style="background:#4a90e8" title="blue" onclick="setAccent('#4a90e8')"></span>
+    <span class="ac-sw" style="background:#ef5350" title="red" onclick="setAccent('#ef5350')"></span>
+    <span class="ac-sw" style="background:#9270e0" title="purple" onclick="setAccent('#9270e0')"></span>
+    <label class="accent-pick" title="Custom accent">
+      <span class="ap-dot" id="ap-dot"></span>
+      <input type="color" id="accent-input" value="#00d4a4" oninput="setAccent(this.value)">
+    </label>
+  </div>
+  <button class="reset-accent" id="reset-accent" onclick="resetAccent()" title="Reset to theme default">reset</button>
+  <button class="theme-toggle" onclick="toggleTheme()"><span id="tt-ic">◑</span> <span id="tt-label">Dark</span></button>
+</div>
+
+<div class="wrap">
+
+  <div class="screen-tabs">
+    <button class="stab active" onclick="showScreen('home',this)">Home</button>
+    <button class="stab" onclick="showScreen('blog',this)">Blog index</button>
+    <button class="stab" onclick="showScreen('post',this)">Post</button>
+    <button class="stab" onclick="showScreen('projects',this)">Projects</button>
+    <button class="stab" onclick="showScreen('project',this)">Project detail</button>
+    <button class="stab" onclick="showScreen('about',this)">About</button>
+    <button class="stab" onclick="showScreen('search',this)">Cmd-K search</button>
+    <button class="stab" onclick="showScreen('ds',this)">Design system</button>
+  </div>
+
+  <!-- ════════════ HOME ════════════ -->
+  <div class="screen active" id="s-home">
+    <div class="screen-note">Landing page — hero (eyebrow · accent headline · lead · meta pills), featured writing, selected projects. Mirrors the NotiQ header treatment.</div>
+    <div class="win">
+      <div class="win-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="win-url">genuine.dev</span></div>
+      <div class="win-body">
+        <nav class="snav">
+          <div class="logo">genuine<span>.</span>dev</div>
+          <div class="nlinks"><a class="npill">Writing</a><a class="npill">Projects</a><a class="npill">About</a></div>
+          <div class="nspacer"></div>
+          <span class="kbd">⌘K</span>
+          <span class="mini-toggle" onclick="toggleTheme()">◑ theme</span>
+        </nav>
+        <div class="page">
+          <div class="hero">
+            <div class="eyebrow">Rust · Systems · Infosec</div>
+            <h1>I build <span>systems</span> and write about how they break.</h1>
+            <p class="lead">Backend &amp; distributed systems engineer working mostly in Rust. I write deep technical posts on systems programming, distributed systems, and offensive/defensive security.</p>
+            <div class="meta-row">
+              <span class="meta-pill"><strong>Focus</strong> Rust</span>
+              <span class="meta-pill"><strong>Writing</strong> coding · infosec</span>
+              <span class="meta-pill"><strong>Bug bounty</strong> active</span>
+              <span class="meta-pill"><strong>Stack</strong> axum · postgres</span>
+            </div>
+          </div>
+          <div class="divider5"><div style="background:var(--warn)"></div><div style="background:var(--purple)"></div><div style="background:var(--blue)"></div><div style="background:var(--acc)"></div><div style="background:var(--faint)"></div></div>
+
+          <div class="section-label">featured writing</div>
+          <div class="card-grid">
+            <div class="pcard"><span class="ptag">rust</span><h3>Writing a lock-free queue from scratch</h3><p>What the ABA problem actually is, and why crossbeam tags its pointers.</p><div class="pmeta"><span>Jun 2026</span><span>12 min</span></div></div>
+            <div class="pcard"><span class="ptag">infosec</span><h3>Blind SSRF: building your own OOB server</h3><p>Catching out-of-band callbacks with a self-hosted interaction server.</p><div class="pmeta"><span>May 2026</span><span>9 min</span></div></div>
+            <div class="pcard"><span class="ptag">distributed</span><h3>SWIM gossip, explained by building it</h3><p>Failure detection without a coordinator, in 400 lines of Rust.</p><div class="pmeta"><span>Apr 2026</span><span>15 min</span></div></div>
+          </div>
+
+          <div class="section-label">selected projects</div>
+          <div class="card-grid">
+            <div class="proj"><h3>NotiQ</h3><div class="pd">Distributed notification platform — 8 Rust microservices over gRPC + a Postgres-native queue.</div><div class="tstack"><span class="chip">Rust</span><span class="chip">gRPC</span><span class="chip">AWS</span></div><div class="links"><a>case study →</a></div></div>
+            <div class="proj blue"><h3>genuine-folio</h3><div class="pd">This site — Rust full-stack portfolio + blog. Modular monolith, hexagonal, self-hosted.</div><div class="tstack"><span class="chip">axum</span><span class="chip">maud</span><span class="chip">HTMX</span></div><div class="links"><a>case study →</a></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ BLOG INDEX ════════════ -->
+  <div class="screen" id="s-blog">
+    <div class="screen-note">Blog index — live search (HTMX debounced), tag filter pills, post rows with date / summary / tags / reading time.</div>
+    <div class="win">
+      <div class="win-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="win-url">genuine.dev/blog</span></div>
+      <div class="win-body">
+        <nav class="snav"><div class="logo">genuine<span>.</span>dev</div><div class="nlinks"><a class="npill active">Writing</a><a class="npill">Projects</a><a class="npill">About</a></div><div class="nspacer"></div><span class="kbd">⌘K</span></nav>
+        <div class="page">
+          <div class="eyebrow">Writing</div>
+          <h1 style="font-size:24px;font-weight:500;margin-bottom:20px;">All posts</h1>
+          <div class="searchbar"><span class="ic mono">⌕</span><input placeholder="Search posts… (full-text)"></div>
+          <div class="chips" style="margin-bottom:8px;">
+            <span class="chip active clickable">all</span>
+            <span class="chip clickable">rust</span>
+            <span class="chip clickable">infosec</span>
+            <span class="chip clickable">distributed</span>
+            <span class="chip clickable">performance</span>
+            <span class="chip clickable">ctf</span>
+          </div>
+          <div class="post-row"><div class="date">2026-06-20</div><div><h3>Writing a lock-free queue from scratch</h3><p>The ABA problem, why pointer tagging is necessary, and how a Michael-Scott queue stays correct without a mutex.</p><div class="chips"><span class="chip">rust</span><span class="chip">performance</span><span class="chip">dsa</span></div></div></div>
+          <div class="post-row"><div class="date">2026-05-28</div><div><h3>Blind SSRF: building your own OOB server</h3><p>How out-of-band interaction servers work, and standing one up safely on isolated infrastructure for bug bounty.</p><div class="chips"><span class="chip">infosec</span><span class="chip">bug-bounty</span></div></div></div>
+          <div class="post-row"><div class="date">2026-04-15</div><div><h3>SWIM gossip, explained by building it</h3><p>Direct ping → suspect → indirect ping → dead. Epidemic dissemination and O(log N) convergence, implemented in Rust.</p><div class="chips"><span class="chip">distributed</span><span class="chip">rust</span></div></div></div>
+          <div class="post-row"><div class="date">2026-03-02</div><div><h3>Postgres as a job queue: SKIP LOCKED in depth</h3><p>Lock-free dequeue, LISTEN/NOTIFY for low-latency wake, and where this approach hits its ceiling.</p><div class="chips"><span class="chip">postgres</span><span class="chip">systems</span></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ POST DETAIL ════════════ -->
+  <div class="screen" id="s-post">
+    <div class="screen-note">Post detail — sticky TOC w/ scroll-spy, code blocks (filename + copy + line highlight), the character aside (your "hot tip" persona), callouts, prev/next, comments.</div>
+    <div class="win" data-topic="rust">
+      <div class="win-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="win-url">genuine.dev/blog/lock-free-queue</span><span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--acc);">● topic: rust</span></div>
+      <div class="win-body">
+        <nav class="snav"><div class="logo">genuine<span>.</span>dev</div><div class="nlinks"><a class="npill active">Writing</a><a class="npill">Projects</a><a class="npill">About</a></div><div class="nspacer"></div><span class="kbd">⌘K</span></nav>
+        <div class="page">
+          <div class="article-layout">
+            <aside class="toc">
+              <div class="toc-h">On this page</div>
+              <a class="cur">The ABA problem</a>
+              <a class="sub">Why tagging works</a>
+              <a>The CAS loop</a>
+              <a>Benchmarks</a>
+              <a>Takeaways</a>
+            </aside>
+            <div class="article">
+              <div class="eyebrow">rust · performance</div>
+              <h1>Writing a lock-free queue from scratch</h1>
+              <div class="ameta"><span>2026-06-20</span><span>12 min read</span><span>· 4 comments</span></div>
+              <h2>The ABA problem</h2>
+              <p>A compare-and-swap only checks that a pointer's <em>value</em> is unchanged — not that it hasn't been changed and changed back. That gap is the ABA problem, and it's the reason a naive lock-free stack corrupts under contention.</p>
+              <div class="code">
+                <div class="chead"><span class="cfile">queue.rs</span><span class="ccopy">copy</span></div>
+                <pre><span class="ln">1</span><span class="kw">loop</span> <span class="pn">{</span>
+<span class="ln">2</span>    <span class="kw">let</span> head <span class="pn">=</span> self<span class="pn">.</span>head<span class="pn">.</span><span class="fn">load</span><span class="pn">(</span>Ordering<span class="pn">::</span>Acquire<span class="pn">);</span>
+<span class="hl"><span class="ln">3</span>    <span class="kw">let</span> next <span class="pn">=</span> <span class="kw">unsafe</span> <span class="pn">{ (*</span>head<span class="pn">).</span>next <span class="pn">};</span>  <span class="com">// danger lives here</span></span>
+<span class="ln">4</span>    <span class="kw">if</span> self<span class="pn">.</span>head<span class="pn">.</span><span class="fn">compare_exchange</span><span class="pn">(</span>head<span class="pn">,</span> next<span class="pn">,</span> <span class="num">/* ... */</span><span class="pn">).</span><span class="fn">is_ok</span><span class="pn">() {</span>
+<span class="ln">5</span>        <span class="kw">break</span><span class="pn">;</span>
+<span class="ln">6</span>    <span class="pn">}</span>
+<span class="ln">7</span><span class="pn">}</span></pre>
+              </div>
+              <div class="aside">
+                <div class="avatar">🦀</div>
+                <div><div class="who">Ferris' hot tip</div><div class="say">If you free that node between the <code>load</code> and the <code>compare_exchange</code>, another thread can reuse the exact same address — same pointer value, totally different node. CAS says "looks fine!" and you've corrupted the queue. That's ABA.</div></div>
+              </div>
+              <h2>Why tagging works</h2>
+              <p class="dim">crossbeam attaches a generation counter to each pointer. The CAS now compares (pointer, tag) together, so a recycled address with a bumped tag fails the swap — exactly what we want.</p>
+              <div class="callout">
+                <div class="ctitle">⚠ Gotcha</div>
+                <p>Tagging needs spare bits in the pointer (alignment) or a double-width CAS. On 64-bit with 8-byte alignment you get 3 low bits for free — usually enough.</p>
+              </div>
+              <div class="prevnext">
+                <div class="pn-card"><div class="dir">← previous</div><div class="t">Atomic memory ordering, demystified</div></div>
+                <div class="pn-card next"><div class="dir">next →</div><div class="t">Zero-copy fan-out with Bytes</div></div>
+              </div>
+              <div class="comments">
+                <div class="ch">4 comments — via self-hosted threads (Phase 6)</div>
+                <div class="comment"><div class="ca"></div><div class="cb"><span class="cn">hannah</span><span class="ct">2 days ago</span><div class="cm">The generation-counter explanation finally made tagging click for me. Great post.</div></div></div>
+                <div class="comment"><div class="ca"></div><div class="cb"><span class="cn">d_sys</span><span class="ct">1 day ago</span><div class="cm">Would love a follow-up benchmarking this against a Mutex&lt;VecDeque&gt; under real load.</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ PROJECTS ════════════ -->
+  <div class="screen" id="s-projects">
+    <div class="screen-note">Projects index — card grid reusing the NotiQ accent-bordered card pattern. Each links to a full case-study page.</div>
+    <div class="win">
+      <div class="win-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="win-url">genuine.dev/projects</span></div>
+      <div class="win-body">
+        <nav class="snav"><div class="logo">genuine<span>.</span>dev</div><div class="nlinks"><a class="npill">Writing</a><a class="npill active">Projects</a><a class="npill">About</a></div><div class="nspacer"></div><span class="kbd">⌘K</span></nav>
+        <div class="page">
+          <div class="eyebrow">Projects</div>
+          <h1 style="font-size:24px;font-weight:500;margin-bottom:20px;">Things I've built</h1>
+          <div class="card-grid">
+            <div class="proj"><h3>NotiQ</h3><div class="pd">Distributed notification platform. 8 Rust microservices over gRPC, Postgres-native queue with SKIP LOCKED, SWIM gossip, consistent hashing.</div><div class="tstack"><span class="chip">Rust</span><span class="chip">gRPC</span><span class="chip">Postgres</span><span class="chip">AWS</span></div><div class="links"><a>case study →</a><a>github →</a></div></div>
+            <div class="proj blue"><h3>genuine-folio</h3><div class="pd">This portfolio + blog. Modular monolith, hexagonal architecture, markdown→Postgres pipeline, self-hosted on a VPS.</div><div class="tstack"><span class="chip">axum</span><span class="chip">maud</span><span class="chip">HTMX</span></div><div class="links"><a>case study →</a><a>github →</a></div></div>
+            <div class="proj purple"><h3>oob-catcher</h3><div class="pd">Self-hosted out-of-band interaction server for bug-bounty SSRF/blind-RCE detection. Wildcard DNS + HTTP/DNS logging.</div><div class="tstack"><span class="chip">Rust</span><span class="chip">DNS</span><span class="chip">infosec</span></div><div class="links"><a>case study →</a></div></div>
+            <div class="proj pink"><h3>ctf-writeups</h3><div class="pd">Collection of CTF solutions with spoiler-blurred reveals and per-challenge tooling.</div><div class="tstack"><span class="chip">pwn</span><span class="chip">web</span><span class="chip">crypto</span></div><div class="links"><a>browse →</a></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ PROJECT DETAIL ════════════ -->
+  <div class="screen" id="s-project">
+    <div class="screen-note">Project detail — a full case study like notiq_portfolio.html: hero + meta pills, architecture diagram, tech stack chips, build narrative. Stored as a <code>kind="project"</code> document.</div>
+    <div class="win">
+      <div class="win-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="win-url">genuine.dev/projects/notiq</span></div>
+      <div class="win-body">
+        <nav class="snav"><div class="logo">genuine<span>.</span>dev</div><div class="nlinks"><a class="npill">Writing</a><a class="npill active">Projects</a><a class="npill">About</a></div><div class="nspacer"></div><span class="kbd">⌘K</span></nav>
+        <div class="page">
+          <div class="eyebrow">Rust · Distributed Systems · AWS</div>
+          <h1 style="font-size:26px;font-weight:500;margin-bottom:12px;">NotiQ — <span style="color:var(--acc)">Distributed Notification Platform</span></h1>
+          <p class="lead" style="margin-bottom:18px;">Eight Rust microservices over gRPC and a Postgres-native job queue. Built to explore what actually breaks operating a reliable delivery system at scale.</p>
+          <div class="meta-row" style="margin-bottom:24px;">
+            <span class="meta-pill"><strong>Services</strong> 8</span>
+            <span class="meta-pill"><strong>Queue</strong> SKIP LOCKED</span>
+            <span class="meta-pill"><strong>Membership</strong> SWIM gossip</span>
+            <span class="meta-pill"><strong>Infra</strong> ECS · Terraform</span>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:34px;text-align:center;color:var(--faint);font-family:var(--mono);font-size:12px;">⟢ architecture diagram (SVG) ⟣<br><span style="font-size:11px;">client → gateway → enqueue → worker[N] → delivery-{email,sms,webhook}</span></div>
+          <div class="section-label">tech stack</div>
+          <div class="chips">
+            <span class="chip">axum</span><span class="chip">tonic</span><span class="chip">sqlx</span><span class="chip">tokio</span><span class="chip">tower</span><span class="chip">crossbeam</span><span class="chip">opentelemetry</span><span class="chip">terraform</span>
+          </div>
+          <p class="dim" style="margin-top:20px;font-size:13px;">↳ full build narrative, comm matrix, ERD and engineering-depth tabs render below — exactly like <code>notiq_portfolio.html</code>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ ABOUT ════════════ -->
+  <div class="screen" id="s-about">
+    <div class="screen-note">About — bio, focus areas, timeline. Markdown-driven page (<code>kind="page"</code>).</div>
+    <div class="win">
+      <div class="win-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="win-url">genuine.dev/about</span></div>
+      <div class="win-body">
+        <nav class="snav"><div class="logo">genuine<span>.</span>dev</div><div class="nlinks"><a class="npill">Writing</a><a class="npill">Projects</a><a class="npill active">About</a></div><div class="nspacer"></div><span class="kbd">⌘K</span></nav>
+        <div class="page">
+          <div class="about-grid">
+            <div>
+              <div class="avatar-lg">🧑‍💻</div>
+              <div class="eyebrow">About</div>
+              <h1 style="font-size:22px;font-weight:500;margin-bottom:10px;">Genuine</h1>
+              <p class="dim" style="font-size:13px;">Systems engineer, Rustacean, and bug-bounty hunter. I like things that are fast, correct, and slightly over-engineered.</p>
+              <div class="chips" style="margin-top:14px;"><span class="chip">Rust</span><span class="chip">Postgres</span><span class="chip">distributed</span><span class="chip">infosec</span></div>
+            </div>
+            <div>
+              <div class="section-label" style="margin-top:0;">timeline</div>
+              <div class="timeline">
+                <div class="tl"><div class="ty">2026</div><div class="tt"><b>genuine-folio</b> <span>— built this site, started writing weekly.</span></div></div>
+                <div class="tl"><div class="ty">2025</div><div class="tt"><b>NotiQ</b> <span>— distributed notification platform in Rust.</span></div></div>
+                <div class="tl"><div class="ty">2024</div><div class="tt"><b>Bug bounty</b> <span>— first valid SSRF report, hooked since.</span></div></div>
+              </div>
+              <div class="section-label">currently</div>
+              <p class="dim" style="font-size:13px;">Mastering full-stack Rust by building everything myself — see the <code>/uses</code> and <code>/now</code> pages.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ CMD-K ════════════ -->
+  <div class="screen" id="s-search">
+    <div class="screen-note">Command palette (⌘K) — instant fuzzy search across posts, projects, tags, and actions. Keyboard-navigable. HTMX-backed results.</div>
+    <div class="win">
+      <div class="win-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="win-url">genuine.dev — ⌘K open</span></div>
+      <div class="win-body" style="padding:50px;display:flex;justify-content:center;background:rgba(0,0,0,.25);">
+        <div class="cmdk">
+          <div class="ci"><span class="mono" style="color:var(--muted)">⌕</span><input value="ssrf" readonly><span class="kbd">esc</span></div>
+          <div class="res">
+            <div class="ritem sel">📝 Blind SSRF: building your own OOB server <span class="rk">post</span></div>
+            <div class="ritem">🛠 oob-catcher <span class="rk">project</span></div>
+            <div class="ritem">🏷 infosec <span class="rk">tag · 12</span></div>
+            <div class="ritem">🏷 bug-bounty <span class="rk">tag · 5</span></div>
+            <div class="ritem">⚡ Toggle theme <span class="rk">action</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ DESIGN SYSTEM ════════════ -->
+  <div class="screen" id="s-ds">
+    <div class="screen-note">Design system — the tokens, both themes. Everything above is built from these. Toggle the theme (top right) and watch every swatch and component re-theme via CSS variables.</div>
+    <div class="win"><div class="win-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="win-url">design tokens</span></div>
+    <div class="win-body"><div class="page">
+
+      <div class="ds-section">
+        <div class="ds-h">surfaces &amp; text</div>
+        <div class="swatches">
+          <div class="sw"><div class="chip-color" style="background:var(--bg)"></div><div class="sl">--bg</div></div>
+          <div class="sw"><div class="chip-color" style="background:var(--surface)"></div><div class="sl">--surface</div></div>
+          <div class="sw"><div class="chip-color" style="background:var(--surface2)"></div><div class="sl">--surface2</div></div>
+          <div class="sw"><div class="chip-color" style="background:var(--border2)"></div><div class="sl">--border2</div></div>
+          <div class="sw"><div class="chip-color" style="background:var(--text)"></div><div class="sl">--text</div></div>
+          <div class="sw"><div class="chip-color" style="background:var(--muted)"></div><div class="sl">--muted</div></div>
+        </div>
+      </div>
+
+      <div class="ds-section">
+        <div class="ds-h">accents</div>
+        <div class="swatches">
+          <div class="sw"><div class="chip-color" style="background:var(--acc)"></div><div class="sl">--acc</div></div>
+          <div class="sw"><div class="chip-color" style="background:var(--blue)"></div><div class="sl">--blue</div></div>
+          <div class="sw"><div class="chip-color" style="background:var(--purple)"></div><div class="sl">--purple</div></div>
+          <div class="sw"><div class="chip-color" style="background:var(--pink)"></div><div class="sl">--pink</div></div>
+          <div class="sw"><div class="chip-color" style="background:var(--green)"></div><div class="sl">--green</div></div>
+          <div class="sw"><div class="chip-color" style="background:var(--warn)"></div><div class="sl">--warn</div></div>
+        </div>
+      </div>
+
+      <div class="ds-section">
+        <div class="ds-h">per-topic accents — page identity (each re-points --acc)</div>
+        <div class="swatches">
+          <div class="sw" data-topic="infosec"><div class="chip-color" style="background:var(--acc)"></div><div class="sl">infosec · default</div></div>
+          <div class="sw" data-topic="rust"><div class="chip-color" style="background:var(--acc)"></div><div class="sl">rust / coding</div></div>
+          <div class="sw" data-topic="distributed"><div class="chip-color" style="background:var(--acc)"></div><div class="sl">distributed</div></div>
+          <div class="sw" data-topic="performance"><div class="chip-color" style="background:var(--acc)"></div><div class="sl">performance</div></div>
+          <div class="sw" data-topic="ctf"><div class="chip-color" style="background:var(--acc)"></div><div class="sl">ctf / offensive</div></div>
+          <div class="sw" data-topic="systems"><div class="chip-color" style="background:var(--acc)"></div><div class="sl">systems</div></div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.65;">A topic page sets <code>data-topic</code> on its root — the whole page (nav, links, code, chips) adopts that accent. Default = NotiQ green (infosec/brand). Saved per topic in the DB; a post can override its own accent. <b>See the Post screen</b> — it's a <code>rust</code> page, tinted orange.</p>
+      </div>
+
+      <div class="ds-section">
+        <div class="ds-h">buttons</div>
+        <div class="btn-row">
+          <button class="btn primary">Primary</button>
+          <button class="btn">Secondary</button>
+          <button class="btn ghost">Ghost</button>
+          <span class="chip active">active pill</span>
+          <span class="chip">pill</span>
+        </div>
+      </div>
+
+      <div class="ds-section">
+        <div class="ds-h">typography</div>
+        <h1 style="font-size:24px;font-weight:500;">Inter — headings &amp; body</h1>
+        <p class="mono" style="color:var(--muted);font-size:13px;">IBM Plex Mono — code, labels, metadata</p>
+      </div>
+
+      <div class="ds-section">
+        <div class="ds-h">aside &amp; callout components</div>
+        <div class="aside"><div class="avatar">🦀</div><div><div class="who">Ferris' hot tip</div><div class="say">The character aside — borrowed from fasterthanlime, built as a custom markdown directive.</div></div></div>
+        <div class="callout"><div class="ctitle">⚠ Gotcha</div><p>Callouts/admonitions — another registered directive in the Renderer.</p></div>
+      </div>
+
+    </div></div></div>
+  </div>
+
+</div>
+
+<script>
+// ── theming system (mirrors the real site) ──
+// A theme = a name (preset token map via [data-theme]) + optional custom accent
+// override. Both persist — anonymous → localStorage; logged-in → DB (Phase 5).
+const THEMES = ['dark','light','midnight','sepia','matrix'];
+const LABEL = {dark:'Dark',light:'Light',midnight:'Midnight',sepia:'Sepia',matrix:'Matrix'};
+const DARKISH = {dark:1,midnight:1,matrix:1,light:0,sepia:0};
+// each preset's *default* accent — the NotiQ green is the dark/default brand color
+const THEME_ACC = {dark:'#00d4a4', light:'#008f6f', midnight:'#7c8cff', sepia:'#9c6b1f', matrix:'#22e06a'};
+
+function getAccent(){ try { return localStorage.getItem('accent'); } catch(e){ return null; } }
+
+function applyTheme(name){
+  document.documentElement.setAttribute('data-theme', name);
+  document.getElementById('tt-label').textContent = LABEL[name] || name;
+  document.getElementById('tt-ic').textContent = DARKISH[name] ? '◑' : '◐';
+  document.querySelectorAll('.tp-swatch').forEach(s =>
+    s.classList.toggle('sel', s.dataset.themeName === name));
+  try { localStorage.setItem('theme', name); } catch(e){}
+  syncAccentUI();   // reflect this theme's default accent in the picker
+  reapplyAccent();  // re-assert any custom override on top
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme');
+  applyTheme(DARKISH[cur] ? 'light' : 'dark');
+}
+
+// custom accent override — stored separately so it layers over any preset
+function setAccent(hex){
+  document.documentElement.style.setProperty('--acc', hex);
+  document.documentElement.style.setProperty('--acc-bg', hexA(hex, 0.08));
+  document.documentElement.style.setProperty('--acc-border', hexA(hex, 0.25));
+  try { localStorage.setItem('accent', hex); } catch(e){}
+  document.getElementById('reset-accent').classList.add('show');
+}
+function resetAccent(){
+  document.documentElement.style.removeProperty('--acc');
+  document.documentElement.style.removeProperty('--acc-bg');
+  document.documentElement.style.removeProperty('--acc-border');
+  try { localStorage.removeItem('accent'); } catch(e){}
+  document.getElementById('reset-accent').classList.remove('show');
+  syncAccentUI();
+}
+function reapplyAccent(){
+  const a = getAccent();
+  if(a){ document.documentElement.style.setProperty('--acc', a);
+         document.documentElement.style.setProperty('--acc-bg', hexA(a,0.08));
+         document.documentElement.style.setProperty('--acc-border', hexA(a,0.25)); }
+}
+// point the color input at the active accent: custom override if set, else the
+// current theme's default (NotiQ green on the default theme)
+function syncAccentUI(){
+  const theme = document.documentElement.getAttribute('data-theme');
+  const a = getAccent() || THEME_ACC[theme] || '#00d4a4';
+  const inp = document.getElementById('accent-input'); if(inp) inp.value = a;
+}
+function hexA(hex, a){
+  const n = parseInt(hex.slice(1),16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+}
+
+(function(){
+  let saved; try { saved = localStorage.getItem('theme'); } catch(e){}
+  if(!THEMES.includes(saved)) saved = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  applyTheme(saved);
+  if(getAccent()) document.getElementById('reset-accent').classList.add('show');
+})();
+
+// ── screen switcher ──
+function showScreen(name, btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('s-'+name).classList.add('active');
+  btn.classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+</script>
+</body>
+</html>

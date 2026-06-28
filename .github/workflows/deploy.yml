@@ -1,0 +1,46 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - { name: backend, context: ./backend }
+          - { name: frontend, context: ./frontend }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}-${{ matrix.name }}:latest
+            ghcr.io/${{ github.repository }}-${{ matrix.name }}:${{ github.sha }}
+
+  # Deploy to the VPS once images are pushed. Configure secrets
+  # (VPS_HOST, VPS_USER, VPS_SSH_KEY) + set the image paths in docker-compose.prod.yml.
+  # deploy:
+  #   needs: build-push
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: appleboy/ssh-action@v1
+  #       with:
+  #         host: ${{ secrets.VPS_HOST }}
+  #         username: ${{ secrets.VPS_USER }}
+  #         key: ${{ secrets.VPS_SSH_KEY }}
+  #         script: |
+  #           cd /srv/folio
+  #           docker compose -f docker-compose.prod.yml pull
+  #           docker compose -f docker-compose.prod.yml up -d
