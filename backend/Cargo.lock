@@ -776,7 +776,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "genuine-folio"
+name = "genuine-dev"
 version = "0.1.0"
 dependencies = [
  "argon2",

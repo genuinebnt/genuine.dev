@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { findScrollRoot, scrollToHashTarget } from "../lib/scrollRoot";
 
 /**
  * Attaches client-side interactivity to server-rendered markdown HTML.
@@ -68,27 +69,64 @@ export function DocInteractive() {
     };
     phases.forEach((phase) => phase.addEventListener("click", handlePhaseClick));
 
-    // 4. Scroll-spy TOC. comrak puts the id on an anchor inside each heading.
-    const headings = document.querySelectorAll<HTMLElement>(".prose h2, .prose h3");
-    const tocLinks = document.querySelectorAll<HTMLAnchorElement>(".toc a");
+    // 4. Scroll-spy TOC — panel pages scroll inside `[data-scroll-root]`, not the window.
+    const readingTarget = document.getElementById("reading-target");
+    const proseRoot = readingTarget ?? document.querySelector<HTMLElement>(".article-col, .about-body");
+    if (!proseRoot) {
+      return () => {
+        copyBtns.forEach((btn) => btn.removeEventListener("click", handleCopy));
+        tabs.forEach((tab) => tab.removeEventListener("click", handleTabClick));
+        phases.forEach((phase) => phase.removeEventListener("click", handlePhaseClick));
+      };
+    }
+
+    const scrollRoot = findScrollRoot(proseRoot);
+    const headings = proseRoot.querySelectorAll<HTMLElement>(".prose h2, .prose h3, h2, h3");
+    const tocLinks = document.querySelectorAll<HTMLAnchorElement>(".toc a, .toc-link");
 
     const headingId = (h: HTMLElement) => h.querySelector("a[id]")?.id ?? h.id;
 
+    const setCurrentLink = (id: string) => {
+      tocLinks.forEach((link) => {
+        link.classList.remove("cur", "active", "toc-cur");
+        if (link.getAttribute("href") === `#${id}`) {
+          link.classList.add("cur", "toc-cur");
+        }
+      });
+    };
+
+    const handleTocClick = (e: Event) => {
+      const link = e.currentTarget as HTMLAnchorElement;
+      const href = link.getAttribute("href");
+      if (!href?.startsWith("#")) return;
+
+      const target = document.getElementById(href.slice(1));
+      if (!target) return;
+
+      if (scrollRoot !== window) {
+        e.preventDefault();
+        scrollToHashTarget(scrollRoot, target);
+        setCurrentLink(target.id);
+      }
+    };
+    tocLinks.forEach((link) => link.addEventListener("click", handleTocClick));
+
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const id = headingId(entry.target as HTMLElement);
-            tocLinks.forEach((link) => {
-              link.classList.remove("cur", "active");
-              if (link.getAttribute("href") === `#${id}`) {
-                link.classList.add("cur");
-              }
-            });
-          }
-        });
+        const visible = entries.filter((entry) => entry.isIntersecting);
+        if (visible.length === 0) return;
+
+        const current = visible.reduce((best, entry) =>
+          entry.boundingClientRect.top < best.boundingClientRect.top ? entry : best,
+        );
+        const id = headingId(current.target as HTMLElement);
+        if (id) setCurrentLink(id);
       },
-      { rootMargin: "0px 0px -80% 0px" }
+      {
+        root: scrollRoot === window ? null : scrollRoot,
+        rootMargin: "-12% 0px -75% 0px",
+        threshold: 0,
+      },
     );
 
     headings.forEach((h) => observer.observe(h));
@@ -97,6 +135,7 @@ export function DocInteractive() {
       copyBtns.forEach((btn) => btn.removeEventListener("click", handleCopy));
       tabs.forEach((tab) => tab.removeEventListener("click", handleTabClick));
       phases.forEach((phase) => phase.removeEventListener("click", handlePhaseClick));
+      tocLinks.forEach((link) => link.removeEventListener("click", handleTocClick));
       observer.disconnect();
     };
   }, []);

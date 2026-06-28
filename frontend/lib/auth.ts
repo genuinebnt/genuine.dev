@@ -4,8 +4,20 @@ const KEY = "folio_token";
 
 export const getToken = (): string | null =>
   typeof window !== "undefined" ? localStorage.getItem(KEY) : null;
-export const setToken = (t: string) => localStorage.setItem(KEY, t);
-export const clearToken = () => localStorage.removeItem(KEY);
+
+/** Notifies same-tab listeners (e.g. the nav) that auth state changed. */
+function notifyAuthChange() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("auth-change"));
+}
+
+export const setToken = (t: string) => {
+  localStorage.setItem(KEY, t);
+  notifyAuthChange();
+};
+export const clearToken = () => {
+  localStorage.removeItem(KEY);
+  notifyAuthChange();
+};
 
 export async function login(username: string, password: string): Promise<void> {
   const res = await fetch(`${API}/api/auth/login`, {
@@ -63,6 +75,20 @@ export const adminSave = (req: SaveReq) =>
   authed("/api/admin/docs", { method: "POST", body: JSON.stringify(req) });
 export const adminDelete = (slug: string) =>
   authed(`/api/admin/docs/${slug}`, { method: "DELETE" });
+
+export async function adminSetStatus(slug: string, status: string): Promise<void> {
+  const doc = await adminGet(slug);
+  await adminSave({
+    slug: doc.slug,
+    kind: doc.kind,
+    title: doc.title,
+    summary: doc.summary ?? "",
+    status,
+    body: doc.body_markdown,
+    cover_image: doc.cover_image,
+    metadata: doc.metadata ?? {},
+  });
+}
 
 /**
  * Upload an image to the storage backend; returns a site-relative `/uploads/*`

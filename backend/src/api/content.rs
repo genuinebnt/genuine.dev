@@ -10,7 +10,18 @@ use uuid::Uuid;
 use crate::api::ApiError;
 use crate::app::ports::ContentRepository;
 use crate::domain::Document;
-use crate::infra::repo::{self, PgContentRepository};
+use crate::infra::repo::{self, AdjacentPost, PgContentRepository};
+
+fn content_repo(pool: &PgPool) -> PgContentRepository {
+    PgContentRepository::new(pool.clone())
+}
+
+async fn published_doc(pool: &PgPool, slug: &str) -> Result<Document, ApiError> {
+    content_repo(pool)
+        .get_published_by_slug(slug)
+        .await?
+        .ok_or(ApiError::NotFound)
+}
 
 #[derive(Serialize)]
 pub struct PostItem {
@@ -20,6 +31,18 @@ pub struct PostItem {
     reading_min: i32,
     date: Option<String>,
     metadata: JsonValue,
+}
+
+#[derive(Serialize)]
+pub struct PostNavItem {
+    slug: String,
+    title: String,
+}
+
+impl From<AdjacentPost> for PostNavItem {
+    fn from(a: AdjacentPost) -> Self {
+        PostNavItem { slug: a.slug, title: a.title }
+    }
 }
 
 #[derive(Serialize)]
@@ -33,6 +56,8 @@ pub struct PostDetail {
     kind: String,
     cover_image: Option<String>,
     metadata: JsonValue,
+    prev: Option<PostNavItem>,
+    next: Option<PostNavItem>,
 }
 
 fn item(d: Document) -> PostItem {
@@ -46,7 +71,7 @@ fn item(d: Document) -> PostItem {
     }
 }
 
-fn detail(d: Document) -> PostDetail {
+fn detail(d: Document, prev: Option<AdjacentPost>, next: Option<AdjacentPost>) -> PostDetail {
     PostDetail {
         slug: d.slug.clone(),
         title: d.title,
@@ -57,18 +82,18 @@ fn detail(d: Document) -> PostDetail {
         kind: d.kind.as_str().to_owned(),
         cover_image: d.cover_image,
         metadata: d.metadata,
+        prev: prev.map(PostNavItem::from),
+        next: next.map(PostNavItem::from),
     }
 }
 
 pub async fn list_posts(State(pool): State<PgPool>) -> Result<Json<Vec<PostItem>>, ApiError> {
-    let docs = PgContentRepository::new(pool)
-        .list_published_posts()
-        .await?;
+    let docs = content_repo(&pool).list_published_posts().await?;
     Ok(Json(docs.into_iter().map(item).collect()))
 }
 
 pub async fn list_projects(State(pool): State<PgPool>) -> Result<Json<Vec<PostItem>>, ApiError> {
-    let docs = PgContentRepository::new(pool)
+    let docs = content_repo(&pool)
         .list_published_by_kind("project")
         .await?;
     Ok(Json(docs.into_iter().map(item).collect()))
@@ -79,10 +104,16 @@ pub async fn get_doc(
     State(pool): State<PgPool>,
     Path(slug): Path<String>,
 ) -> Result<Json<PostDetail>, ApiError> {
-    let doc = PgContentRepository::new(pool)
-        .get_published_by_slug(&slug)
-        .await?;
-    doc.map(|d| Json(detail(d))).ok_or(ApiError::NotFound)
+    let doc = published_doc(&pool, &slug).await?;
+
+    // Adjacent navigation is only meaningful for posts.
+    let (prev, next) = if doc.kind == crate::domain::Kind::Post {
+        repo::get_adjacent_posts(&pool, &slug).await?
+    } else {
+        (None, None)
+    };
+
+    Ok(Json(detail(doc, prev, next)))
 }
 
 #[derive(Deserialize)]
@@ -94,9 +125,7 @@ pub async fn search(
     State(pool): State<PgPool>,
     Query(query): Query<SearchQ>,
 ) -> Result<Json<Vec<PostItem>>, ApiError> {
-    let docs = PgContentRepository::new(pool)
-        .search_published(&query.q)
-        .await?;
+    let docs = content_repo(&pool).search_published(&query.q).await?;
     Ok(Json(docs.into_iter().map(item).collect()))
 }
 
@@ -120,11 +149,7 @@ pub async fn list_comments(
     State(pool): State<PgPool>,
     Path(slug): Path<String>,
 ) -> Result<Json<Vec<CommentOut>>, ApiError> {
-    // Resolve the document_id by slug first.
-    let doc = PgContentRepository::new(pool.clone())
-        .get_published_by_slug(&slug)
-        .await?
-        .ok_or(ApiError::NotFound)?;
+    let doc = published_doc(&pool, &slug).await?;
 
     let comments = repo::list_comments(&pool, doc.id).await?;
     let out = comments
@@ -152,10 +177,7 @@ pub async fn create_comment(
         return Err(ApiError::BadRequest("name or body too long".into()));
     }
 
-    let doc = PgContentRepository::new(pool.clone())
-        .get_published_by_slug(&slug)
-        .await?
-        .ok_or(ApiError::NotFound)?;
+    let doc = published_doc(&pool, &slug).await?;
 
     let comment = repo::insert_comment(&pool, doc.id, body.name.trim(), body.body.trim()).await?;
     Ok(Json(CommentOut {

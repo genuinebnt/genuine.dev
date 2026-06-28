@@ -55,7 +55,10 @@ fn load_env() {
 
 async fn seed_dev_content(_pool: &PgPool) -> Result<(), BoxError> {
     #[cfg(debug_assertions)]
-    crate::infra::seed::seed_if_empty(_pool).await?;
+    {
+        crate::infra::seed::seed_if_empty(_pool).await?;
+        crate::infra::seed::seed_missing(_pool).await?;
+    }
     Ok(())
 }
 

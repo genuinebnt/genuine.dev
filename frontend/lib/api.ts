@@ -11,13 +11,17 @@ export type PostItem = {
   summary: string | null;
   reading_min: number;
   date: string | null;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 };
+
+export type PostNavItem = { slug: string; title: string };
 
 export type PostDetail = PostItem & { 
   body_html: string; 
   kind: string; 
-  cover_image: string | null; 
+  cover_image: string | null;
+  prev: PostNavItem | null;
+  next: PostNavItem | null;
 };
 
 async function get<T>(path: string): Promise<T> {

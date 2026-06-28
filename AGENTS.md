@@ -1,4 +1,4 @@
-# AGENTS.md — genuine-folio
+# AGENTS.md — genuine.dev
 
 Guidance for working in this repo. Read alongside `docs/ROADMAP.md` (full plan),
 `docs/ui_mockups.html` (UI/UX), and `docs/notiq_portfolio.html` (design system).

@@ -1,4 +1,4 @@
-# Architecture — genuine-folio
+# Architecture — genuine.dev
 
 The **living** architecture reference: decisions + diagrams, kept in sync with the
 code at all times. Diagrams are [Mermaid](https://mermaid.js.org) (text-based, so

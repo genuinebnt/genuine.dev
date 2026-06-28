@@ -19,7 +19,7 @@ services:
   backend:
     build:
       context: ./backend
-    image: ghcr.io/OWNER/genuine-folio-backend:latest
+    image: ghcr.io/OWNER/genuine-dev-backend:latest
     environment:
       DATABASE_URL: postgres://folio:${POSTGRES_PASSWORD}@postgres:5432/folio
       SITE_URL: ${SITE_URL}
@@ -36,7 +36,7 @@ services:
   frontend:
     build:
       context: ./frontend
-    image: ghcr.io/OWNER/genuine-folio-frontend:latest
+    image: ghcr.io/OWNER/genuine-dev-frontend:latest
     environment:
       API_INTERNAL_URL: http://backend:3001 # server-side (SSR) reaches the API directly
     depends_on:

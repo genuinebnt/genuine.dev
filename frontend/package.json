@@ -1,14 +1,15 @@
 {
-  "name": "genuine-folio-frontend",
+  "name": "genuine-dev-frontend",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "clean": "rm -rf .next",
+    "lint": "eslint ."
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.62.0",
+    "@tanstack/react-query": "^5.101.2",
     "@tiptap/extension-image": "^3.27.1",
     "@tiptap/extension-link": "^3.27.1",
     "@tiptap/extension-table": "^3.27.1",
@@ -21,16 +22,19 @@
     "@tiptap/react": "^3.27.1",
     "@tiptap/starter-kit": "^3.27.1",
     "markdown-it-container": "^4.0.0",
-    "next": "^15.1.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "marked": "^18.0.5",
+    "next": "^16.2.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "tiptap-markdown": "^0.9.0"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "sass": "^1.83.0",
-    "typescript": "^5.7.0"
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.9",
+    "sass": "^1.101.0",
+    "typescript": "^5.9.3"
   }
 }

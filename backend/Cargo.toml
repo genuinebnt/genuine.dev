@@ -1,7 +1,15 @@
 [package]
-name = "genuine-folio"
+name = "genuine-dev"
 version = "0.1.0"
 edition = "2024"
+default-run = "genuine-dev"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "seed"
+path = "src/bin/seed.rs"
 
 [dependencies]
 axum = { version = "0.8", features = ["multipart"] }

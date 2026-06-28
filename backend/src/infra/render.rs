@@ -300,14 +300,16 @@ fn render_timeline(body: &str) -> String {
         if line.is_empty() {
             continue;
         }
-        // Format: `2026 genuine-folio — built this site`
+        // Format: `2026 genuine.dev — built this site`
         let (year, rest) = line.split_once(' ').unwrap_or(("", line));
         let (title, desc) = rest.split_once(" — ").unwrap_or((rest, ""));
         items.push_str(&format!(
             r#"<div class="tl"><div class="ty">{year}</div><div class="tt"><b>{title}</b> <span>— {desc}</span></div></div>"#
         ));
     }
-    format!(r#"<div class="timeline">{items}</div>"#)
+    format!(
+        r#"<div class="section-label">timeline</div><div class="timeline">{items}</div>"#
+    )
 }
 
 // ── Sub-directive helper ──────────────────────────────────────────────────────
@@ -607,10 +609,11 @@ let b = 2;""#
     #[test]
     fn timeline_directive_renders_entries() {
         let md =
-            ":::timeline\n2026 genuine-folio — built this site\n2025 NotiQ — Rust platform\n:::";
+            ":::timeline\n2026 genuine.dev — built this site\n2025 NotiQ — Rust platform\n:::";
         let out = MarkdownRenderer::new().render(md);
+        assert!(out.html.contains("class=\"section-label\">timeline</div>"));
         assert!(out.html.contains("class=\"timeline\""));
-        assert!(out.html.contains("genuine-folio"));
+        assert!(out.html.contains("genuine.dev"));
         assert!(out.html.contains("NotiQ"));
     }
 }

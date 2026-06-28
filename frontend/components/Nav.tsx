@@ -2,37 +2,61 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import ThemePicker from "./ThemePicker";
+import { useEffect, useState } from "react";
+import { getToken } from "../lib/auth";
+import { TypewriterBrand } from "./TypewriterBrand";
 
 export default function Nav() {
   const path = usePathname();
-  const onWriting = path === "/" || path.startsWith("/blog");
+  // "Articles" is only active on the blog index / individual posts, not the home page.
+  const onArticles = path.startsWith("/blog");
+  const onProjects = path.startsWith("/projects");
+  const onAbout = path.startsWith("/about") || path === "/now" || path === "/uses";
+  const onAdmin = path.startsWith("/admin");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setIsAdmin(!!getToken());
+    sync();
+    window.addEventListener("auth-change", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("auth-change", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, [path]);
+
+  function openCmdk() {
+    window.dispatchEvent(new CustomEvent("open-cmdk"));
+  }
 
   return (
     <header className="nav">
       <nav className="nav-inner">
-        <Link className="logo" href="/">
-          genuine<span>·</span>folio
+        <Link className="logo" href="/" aria-label="genuine.dev home">
+          <TypewriterBrand />
         </Link>
         <div className="nav-links">
-          <Link className={`npill${onWriting ? " active" : ""}`} href="/">
-            Writing
+          <Link className={`npill${onArticles ? " active" : ""}`} href="/blog">
+            Articles
           </Link>
-          <Link
-            className={`npill${path.startsWith("/projects") ? " active" : ""}`}
-            href="/projects"
-          >
+          <Link className={`npill${onProjects ? " active" : ""}`} href="/projects">
             Projects
           </Link>
-          <Link
-            className={`npill${path.startsWith("/about") ? " active" : ""}`}
-            href="/about"
-          >
+          <Link className={`npill${onAbout ? " active" : ""}`} href="/about">
             About
           </Link>
+          {isAdmin && (
+            <Link className={`npill admin${onAdmin ? " active" : ""}`} href="/admin">
+              Admin ✦
+            </Link>
+          )}
         </div>
         <div className="nav-spacer" />
-        <ThemePicker />
+        {/* ⌘K — keyboard shortcut badge; also clickable to open the palette */}
+        <button className="kbd" onClick={openCmdk} type="button" aria-label="Open command palette">
+          ⌘K
+        </button>
       </nav>
     </header>
   );

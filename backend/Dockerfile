@@ -11,9 +11,9 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* \
  && useradd -m -u 10001 app
 WORKDIR /app
-COPY --from=builder /app/target/release/genuine-folio ./genuine-folio
+COPY --from=builder /app/target/release/genuine-dev ./genuine-dev
 ENV BIND_ADDR=0.0.0.0:3001 \
     RUST_LOG=info
 USER app
 EXPOSE 3001
-CMD ["./genuine-folio"]
+CMD ["./genuine-dev"]

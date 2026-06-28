@@ -1,10 +1,220 @@
-# Changelog — genuine-folio
+# Changelog — genuine.dev
 
 Dated timeline of everything added to the project. Newest first.
 Format: each entry is `what` (+ `why` when not obvious). Planning artifacts and
 code changes both go here so the history is complete.
 
 ---
+
+## 2026-06-28 — Nav label: Writing → Articles
+
+- **Nav, blog index sidebar, about link, theme admin preview, home featured section, post prev link**: User-facing blog section renamed to **Articles** (route stays `/blog`; internal theme key `writing` unchanged).
+
+## 2026-06-28 — Reading progress scope
+
+- **`/about`**: Removed reading progress bar (reference page, not long-form article).
+- **Portfolio case studies** (`/projects/notiq`, `/projects/genuine-dev`, `/projects/db-labs`): Added via `PortfolioPageShell`. CMS project pages via `DocArticle` already had it.
+
+## 2026-06-28 — Panel scroll-spy for sidebar TOC
+
+- **`DocInteractive` / `useScrollSpy`**: IntersectionObserver now uses the panel scroll column (`[data-scroll-root]`) instead of the viewport; TOC hash clicks scroll inside that column.
+- **`/now` and `/uses`**: Sidebar highlight follows scroll again; section links scroll the body panel.
+
+## 2026-06-28 — Reading progress bar visibility
+
+- **`ReadingProgress`**: Portaled to `document.body` so `panel-fullbleed { overflow: hidden }` no longer clips the fixed bar; scroll tracking prefers `[data-scroll-root]` and the largest scroll column (not the sidebar rail).
+
+## 2026-06-28 — About page hydration + theme boot script
+
+- **`AboutShell`**: Stopped splitting timeline HTML in React (regex matched the first nested `</div>`, corrupting server markup vs client tree). Timeline section label now comes from the backend `:::timeline` renderer.
+- **`layout.tsx`**: Theme boot moved to `next/script` with `beforeInteractive` — fixes React 19 “script tag while rendering” warning.
+- **Re-seed**: Run `just seed-refresh` so stored about-page HTML picks up the renderer change.
+
+## 2026-06-28 — Frontend and backend dependency refresh
+
+- **Next.js 16** (`^16.2.9`), React 19.2, ESLint 9 flat config (`eslint.config.mjs`), TypeScript 5.9, TanStack Query 5.101, Sass 1.101 — frontend stack brought current without jumping to ESLint 10 / TS 6 majors.
+- **Removed `experimental.devtoolSegmentExplorer`**: Option dropped in Next 16; stale `.next` cache still cleared via `npm run clean`.
+- **Editor toolbar**: Image upload uses a `<label>` file picker (no ref click) for React 19 `react-hooks/refs` lint compatibility.
+- **Backend `Cargo.lock`**: Already at latest within semver ranges (`axum` 0.8.9, `tokio` 1.52, `sqlx` 0.8.6, `comrak` 0.52, `syntect` 5.3).
+
+## 2026-06-28 — Next.js stability and lint setup
+
+- **`experimental.devtoolSegmentExplorer: false`**: Prevents dev-only SegmentViewNode / client manifest errors after HMR (500s on `/about` etc.) — superseded by Next 16 upgrade (option removed).
+- **`npm run clean` / `just frontend-clean`**: Clears stale `.next` cache when webpack module errors appear in dev.
+- **ESLint**: Migrated to flat config + `eslint-config-next@16`; `npm run lint` runs `eslint .` directly.
+- **`ProjectCard`**: Fixed invalid nested `<a>` tags (card stretch link + external links as siblings).
+- **Fonts**: Kept Google Fonts `<link>` in layout (build env cannot reach fonts.googleapis.com for `next/font` fetch).
+
+## 2026-06-28 — Unified panel sidebar rail width
+
+- **`--panel-rail` / `--panel-rail-pad`**: Writing, posts, projects, now, and uses sidebars now match the about page rail (`240–280px`, `24px 20px` padding) instead of the old `180–200px` narrow rails.
+- **Panel rail typography**: Shared `--panel-rail-*` tokens bump sidebar labels, links, and section headers ~1px so text scales with the wider rail.
+
+## 2026-06-28 — Frontend/backend maintainability pass
+
+- **`lib/projects.ts`**: Single source for portfolio slugs, routes, accents, status, and rainbow divider colors; legacy re-exports kept in `projectLinks` / `projectStatus`.
+- **`lib/metadata.ts`**: Typed metadata accessors replace repeated casts across list pages.
+- **`ProjectCard` + `components/portfolio/*`**: Shared card and case-study blocks dedupe `/projects`, `/now`, and three portfolio pages.
+- **`NowPage`**: Fetches projects from API instead of hardcoded status/color duplicates.
+- **`content.rs`**: `content_repo` / `published_doc` helpers remove repeated repository wiring.
+
+## 2026-06-28 — Portfolio UI consistency pass
+
+- **db-labs**: Removed status badges, hero Status pill, and ✅/🔄 icons from coverage table — learning project, not a ship checklist.
+- **Case studies**: Aligned hero meta pills (no Status on portfolio pages) and `divider5` spacing (32px) across NotiQ, genuine.dev, db-labs.
+- **Projects index / home**: Per-slug accent bars (`notiq` / `genuine-dev` / `db-labs`); status badges only when seed metadata sets `status`.
+
+## 2026-06-28 — `just seed-refresh` upserts existing seed slugs
+
+- **`seed_refresh`**: `just seed` still skips existing rows; `just seed-refresh` re-renders and upserts all seed documents (preserves ids + published_at).
+
+## 2026-06-28 — db-labs framed as portfolio project
+
+- **`/now`**: Replaced roadmap progress bars with portfolio project cards (NotiQ, genuine.dev, db-labs). db-labs is current build focus.
+- **`/projects/db-labs`**: Case study reframed — BusTub build phases (P0–P4) instead of CMU curriculum roadmap; portfolio-style hero and signals.
+
+## 2026-06-28 — Rename genuine-folio → genuine.dev
+
+- **Rust crate** `genuine-dev` (was `genuine-folio`); `just dev` / Dockerfile / prod image names updated.
+- **Frontend package** `genuine-dev-frontend`; `/now` and docs use genuine.dev branding.
+- **Legacy** `/projects/genuine-folio` still redirects to `/projects/genuine-dev`.
+
+## 2026-06-28 — db-labs portfolio case study
+
+- **`/projects/db-labs`**: Third rich project page — CMU 15-445 disk-oriented architecture, engine components, five-phase roadmap accordions, engineering tabs, milestones, page layout diagram, and signal list. Content sourced from `~/projects/db-labs/ROADMAP.md`.
+- **Seed + routing**: `db-labs` project in seed (featured, GitHub link); `projectLinks`, `[slug]` redirect, and Cmd-K use portfolio route.
+
+## 2026-06-28 — Portfolio case studies: typography + rich genuine.dev page
+
+- **Portfolio CSS**: Tighter measure (1000px shell), smaller hero/title/lead/pills — NotiQ and case-study pages no longer read oversized vs mockup.
+- **`/projects/genuine-dev`**: Expanded to match NotiQ depth — architecture SVG, 8 service cards, comm matrix, 5 phase accordions with decision grids, engineering tabs + concept grid, platform coverage, schema ERD, stack grid, and signal list.
+
+## 2026-06-28 — Typewriter `genuine.dev` wordmark
+
+- **`TypewriterBrand`**: Nav + login logo types out `genuine.dev` with a blinking shell cursor, then hides the cursor after completion; runs once per browser session; respects `prefers-reduced-motion`.
+
+## 2026-06-28 — Reading progress tracks panel scroll containers
+
+- **`ReadingProgress`**: Listens to the element that actually scrolls (e.g. `.article-col` on post pages), not just `window`, so the top accent bar fills as you read.
+
+## 2026-06-28 — Per-page theme overrides wired up
+
+- **`lib/theme.ts`**: Central theme storage, route matching, and boot script for site theme + per-page overrides (localStorage). Defaults: Projects → Midnight/#7c8cff; post pages → per-topic accent.
+- **`ThemeRoute` + boot script**: Applies the correct theme/accent on load and client navigation; admin routes stay on the editor's site theme.
+- **`PostTopicAccent`**: Sets `[data-topic]` on post pages when the posts override uses per-topic mode.
+- **Theme settings UI**: Customize/reset/save now persist page overrides; customize captures the current preset + accent (posts → per-topic).
+
+## 2026-06-28 — Site-wide responsive layout
+
+- **Auto-fit grids**: Card grids (`feat-grid`, `service-grid`, `decision-grid`, etc.) use `repeat(auto-fit, minmax(...))` so columns shrink naturally with viewport width — removed fixed 3/2/1 breakpoint overrides that fought auto-fit.
+- **Mobile pass (≤760px)**: Nav/footer subscribe stack; page headers and admin table scroll; panel pages (writing, post, projects, now, uses) collapse side rails; uses rows, home project rows, and prev/next nav stack vertically; tighter gutters via CSS vars.
+- **Portfolio pages**: Shared `portfolio-hero`, `portfolio-title`, `portfolio-meta` classes; admin post table wrapped in `.table-scroll`.
+
+## 2026-06-28 — Four-column card grids on full-width layout
+
+- **Home + portfolio grids**: Desktop card grids (`feat-grid`, `service-grid`, `decision-grid`, `concept-grid`, `coverage-grid`, `stack-grid`, `card-grid`) use 4 columns instead of 3/auto-fill so cards don’t stretch on wide viewports; responsive fallbacks at 1200px (3), 1024px (2), 760px (1).
+- **Home featured grid**: `auto-fit` columns (up to 4 on wide screens, 3 when only three are featured); no backfill from non-featured posts.
+
+## 2026-06-28 — Layout matches mockup (edge-to-edge panels)
+
+- **Panel pages**: Removed `--shell-inset` wrapper — `/blog`, `/projects`, `/about`, `/now`, `/uses` fill the viewport edge-to-edge with fixed sidebar rails (`200px` writing, `180px` post/projects/now/uses) per `ui-ux-mockup.html`.
+- **Nav / home / footer**: Dropped centered `1280px` cap; nav uses mockup `22px` horizontal padding, home/footer use `28px` gutters.
+- **Projects filter**: Reverted to mockup flat sidebar (`padding: 16px 12px`, header divider) instead of pinned scroll wrapper.
+
+## 2026-06-28 — Sidebar UI mockup parity
+
+- **Writing filter**: Topic dots use `t-*` CSS classes; “all” active only when no topic/tag filter; `.fc-title` alias matches mockup header class.
+- **Projects filter**: “all” clears stack and status filters.
+
+## 2026-06-28 — Post article column uses full panel width
+
+- **`post-shell`**: Two-column grid (`180px 1fr`) matching the mockup — article body fills the panel instead of capping at `--read-w` with a dead third column. `--read-w` still applies to solo/no-TOC layouts.
+
+## 2026-06-28 — Shell gutter regression fix
+
+- **`.page` padding**: Switched to `padding-block` only so the vertical rhythm rule no longer zeroes out `.shell` horizontal gutters (home/admin/portfolio/404 were flush to the shell edge).
+- **`.shell` width**: Added `width: 100%` so flex layout doesn’t shrink `main` to narrow portfolio content width.
+- **Admin / 404**: Removed extra horizontal padding on `.admin-page` and `.e404-shell`.
+- **NotiQ portfolio**: Dropped inline `maxWidth: 1000px` wrapper so case study uses full shell width like `genuine-dev`.
+
+## 2026-06-28 — Hybrid panel margins + edit FAB fix
+
+- **Layout**: Panel routes use `.panel-fullbleed` — full viewport height with `--shell-inset` horizontal padding so sidebars align with home/nav content; admin editor stays true edge-to-edge.
+- **Edit FAB**: Moved outside `post-shell` grid (was clipped as an extra grid cell); SVG pencil icon replaces `✎` for reliable rendering; FAB `right` tracks shell inset.
+
+## 2026-06-28 — Blog panel fills viewport
+
+- **Layout (`globals.scss`)**: `body` flex column + `editor-fullbleed` flex stretch so `/blog` (and other panel pages) fill the viewport below the nav; grid shells use `grid-template-rows: minmax(0, 1fr)`; mobile keeps `min-height: calc(100dvh - var(--nav-h))` so short lists don't leave a gap.
+
+## 2026-06-28 — About layout, editor parity, projects portfolio, responsive gutters
+
+- **About (`AboutShell.tsx`)**: Two-column mockup layout — avatar, /now · /uses links, skills chips, timeline block, bio prose. Replaces bare `DocArticle` solo layout.
+- **Editor**: Multi-tab bar (sessionStorage) with close buttons; file-tree **M** (modified) and **N** (new) badges; toolbar matches mockup (`::aside`, `::callout`, split + **Save draft** in toolbar-right); status bar adds split toggle + Save draft + Publish.
+- **Projects**: Whole card links to case study; `projectCaseStudyHref()` routes NotiQ → `/projects/notiq`, genuine.dev → `/projects/genuine-dev`. New rich portfolio page at `/projects/genuine-dev` (architecture diagram, service cards, build phases, design signals). Seed slug `genuine-folio` → `genuine-dev`.
+- **Responsive**: Mobile gutters 20px on `.shell`, `.nav-inner`, footer; about grid stacks; hero uncapped on small screens.
+- **⌘K badge**: Larger padding/font (11px).
+
+## 2026-06-28 — Reading progress bar on articles
+
+- **`ReadingProgress` (`components/ReadingProgress.tsx`)**: Fixed 3px bar at the top of the viewport; fills left→right with `--acc` as the reader scrolls through the article body. Wired into `DocArticle` for blog posts and project/about long-form pages.
+
+## 2026-06-28 — Layout system reset, UX fixes, undo/redo
+
+- **Width tokens (`globals.scss`)**: `--shell-w` back to **1280px** (practical center for a blog; change one line to widen the whole site), `--gutter: 28px` (consistent, not clever), `--read-w: 720px`. Simpler to reason about than the previous `1700px + clamp()` combo.
+- **Nav (`components/Nav.tsx`)**: "Writing" active pill is now only set on `/blog/*`, never on `/` (home). Removed ThemePicker from nav entirely — it lives in the admin theme settings page only. The `⌘K` badge is now a `<button>` that dispatches `open-cmdk`; also updated `.kbd` CSS.
+- **CommandPalette**: Listens for `open-cmdk` custom event so clicking the nav badge opens the palette.
+- **Projects page full-bleed (`AppChrome.tsx`)**: `/projects` added to the panel-page group so its sidebar fills the full viewport height (same pattern as `/blog`).
+- **Projects sidebar height (`globals.scss`)**: `.projects-shell` → `height: 100%; overflow: hidden`; `.proj-filter` → `overflow-y: auto; display: flex; flex-direction: column`; `.projects-body` → `overflow-y: auto`. Matches writing-index pattern.
+- **Editor toolbar (`editor/Toolbar.tsx`, `globals.scss`)**: Added **undo** (↩) and **redo** (↪) buttons at the start of the toolbar. Removed `position: sticky` from `.tb` — it was meaningless inside an `overflow: hidden` flex column and caused stacking issues. Removed duplicate `.tb-btn` / `.tb-sep` rules.
+- **Mobile (`globals.scss`)**: `.projects-shell` resets to `height: auto; overflow: visible` on mobile; `.projects-body` also resets.
+
+## 2026-06-28 — Hybrid width: wide app frame, protected reading measure
+
+- **Width tokens (`globals.scss`)**: `--shell-w` 1080 → **1700px**, added `--read-w: 760px` (reading measure) and `--gutter: clamp(20px, 3.5vw, 48px)` (viewport-scaled side padding). The app frame now fills the screen on typical laptop/desktop sizes; reading content is capped separately.
+- **App frame fills the screen**: `.shell`, `.nav-inner`, `.footer-inner`, `.footer-news` use the wide width + `--gutter`, so chrome, list/index/grid pages (writing, projects, now, uses) and admin surfaces span the viewport with aligned edges.
+- **Reading stays readable**: `.article-solo` (about / no-TOC) capped at `--read-w`; post detail `.post-shell` → `180px minmax(0, var(--read-w)) 1fr` (TOC aligns left with the nav, article body bounded to ~760px, trailing space keeps alignment); `.now-body` / `.uses-body` capped at `--read-w + 120px` so their prose doesn't run edge-to-edge.
+- **Rationale**: app/tool surfaces benefit from width; long-form text does not (line length > ~75ch hurts readability). The split honours both.
+
+## 2026-06-28 — Editor full-bleed, responsive tiers, reactive nav
+
+- **Chrome routing (`components/AppChrome.tsx`, new + `app/layout.tsx`)**: Root layout no longer forces `.shell .page` (max-width 1080px + padding) on every route. `AppChrome` now picks chrome by path: the editor (`/admin/new`, `/admin/edit/*`) renders **full-bleed** (fills viewport, no footer), the login screen renders **full-height centered** (no footer), everything else keeps the centered shell + footer. Fixes the squished/clipped editor and the off-center login card.
+- **Editor sizing (`globals.scss`)**: Added `--nav-h: 57px`; `.editor-fullbleed` = `calc(100dvh - var(--nav-h))` and `.editor-shell` fills it (`height: 100%`), so the file tree + meta sidebar now run the full height of the screen.
+- **Responsive tiers (`globals.scss`)**: New `≤1024px` tablet breakpoint (hides editor file tree, keeps editor + meta sidebar; 3-col theme grid) and reworked `≤760px` mobile (editor stacks: write surface → meta sidebar, split preview goes vertical, panels scroll with the page instead of being hidden).
+- **Preview (`EditorForm.tsx`)**: Split-preview pane now renders with the published `.prose` styling (was a non-existent `doc-body` class) so the preview matches the live post.
+- **Reactive admin pill (`components/Nav.tsx`, `lib/auth.ts`)**: Nav re-checks the token on every route change and on `auth-change` (same tab) / `storage` (cross-tab) events; `setToken`/`clearToken` dispatch `auth-change`. The **Admin ✦** pill now appears immediately after login without a hard refresh.
+- **Login redirect (`app/admin/login/page.tsx`)**: Uses `router.replace("/admin")` and holds the button in its loading state through the redirect (no flash back to "Enter →"); back button no longer returns to the login form.
+
+## 2026-06-28 — New mockup pages + NotiQ portfolio sections
+
+- **CSS (`globals.scss`)**: Added all CSS from `notiq_portfolio.html` (`.svc-card`, `.phase`, `.decision-grid`, `.comm-table`, `.concept-grid`, `.coverage-grid`, `.stack-grid`, `.signal-list`, `.notiq-tab`, `.notiq-panel`) and new mockup pages (`.login-shell`/`.lc-*`, `.e404-*`/`.ell-*`, `.now-*`/`.npi-*`/`.nr-*`/`.nsc-*`, `.uses-*`/`.ui-*`, upgraded `.cmdk-*`/`.ci-*` with topic dots and footer).
+- **404 page (`app/not-found.tsx`)** (new): Custom 404 with accent `4·0·4` code, suggestion links (rust/project/infosec) with colored topic bars, and inline search that opens ⌘K on click.
+- **`/now` (`app/now/page.tsx`)** (new): Static page — two-column TOC + body layout, status cards (current project/job hunt timeline), roadmap progress bars (NotiQ 100%, genuine-folio 70%, etc.), learning chips (bug bounty/DB internals/Hindi/guitar), reading list with spine-color bars.
+- **`/uses` (`app/uses/page.tsx`)** (new): Static page — two-column TOC + body layout, sections (Languages/Editor/Terminal/Stack/Hardware/Security) with colored h2 bars and item rows (name/desc/frequency tag).
+- **Login (`app/admin/login/page.tsx`)**: Redesigned with centered `lc-*` card — logo, "Admin access" header, passphrase-only input with show/hide toggle, session hint with green dot, attempts counter (0/5), back-to-site link. Maps passphrase → `login("admin", passphrase)`.
+- **CommandPalette (`components/CommandPalette.tsx`)**: Upgraded to new design — grouped results (posts/projects/actions), topic dot color per item, `ci-icon` + `ci-body`/`ci-sub` layout, keyboard hint footer (`↑↓`/`↵`/`esc`), result count. Projects fetched once at mount for instant filtering. Static actions include toggle theme, go to /now, go to /uses.
+- **NotiQ portfolio (`app/projects/notiq/page.tsx`)** (new): Full static portfolio page at `/projects/notiq` (takes precedence over `[slug]` route). Includes: header with meta pills, architecture SVG diagram, 8 service cards, comm-matrix table, 5 expandable phase accordions, 6 engineering depth tabs (micro/dist/sysdes/rust/perf/dsa), AWS infra grid, ERD SVG diagram, tech stack grid (27 crates), design decisions signal list.
+- **Nav (`Nav.tsx`)**: `/now` and `/uses` paths now mark the "About" pill as active.
+
+## 2026-06-28 — Out-of-scope items: editor shell, theme settings, prev/next nav
+
+- **Backend (`content.rs`, `repo.rs`)**: Added `get_adjacent_posts()` to fetch prev/next published post by date. `PostDetail` response now includes `prev: {slug, title}` and `next: {slug, title}` for navigation between posts.
+- **Frontend (`lib/api.ts`)**: Added `PostNavItem` type; `PostDetail` extended with `prev`/`next`.
+- **Post detail (`DocArticle.tsx`)**: Prev/next nav at bottom of article now uses real adjacent posts from API (falls back to "Back to writing" when no prev, omits next link when at end of list).
+- **Admin editor (`EditorForm.tsx`)**: Full 3-panel shell layout per mockup — left file tree (220px, fetches admin list, grouped by kind, filter input, current file highlighted), center editor (tab bar with unsaved indicator, title input, TipTap WYSIWYG, status bar with word count/read time/save button), right tabbed sidebar (Meta: all form fields including slug/summary/kind/status/topic picker/tags/series/cover; Outline: heading hierarchy from markdown; Diagnostics: live checks for missing fields, word count, topic accent info).
+- **Theme settings (`app/admin/settings/theme/page.tsx`)** (new): Interactive `/admin/settings/theme` page — admin left nav (content/site sections), 5 preset theme cards with miniature previews (Dark/Light/Midnight/Sepia/Matrix), 8 accent colour swatches + custom colour picker, live preview panel that re-renders on every selection, per-page override table, save bar that persists to localStorage and applies via `__setTheme`/`__setAccent`. Link added to admin dashboard.
+- **SCSS (`globals.scss`)**: Added all editor-shell, file-tree, tab-bar, toolbar, sidebar, outline, diagnostics, publish-modal, and theme-settings CSS classes. Also added `art-prevnext`/`art-pn` styles for the post prev/next nav.
+
+## 2026-06-28 — Full UI/UX parity with `docs/mockups/ui-ux-mockup.html`
+
+- **SCSS (`globals.scss`)**: Ported all CSS classes from the mockup — topic-bar colours (`.t-rust`, `.t-infosec`, etc.), home feat-card grid, home-proj-row, writing-index two-column shell, post-shell/toc-col/art-* for post detail, projects-shell/project-card, admin stat cards/status-badge/post-table. Also added missing theme bg variables (`--purple-bg`, `--warn-bg`, `--green-bg`, `--warn-border`, etc.) to `@mixin theme-vars`.
+- **`lib/topic.ts`** (new): `deriveTopic()` + `topicColor()` + `topicCssClass()` helpers — maps topic strings to the per-topic accent colours used by colored bars and tags.
+- **Nav (`Nav.tsx`)**: Logo changed to `genuine.dev` (`.` accent); added `⌘K` kbd hint; admin pill (`.npill.admin`) shown when a JWT token exists.
+- **Home (`app/page.tsx`)**: Featured writing uses `feat-card` grid with colored top bar, topic tag, summary, date/min meta. Selected projects use `home-proj-row` with colored left bar, name, description, tech chips, "case study →" link.
+- **Writing index** (`app/blog/page.tsx` → new `WritingIndex.tsx`): Full two-column `wri-shell` layout — sticky filter sidebar (topic + tag filters with colored dots + counts, newest/oldest sort) | post list with year dividers, 3px topic-colored left bar per row, summary, read time, "new" badge for posts < 14 days old.
+- **Projects** (`app/projects/page.tsx` → new `ProjectsShell.tsx`): Two-column `projects-shell` — filter sidebar (stack + status filters) | `project-card` rows with colored left bar, complete/wip badge, description, chip stack, links.
+- **Post detail (`DocArticle.tsx`)**: Switched to `post-shell` (180px TOC col + article col). TOC column now shows heading links + divider + date/read/topic/tags key-value pairs. Article column renders `art-eyebrow`, `art-h1`, `art-meta` with `art-topic-pill` (topic colour). `DocInteractive` scroll-spy updated to target `.toc-link`.
+- **Admin post list (`admin/page.tsx`)**: Stat cards row (total/published/drafts/projects counts), filter chip row (all/posts/projects/drafts/published), rich `post-table` with title+tags, `status-badge`, and ra edit/delete actions.
+- **Metadata**: Layout title updated to `genuine.dev`.
 
 ## 2026-06-28 — Rich seed content + directive renderer fixes
 

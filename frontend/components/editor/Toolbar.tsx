@@ -1,13 +1,27 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { directiveAttrsFromSource } from "./Directive";
 import { DIRECTIVE_TEMPLATES } from "./insertTemplates";
 import { uploadImage } from "../../lib/auth";
 
-export function Toolbar({ editor }: { editor: Editor }) {
-  const fileInput = useRef<HTMLInputElement>(null);
+const ASIDE_SRC = ':::aside 🦀 "Ferris\' hot tip"\nA personal note from the mascot.\n:::';
+const CALLOUT_SRC = ':::callout ⚠ "Heads up"\nSomething worth flagging.\n:::';
+
+export function Toolbar({
+  editor,
+  showPreview,
+  onTogglePreview,
+  onSaveDraft,
+  saving,
+}: {
+  editor: Editor;
+  showPreview?: boolean;
+  onTogglePreview?: () => void;
+  onSaveDraft?: () => void;
+  saving?: boolean;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -31,10 +45,10 @@ export function Toolbar({ editor }: { editor: Editor }) {
     }
   };
 
-  const btn = (active: boolean, label: string, onClick: () => void, title?: string) => (
+  const btn = (active: boolean, label: string, onClick: () => void, title?: string, extraClass = "") => (
     <button
       type="button"
-      className={`tb-btn${active ? " active" : ""}`}
+      className={`tb-btn${active ? " active" : ""}${extraClass ? ` ${extraClass}` : ""}`}
       title={title ?? label}
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
@@ -44,29 +58,48 @@ export function Toolbar({ editor }: { editor: Editor }) {
   );
 
   return (
-    <div className="tb">
-      {btn(editor.isActive("heading", { level: 2 }), "H2", () => editor.chain().focus().toggleHeading({ level: 2 }).run())}
-      {btn(editor.isActive("heading", { level: 3 }), "H3", () => editor.chain().focus().toggleHeading({ level: 3 }).run())}
+    <div className="toolbar-row">
+      <div className="tb-group">
+        {btn(false, "↩", () => editor.chain().focus().undo().run(), "Undo")}
+        {btn(false, "↪", () => editor.chain().focus().redo().run(), "Redo")}
+      </div>
       <span className="tb-sep" />
-      {btn(editor.isActive("bold"), "B", () => editor.chain().focus().toggleBold().run(), "Bold")}
-      {btn(editor.isActive("italic"), "i", () => editor.chain().focus().toggleItalic().run(), "Italic")}
-      {btn(editor.isActive("strike"), "S", () => editor.chain().focus().toggleStrike().run(), "Strikethrough")}
-      {btn(editor.isActive("code"), "</>", () => editor.chain().focus().toggleCode().run(), "Inline code")}
+      <div className="tb-group">
+        {btn(editor.isActive("bold"), "B", () => editor.chain().focus().toggleBold().run(), "Bold")}
+        {btn(editor.isActive("italic"), "I", () => editor.chain().focus().toggleItalic().run(), "Italic", "tb-italic")}
+        {btn(editor.isActive("strike"), "S", () => editor.chain().focus().toggleStrike().run(), "Strikethrough", "tb-strike")}
+      </div>
       <span className="tb-sep" />
-      {btn(editor.isActive("bulletList"), "• List", () => editor.chain().focus().toggleBulletList().run())}
-      {btn(editor.isActive("orderedList"), "1. List", () => editor.chain().focus().toggleOrderedList().run())}
-      {btn(editor.isActive("blockquote"), "❝", () => editor.chain().focus().toggleBlockquote().run(), "Quote")}
-      {btn(editor.isActive("codeBlock"), "Code", () => editor.chain().focus().toggleCodeBlock().run(), "Code block")}
+      <div className="tb-group">
+        {btn(editor.isActive("heading", { level: 1 }), "H1", () => editor.chain().focus().toggleHeading({ level: 1 }).run())}
+        {btn(editor.isActive("heading", { level: 2 }), "H2", () => editor.chain().focus().toggleHeading({ level: 2 }).run())}
+        {btn(editor.isActive("heading", { level: 3 }), "H3", () => editor.chain().focus().toggleHeading({ level: 3 }).run())}
+      </div>
       <span className="tb-sep" />
-      {btn(false, "Link", () => {
-        const prev = editor.getAttributes("link").href as string | undefined;
-        const url = window.prompt("Link URL", prev ?? "https://");
-        if (url === null) return;
-        if (url === "") editor.chain().focus().unsetLink().run();
-        else editor.chain().focus().setLink({ href: url }).run();
-      })}
-      {btn(false, uploading ? "Uploading…" : "Image", () => fileInput.current?.click())}
-      {btn(false, "Table", () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run())}
+      <div className="tb-group">
+        {btn(editor.isActive("code"), "`code`", () => editor.chain().focus().toggleCode().run(), "Inline code")}
+        {btn(editor.isActive("codeBlock"), "```block", () => editor.chain().focus().toggleCodeBlock().run(), "Code block")}
+        {btn(false, "::aside", () => insertDirective(ASIDE_SRC), "Character aside")}
+        {btn(false, "::callout", () => insertDirective(CALLOUT_SRC), "Callout")}
+      </div>
+      <span className="tb-sep" />
+      <div className="tb-group">
+        {btn(false, "↗ link", () => {
+          const prev = editor.getAttributes("link").href as string | undefined;
+          const url = window.prompt("Link URL", prev ?? "https://");
+          if (url === null) return;
+          if (url === "") editor.chain().focus().unsetLink().run();
+          else editor.chain().focus().setLink({ href: url }).run();
+        }, "Insert link", "action")}
+        <label
+          className="tb-btn action"
+          title="Upload image"
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {uploading ? "…" : "⊞ img"}
+          <input type="file" accept="image/*" hidden onChange={onPickImage} disabled={uploading} />
+        </label>
+      </div>
       <span className="tb-sep" />
       <div className="tb-menu">
         <button type="button" className="tb-btn" onMouseDown={(e) => e.preventDefault()} onClick={() => setMenuOpen((o) => !o)}>
@@ -74,7 +107,7 @@ export function Toolbar({ editor }: { editor: Editor }) {
         </button>
         {menuOpen && (
           <div className="tb-menu-list">
-            {DIRECTIVE_TEMPLATES.map((t) => (
+            {DIRECTIVE_TEMPLATES.filter((t) => !["Callout", "Character aside"].includes(t.label)).map((t) => (
               <button key={t.label} type="button" onClick={() => insertDirective(t.source)}>
                 {t.label}
               </button>
@@ -82,7 +115,24 @@ export function Toolbar({ editor }: { editor: Editor }) {
           </div>
         )}
       </div>
-      <input ref={fileInput} type="file" accept="image/*" hidden onChange={onPickImage} />
+
+      <div className="tb-right">
+        {onTogglePreview !== undefined && (
+          <button
+            type="button"
+            className={`preview-btn${showPreview ? " active" : ""}`}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onTogglePreview}
+          >
+            split
+          </button>
+        )}
+        {onSaveDraft && (
+          <button type="button" className="save-btn" onClick={onSaveDraft} disabled={saving}>
+            {saving ? "Saving…" : "Save draft"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

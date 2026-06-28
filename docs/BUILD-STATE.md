@@ -34,10 +34,9 @@ Update this whenever a step completes. **Last updated: 2026-06-27.**
 - **Run (dev):** `cd backend && cargo run` (:3001) + `cd frontend && npm run dev` (:3000);
   admin `/admin/login` (`admin`/`admin`). **Prod:** set host `.env` (POSTGRES_PASSWORD,
   SITE_URL, DOMAIN, JWT_SECRET, ADMIN_*) → `docker compose -f docker-compose.prod.yml up -d --build`.
-- **Remaining polish:** NotiQ rich blocks (cards/tabs/accordion/mermaid — roadmap §11),
-  full ARCHITECTURE diagram refresh (hexagonal/ER/sequence still describe Leptos web layer),
-  sass `map-get` deprecation tidy (`@use "sass:map"`), and an actual `docker compose build`
-  + VPS deploy run (yours).
+- **2026-06-28 UI parity pass completed**: all public pages now match `docs/mockups/ui-ux-mockup.html` — feat-card home, two-column writing index (wri-shell), two-column projects (projects-shell), post-shell post detail with TOC kv-pairs + art-* classes, admin stat cards + post table, topic colour bars throughout, nav updated to `genuine.dev` logo + ⌘K kbd hint + admin pill.
+- **2026-06-28 Out-of-scope items completed**: (1) Backend prev/next adjacent post navigation in `PostDetail` API response; `DocArticle` uses real prev/next links. (2) Admin editor refactored to 3-panel shell per mockup — file tree (fetches admin list, grouped by kind) | TipTap editor (tab bar + status bar) | tabbed sidebar (Meta/Outline/Diagnostics). (3) `/admin/settings/theme` page: 5 preset cards, accent swatches + custom picker, live preview, per-page override table, save to localStorage.
+- **Remaining polish:** full ARCHITECTURE diagram refresh (hexagonal/ER/sequence still describe Leptos web layer), and an actual `docker compose build` + VPS deploy run (yours).
 
 ### Done (Phase 2a)
 - Full NotiQ design tokens (dark + light) ported into `style/main.css` + components

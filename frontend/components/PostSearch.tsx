@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import type { PostItem } from "../lib/api";
 import { searchPosts } from "../lib/api";
+import { postTags } from "../lib/metadata";
 import PostRows from "./PostRows";
 
 export default function PostSearch({ initialPosts }: { initialPosts: PostItem[] }) {
@@ -13,10 +14,8 @@ export default function PostSearch({ initialPosts }: { initialPosts: PostItem[] 
   // Extract all unique tags
   const allTags = useMemo(() => {
     const tags = new Set<string>();
-    initialPosts.forEach(p => {
-      if (p.metadata?.tags) {
-        p.metadata.tags.forEach((t: string) => tags.add(t));
-      }
+    initialPosts.forEach((p) => {
+      postTags(p.metadata).forEach((t) => tags.add(t));
     });
     return Array.from(tags).sort();
   }, [initialPosts]);
@@ -37,7 +36,7 @@ export default function PostSearch({ initialPosts }: { initialPosts: PostItem[] 
   // Filter posts by active tag if set
   const displayedPosts = (results ?? initialPosts).filter(p => {
     if (!activeTag) return true;
-    return p.metadata?.tags?.includes(activeTag);
+    return postTags(p.metadata).includes(activeTag);
   });
 
   return (

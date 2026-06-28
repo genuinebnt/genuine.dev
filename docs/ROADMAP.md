@@ -1,4 +1,4 @@
-# genuine-folio — Roadmap
+# genuine.dev — Roadmap
 
 A Rust full-stack portfolio + technical blog. Dark, terminal-inspired aesthetic
 (ported from `docs/notiq_portfolio.html`). Built MVP-first with AI assistance,
@@ -208,7 +208,7 @@ layer), `link_previews` (cached OG/oEmbed unfurl metadata).
 ## 6. Repo structure
 
 ```
-genuine-folio/
+genuine.dev/
 ├── Cargo.toml            # leptos + cargo-leptos config
 ├── src/
 │   ├── main.rs           # server entry: config, tracing, pool, leptos+axum, shutdown

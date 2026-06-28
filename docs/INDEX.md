@@ -1,4 +1,4 @@
-# genuine-folio — documentation index
+# genuine.dev — documentation index
 
 Entry point for the project. Everything you need to understand, run, and continue
 the project lives in this `docs/` folder. **Last updated: 2026-06-28.**

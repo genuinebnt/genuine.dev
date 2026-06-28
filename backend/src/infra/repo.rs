@@ -195,6 +195,44 @@ impl ContentRepository for PgContentRepository {
     }
 }
 
+// ── Adjacent post helpers — not on the port trait (single-use, no second impl planned) ──
+
+#[derive(sqlx::FromRow)]
+pub struct AdjacentPost {
+    pub slug: String,
+    pub title: String,
+}
+
+/// Returns (prev, next) published posts adjacent by date to the given slug.
+/// `prev` is the most recently published post before this one; `next` is the
+/// oldest published post after this one. Both are `None` if there is no neighbour.
+pub async fn get_adjacent_posts(
+    pool: &PgPool,
+    slug: &str,
+) -> Result<(Option<AdjacentPost>, Option<AdjacentPost>), AppError> {
+    let prev = sqlx::query_as::<_, AdjacentPost>(
+        "select slug, title from documents \
+         where status = 'published' and kind = 'post' \
+           and published_at < (select published_at from documents where slug = $1 and status = 'published') \
+         order by published_at desc limit 1",
+    )
+    .bind(slug)
+    .fetch_optional(pool)
+    .await?;
+
+    let next = sqlx::query_as::<_, AdjacentPost>(
+        "select slug, title from documents \
+         where status = 'published' and kind = 'post' \
+           and published_at > (select published_at from documents where slug = $1 and status = 'published') \
+         order by published_at asc limit 1",
+    )
+    .bind(slug)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok((prev, next))
+}
+
 // ── Comment helpers (not on the port trait — simple CRUD, no abstraction needed yet) ──
 
 pub struct Comment {

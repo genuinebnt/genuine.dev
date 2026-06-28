@@ -4,7 +4,7 @@ import type { PostItem } from "../lib/api";
 export default function PostRows({ posts }: { posts: PostItem[] }) {
   if (posts.length === 0) return <p style={{ color: "var(--muted)" }}>No posts found.</p>;
   return (
-    <div className="card-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" }}>
+    <div className="card-grid">
       {posts.map((p) => (
         <Link key={p.slug} className="pcard" href={`/blog/${p.slug}`}>
           <span className="ptag">{p.metadata?.series ? 'series' : 'post'}</span>

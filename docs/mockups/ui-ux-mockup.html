@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>genuine-folio — Editor UI Mockups</title>
+<title>genuine.dev — Editor UI Mockups</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
@@ -346,6 +346,11 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
     <button class="stab" onclick="showScreen('post', this)">Post detail</button>
     <button class="stab" onclick="showScreen('projects', this)">Projects</button>
     <button class="stab" onclick="showScreen('theme', this)">Admin — theme</button>
+    <button class="stab" onclick="showScreen('login', this)">Login</button>
+    <button class="stab" onclick="showScreen('404', this)">404</button>
+    <button class="stab" onclick="showScreen('now', this)">/now</button>
+    <button class="stab" onclick="showScreen('uses', this)">/uses</button>
+    <button class="stab" onclick="showScreen('cmdk', this)">Cmd-K</button>
   </div>
 
   <!-- ════════════ EDITOR (SPLIT VIEW) ════════════ -->
@@ -1738,7 +1743,7 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
             <div class="hpr-bar" style="background:var(--blue);"></div>
             <div class="hpr-content">
               <div class="hpr-info">
-                <div class="hpr-name">genuine-folio</div>
+                <div class="hpr-name">genuine.dev</div>
                 <div class="hpr-desc">This site — Rust full-stack portfolio + blog. Modular monolith, hexagonal, self-hosted.</div>
                 <div class="hpr-stack"><span class="hpr-chip">axum</span><span class="hpr-chip">maud</span><span class="hpr-chip">HTMX</span></div>
               </div>
@@ -1930,7 +1935,7 @@ pre.code-editor { padding: 14px 0; font-family: var(--mono); font-size: 12px; li
               <div class="pc-bar" style="background:var(--blue);"></div>
               <div class="pc-inner">
                 <div class="pc-top">
-                  <div class="pc-name">genuine-folio</div>
+                  <div class="pc-name">genuine.dev</div>
                   <span class="pc-badge wip">in progress</span>
                 </div>
                 <div class="pc-desc">This portfolio + blog. Modular monolith, hexagonal architecture, markdown→Postgres pipeline, self-hosted on a VPS.</div>
@@ -2079,5 +2084,438 @@ function tsUpdateBar() {
 }
 
 </script>
+
+<style>
+/* ── LOGIN ── */
+.login-shell { display: flex; align-items: center; justify-content: center; min-height: 480px; background: var(--bg); padding: 60px 20px; }
+.login-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; width: 100%; max-width: 360px; overflow: hidden; }
+.lc-head { padding: 22px 24px 18px; border-bottom: 1px solid var(--border); }
+.lc-logo { font-family: var(--mono); font-size: 13px; font-weight: 500; margin-bottom: 10px; }
+.lc-logo span { color: var(--acc); }
+.lc-title { font-size: 16px; font-weight: 500; margin-bottom: 3px; }
+.lc-sub { font-size: 12px; color: var(--muted); }
+.lc-body { padding: 20px 24px; }
+.lc-field { margin-bottom: 14px; }
+.lc-label { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-bottom: 5px; display: block; }
+.lc-input { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 8px 11px; font-family: var(--mono); font-size: 12px; color: var(--text); outline: none; }
+.lc-input:focus { border-color: var(--acc-border); }
+.lc-pass-wrap { position: relative; }
+.lc-pass-wrap .lc-input { padding-right: 52px; }
+.lc-show { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-family: var(--mono); font-size: 10px; color: var(--faint); cursor: pointer; }
+.lc-show:hover { color: var(--muted); }
+.lc-hint { display: flex; align-items: center; gap: 5px; margin-bottom: 16px; font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.lc-hint-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+.lc-submit { width: 100%; background: var(--acc); border: 1px solid var(--acc); border-radius: var(--radius); padding: 9px; font-family: var(--mono); font-size: 12px; font-weight: 500; color: #04130f; cursor: pointer; }
+.lc-footer { padding: 12px 24px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.lc-back { font-family: var(--mono); font-size: 10px; color: var(--faint); cursor: pointer; }
+.lc-back:hover { color: var(--acc); }
+.lc-attempts { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+
+/* ── 404 ── */
+.e404-shell { display: flex; align-items: center; justify-content: center; min-height: 500px; padding: 60px 40px; }
+.e404-inner { max-width: 520px; width: 100%; }
+.e404-code { font-family: var(--mono); font-size: 72px; font-weight: 500; color: var(--faint); line-height: 1; margin-bottom: 6px; letter-spacing: -.04em; }
+.e404-code span { color: var(--acc); }
+.e404-title { font-size: 22px; font-weight: 500; margin-bottom: 10px; }
+.e404-lead { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 24px; max-width: 400px; }
+.e404-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
+.e404-label { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 10px; }
+.e404-links { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.e404-link { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+.e404-link:hover { border-color: var(--border2); }
+.e404-link:hover .ell-title { color: var(--acc); }
+.ell-bar { width: 3px; height: 28px; border-radius: 2px; flex-shrink: 0; }
+.ell-title { font-size: 13px; font-weight: 500; flex: 1; transition: color .12s; }
+.ell-url { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-left: auto; flex-shrink: 0; }
+.e404-search { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 9px 12px; }
+.e404-search input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-family: var(--mono); font-size: 12px; }
+.e404-search input::placeholder { color: var(--faint); }
+.e404-search-ic { color: var(--faint); font-size: 13px; }
+.e404-search-hint { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+
+/* ── /NOW ── */
+.now-shell { display: grid; grid-template-columns: 180px 1fr; min-height: 580px; }
+.now-toc { border-right: 1px solid var(--border); background: var(--surface); padding: 16px 12px; }
+.now-toc-h { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.now-toc-link { display: block; font-size: 12px; color: var(--muted); padding: 4px 0 4px 10px; border-left: 2px solid var(--border); margin-bottom: 1px; cursor: pointer; text-decoration: none; }
+.now-toc-link:hover { color: var(--text); border-left-color: var(--border2); }
+.now-toc-link.now-cur { color: var(--acc); border-left-color: var(--acc); }
+.now-toc-divider { margin: 12px 0; border: none; border-top: 1px solid var(--border); }
+.now-toc-updated { font-family: var(--mono); font-size: 10px; color: var(--faint); line-height: 1.6; }
+.now-toc-updated strong { color: var(--muted); }
+.now-body { padding: 24px 28px 40px; overflow: auto; }
+.now-eyebrow { font-family: var(--mono); font-size: 11px; color: var(--acc); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px; }
+.now-h1 { font-size: 22px; font-weight: 500; margin-bottom: 5px; }
+.now-meta { font-family: var(--mono); font-size: 11px; color: var(--faint); margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.now-h2 { font-size: 16px; font-weight: 500; margin: 20px 0 10px; }
+.now-p { font-size: 13px; color: var(--text); opacity: .9; line-height: 1.75; margin-bottom: 12px; }
+.now-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 16px; }
+.now-status-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 13px; }
+.nsc-label { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 5px; }
+.nsc-val { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+.nsc-sub { font-size: 11px; color: var(--muted); }
+.now-prog-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.now-prog-item:last-child { border-bottom: none; }
+.npi-bar-wrap { flex: 1; height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+.npi-bar { height: 100%; border-radius: 2px; }
+.npi-label { font-size: 12px; color: var(--text); width: 140px; flex-shrink: 0; }
+.npi-pct { font-family: var(--mono); font-size: 10px; color: var(--faint); width: 32px; text-align: right; flex-shrink: 0; }
+.now-chip-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 14px; }
+.now-chip { font-family: var(--mono); font-size: 10px; padding: 3px 9px; border-radius: 100px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+.now-chip.now-acc { background: var(--acc-bg); border-color: var(--acc-border); color: var(--acc); }
+.now-reading { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; }
+.nr-spine { width: 3px; height: 36px; border-radius: 2px; flex-shrink: 0; }
+.nr-title { font-size: 12.5px; font-weight: 500; margin-bottom: 2px; }
+.nr-author { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.nr-progress { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+/* ── /USES ── */
+.uses-shell { display: grid; grid-template-columns: 180px 1fr; min-height: 560px; }
+.uses-body { padding: 24px 28px 40px; }
+.uses-h2 { font-size: 15px; font-weight: 500; margin: 22px 0 12px; display: flex; align-items: center; gap: 8px; }
+.uses-h2-bar { width: 3px; height: 16px; border-radius: 2px; flex-shrink: 0; }
+.uses-item { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 10px 0; }
+.uses-item:last-child { border-bottom: none; }
+.ui-name { font-size: 13px; font-weight: 500; width: 150px; flex-shrink: 0; }
+.ui-desc { font-size: 12.5px; color: var(--muted); line-height: 1.6; flex: 1; }
+.ui-tag { font-family: var(--mono); font-size: 10px; padding: 1px 7px; border-radius: 100px; background: var(--surface2); border: 1px solid var(--border); color: var(--faint); margin-left: 10px; align-self: flex-start; flex-shrink: 0; margin-top: 2px; }
+
+/* ── CMD-K ── */
+.cmdk-overlay { background: rgba(0,0,0,0.5); padding: 60px 40px; display: flex; align-items: flex-start; justify-content: center; min-height: 540px; }
+.cmdk-modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; width: 100%; max-width: 540px; overflow: hidden; }
+.cmdk-input-row { display: flex; align-items: center; gap: 10px; padding: 13px 16px; border-bottom: 1px solid var(--border); }
+.cmdk-ic { color: var(--muted); font-size: 15px; font-family: var(--mono); }
+.cmdk-input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 14px; font-family: var(--sans); }
+.cmdk-esc { font-family: var(--mono); font-size: 10px; color: var(--faint); border: 1px solid var(--border2); border-radius: 4px; padding: 2px 7px; background: var(--surface2); }
+.cmdk-sections { padding: 8px; }
+.cmdk-group-label { font-family: var(--mono); font-size: 9px; color: var(--faint); text-transform: uppercase; letter-spacing: .12em; padding: 6px 10px 4px; }
+.cmdk-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius); cursor: pointer; margin-bottom: 1px; }
+.cmdk-item:hover { background: var(--surface2); }
+.cmdk-item.cmdk-sel { background: var(--acc-bg); }
+.cmdk-item.cmdk-sel .ci-title { color: var(--acc); }
+.cmdk-item.cmdk-sel .ci-type { color: var(--acc); opacity: .7; }
+.ci-icon { width: 26px; height: 26px; border-radius: 5px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+.cmdk-item.cmdk-sel .ci-icon { background: var(--acc-bg); border-color: var(--acc-border); }
+.ci-body { flex: 1; }
+.ci-title { font-size: 13px; color: var(--text); }
+.ci-sub { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-top: 1px; }
+.ci-type { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-left: auto; flex-shrink: 0; }
+.ci-topic-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.cmdk-footer { display: flex; align-items: center; gap: 14px; padding: 8px 14px; border-top: 1px solid var(--border); background: var(--surface2); }
+.cmdk-hint { display: flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10px; color: var(--faint); }
+.cmdk-key { border: 1px solid var(--border2); border-radius: 4px; padding: 1px 6px; background: var(--surface); font-size: 10px; font-family: var(--mono); }
+.cmdk-footer-sp { flex: 1; }
+.cmdk-results-count { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+</style>
+
+  <!-- ════════════ LOGIN ════════════ -->
+  <div class="screen" id="s-login">
+    <div class="screen-note">
+      Admin login — /admin/login. Centered card with passphrase field (no username — single-user site), session hint, submit button, back-to-site link, and attempt counter. Intentionally minimal and slightly opaque — signals it's not meant for visitors without being hostile.
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev/admin/login</span>
+      </div>
+      <div class="login-shell">
+        <div class="login-card">
+          <div class="lc-head">
+            <div class="lc-logo">genuine<span>.</span>dev</div>
+            <div class="lc-title">Admin access</div>
+            <div class="lc-sub">This area is not for you — unless it is.</div>
+          </div>
+          <div class="lc-body">
+            <div class="lc-field">
+              <label class="lc-label">passphrase</label>
+              <div class="lc-pass-wrap">
+                <input class="lc-input" type="password" placeholder="enter passphrase…">
+                <span class="lc-show">show</span>
+              </div>
+            </div>
+            <div class="lc-hint">
+              <div class="lc-hint-dot"></div>
+              <span>session persists for 30 days · stored in http-only cookie</span>
+            </div>
+            <button class="lc-submit">Enter →</button>
+          </div>
+          <div class="lc-footer">
+            <a class="lc-back">← back to site</a>
+            <span class="lc-attempts">0 / 5 attempts</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ 404 ════════════ -->
+  <div class="screen" id="s-404">
+    <div class="screen-note">
+      404 page — accent digits on the error code (4·0·4 with acc-colored outer digits), concise copy, topic-bar suggestion links (same pattern as writing index rows), inline search with ⌘K hint. No nav links in the main body — the nav bar handles escape.
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev/blog/this-page-does-not-exist</span>
+        <span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--red);">404</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks"><a class="npill">Writing</a><a class="npill">Projects</a><a class="npill">About</a></div>
+        <div class="nsp"></div><span class="kbd">⌘K</span>
+      </nav>
+      <div class="e404-shell">
+        <div class="e404-inner">
+          <div class="e404-code"><span>4</span>0<span>4</span></div>
+          <div class="e404-title">Nothing here.</div>
+          <p class="e404-lead">The page you're looking for doesn't exist, was moved, or is still being written. Happens to the best of us.</p>
+          <div class="e404-divider"></div>
+          <div class="e404-label">you might be looking for</div>
+          <div class="e404-links">
+            <div class="e404-link">
+              <div class="ell-bar" style="background:#f0703c;"></div>
+              <div><div class="ell-title">Writing a lock-free queue from scratch</div><div style="font-size:11px;color:var(--faint);">rust · performance · 12 min</div></div>
+              <span class="ell-url">writing/lock-free-queue</span>
+            </div>
+            <div class="e404-link">
+              <div class="ell-bar" style="background:var(--acc);"></div>
+              <div><div class="ell-title">NotiQ — Distributed Notification Platform</div><div style="font-size:11px;color:var(--faint);">project · case study</div></div>
+              <span class="ell-url">projects/notiq</span>
+            </div>
+            <div class="e404-link">
+              <div class="ell-bar" style="background:var(--blue);"></div>
+              <div><div class="ell-title">Blind SSRF: building your own OOB server</div><div style="font-size:11px;color:var(--faint);">infosec · bug-bounty · 9 min</div></div>
+              <span class="ell-url">writing/blind-ssrf</span>
+            </div>
+          </div>
+          <div class="e404-search">
+            <span class="e404-search-ic">⌕</span>
+            <input placeholder="search the site…">
+            <span class="e404-search-hint">or press ⌘K</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ /NOW ════════════ -->
+  <div class="screen" id="s-now">
+    <div class="screen-note">
+      /now page — two-column: TOC sidebar with "last updated" meta | body with status cards, progress bars (roadmap), current learning chips, reading list with spine-color bars. Follows the post-detail panel pattern. Linked from About nav.
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev/now</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks"><a class="npill">Writing</a><a class="npill">Projects</a><a class="npill active">About</a></div>
+        <div class="nsp"></div><span class="kbd">⌘K</span>
+      </nav>
+      <div class="now-shell">
+        <div class="now-toc">
+          <div class="now-toc-h">On this page</div>
+          <a class="now-toc-link now-cur">Building</a>
+          <a class="now-toc-link">Learning</a>
+          <a class="now-toc-link">Reading</a>
+          <a class="now-toc-link">Fitness</a>
+          <a class="now-toc-link">Not doing</a>
+          <hr class="now-toc-divider">
+          <div class="now-toc-updated">Last updated<br><strong>June 2026</strong></div>
+        </div>
+        <div class="now-body">
+          <div class="now-eyebrow">Now</div>
+          <h1 class="now-h1">What I'm doing right now</h1>
+          <div class="now-meta">Updated June 2026 · inspired by nownownow.com</div>
+          <h2 class="now-h2">Building</h2>
+          <p class="now-p">Finishing genuine.dev — the site you're reading — and the four-project Rust backend roadmap that backs up the portfolio. NotiQ is done. Working through the e-commerce platform next.</p>
+          <div class="now-status-grid">
+            <div class="now-status-card">
+              <div class="nsc-label">current project</div>
+              <div class="nsc-val" style="color:var(--acc);">genuine.dev</div>
+              <div class="nsc-sub">portfolio + blog, this site</div>
+            </div>
+            <div class="now-status-card">
+              <div class="nsc-label">job hunt</div>
+              <div class="nsc-val" style="color:var(--warn);">Jan 2027</div>
+              <div class="nsc-sub">targeting DB-infra companies</div>
+            </div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <div style="font-family:var(--mono);font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;">roadmap progress</div>
+            <div class="now-prog-item"><span class="npi-label">NotiQ</span><div class="npi-bar-wrap"><div class="npi-bar" style="width:100%;background:var(--acc);"></div></div><span class="npi-pct">100%</span></div>
+            <div class="now-prog-item"><span class="npi-label">genuine.dev</span><div class="npi-bar-wrap"><div class="npi-bar" style="width:70%;background:var(--blue);"></div></div><span class="npi-pct">70%</span></div>
+            <div class="now-prog-item"><span class="npi-label">e-commerce platform</span><div class="npi-bar-wrap"><div class="npi-bar" style="width:0%;background:var(--purple);"></div></div><span class="npi-pct">0%</span></div>
+            <div class="now-prog-item"><span class="npi-label">Raft KV store</span><div class="npi-bar-wrap"><div class="npi-bar" style="width:0%;background:var(--warn);"></div></div><span class="npi-pct">0%</span></div>
+          </div>
+          <h2 class="now-h2">Learning</h2>
+          <p class="now-p">Bug bounty on Bugcrowd — rotating through auth and business logic bugs right now. Reading CMU 15-445 lecture notes alongside building. Hindi through songs as dual language + singing practice.</p>
+          <div class="now-chip-row">
+            <span class="now-chip now-acc">bug bounty</span>
+            <span class="now-chip now-acc">DB internals</span>
+            <span class="now-chip">Hindi</span>
+            <span class="now-chip">guitar</span>
+          </div>
+          <h2 class="now-h2">Reading</h2>
+          <div class="now-reading">
+            <div class="nr-spine" style="background:var(--acc);"></div>
+            <div><div class="nr-title">Database Internals</div><div class="nr-author">Alex Petrov</div><div class="nr-progress">ch. 4 of 14 — B-tree internals</div></div>
+          </div>
+          <div class="now-reading">
+            <div class="nr-spine" style="background:var(--purple);"></div>
+            <div><div class="nr-title">Rust Atomics and Locks</div><div class="nr-author">Mara Bos</div><div class="nr-progress">finished — reference</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ /USES ════════════ -->
+  <div class="screen" id="s-uses">
+    <div class="screen-note">
+      /uses page — two-column: TOC sidebar | uses body with section h2s (colored left bar) and item rows (name · description · frequency tag). Sections: Languages, Editor and terminal, Security and bug bounty, Hardware. Linked from About nav.
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev/uses</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks"><a class="npill">Writing</a><a class="npill">Projects</a><a class="npill active">About</a></div>
+        <div class="nsp"></div><span class="kbd">⌘K</span>
+      </nav>
+      <div class="uses-shell">
+        <div class="now-toc">
+          <div class="now-toc-h">sections</div>
+          <a class="now-toc-link now-cur">Languages</a>
+          <a class="now-toc-link">Editor</a>
+          <a class="now-toc-link">Terminal</a>
+          <a class="now-toc-link">Stack</a>
+          <a class="now-toc-link">Hardware</a>
+          <a class="now-toc-link">Security</a>
+        </div>
+        <div class="uses-body">
+          <div class="now-eyebrow">Uses</div>
+          <h1 class="now-h1" style="margin-bottom:4px;">What I use</h1>
+          <div class="now-meta">The actual stack, not the aspirational one.</div>
+          <div>
+            <h2 class="uses-h2"><div class="uses-h2-bar" style="background:#f0703c;"></div>Languages</h2>
+            <div class="uses-item"><div class="ui-name">Rust</div><div class="ui-desc">Primary language for everything systems. axum, tokio, sqlx, tonic, crossbeam.</div><span class="ui-tag">daily</span></div>
+            <div class="uses-item"><div class="ui-name">Python</div><div class="ui-desc">LeetCode and scripting only. Not production.</div><span class="ui-tag">weekly</span></div>
+            <div class="uses-item"><div class="ui-name">SQL</div><div class="ui-desc">Postgres almost exclusively. Raw queries over ORMs.</div><span class="ui-tag">daily</span></div>
+          </div>
+          <div>
+            <h2 class="uses-h2"><div class="uses-h2-bar" style="background:var(--blue);"></div>Editor and terminal</h2>
+            <div class="uses-item"><div class="ui-name">Neovim</div><div class="ui-desc">rust-analyzer, nvim-cmp, telescope. Lua config in dotfiles.</div><span class="ui-tag">daily</span></div>
+            <div class="uses-item"><div class="ui-name">WezTerm</div><div class="ui-desc">GPU-accelerated, Lua config, multiplexer built in.</div><span class="ui-tag">daily</span></div>
+            <div class="uses-item"><div class="ui-name">fish</div><div class="ui-desc">Abbreviations over aliases. starship prompt.</div><span class="ui-tag">daily</span></div>
+          </div>
+          <div>
+            <h2 class="uses-h2"><div class="uses-h2-bar" style="background:var(--acc);"></div>Security and bug bounty</h2>
+            <div class="uses-item"><div class="ui-name">Burp Suite</div><div class="ui-desc">Pro. Intercept, scanner, repeater. Primary bounty tool.</div><span class="ui-tag">active</span></div>
+            <div class="uses-item"><div class="ui-name">Ghidra</div><div class="ui-desc">Static RE on Apple Silicon. C and x86-64 targets.</div><span class="ui-tag">weekly</span></div>
+            <div class="uses-item"><div class="ui-name">oob-catcher</div><div class="ui-desc">My own OOB interaction server. Wildcard DNS + HTTP logging.</div><span class="ui-tag">self-built</span></div>
+          </div>
+          <div>
+            <h2 class="uses-h2"><div class="uses-h2-bar" style="background:var(--purple);"></div>Hardware</h2>
+            <div class="uses-item"><div class="ui-name">MacBook Pro M2</div><div class="ui-desc">Apple Silicon. Static analysis only — can't run Linux ELFs natively.</div><span class="ui-tag">primary</span></div>
+            <div class="uses-item"><div class="ui-name">Yamaha F310</div><div class="ui-desc">Acoustic guitar. Learning fingerstyle alongside Hindi songs.</div><span class="ui-tag">hobby</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════ CMD-K ════════════ -->
+  <div class="screen" id="s-cmdk">
+    <div class="screen-note">
+      Command palette (⌘K) — upgraded from original. Results grouped by type (posts / projects / tags / actions). Each post row has a topic-dot color indicator and subtitle with tags + read time. Icon cells replace emoji. Keyboard hint footer. Overlay sits on a dimmed page background.
+    </div>
+    <div class="win">
+      <div class="win-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="win-url">genuine.dev — ⌘K open</span>
+      </div>
+      <nav class="snav">
+        <div class="logo">genuine<span>.</span>dev</div>
+        <div class="nlinks"><a class="npill">Writing</a><a class="npill">Projects</a><a class="npill">About</a></div>
+        <div class="nsp"></div><span class="kbd">⌘K</span>
+      </nav>
+      <div class="cmdk-overlay">
+        <div class="cmdk-modal">
+          <div class="cmdk-input-row">
+            <span class="cmdk-ic">⌕</span>
+            <input class="cmdk-input" value="ssrf" readonly>
+            <span class="cmdk-esc">esc</span>
+          </div>
+          <div class="cmdk-sections">
+            <div class="cmdk-group-label">posts</div>
+            <div class="cmdk-item cmdk-sel">
+              <div class="ci-icon">✎</div>
+              <div class="ci-body">
+                <div class="ci-title">Blind SSRF: building your own OOB server</div>
+                <div class="ci-sub">infosec · bug-bounty · 9 min read</div>
+              </div>
+              <div class="ci-topic-dot" style="background:var(--acc);"></div>
+              <span class="ci-type">post</span>
+            </div>
+            <div class="cmdk-item">
+              <div class="ci-icon">✎</div>
+              <div class="ci-body">
+                <div class="ci-title">First blood on a blind RCE: how the chain came together</div>
+                <div class="ci-sub">infosec · ctf · 14 min read</div>
+              </div>
+              <div class="ci-topic-dot" style="background:#ef5350;"></div>
+              <span class="ci-type">post</span>
+            </div>
+            <div class="cmdk-group-label">projects</div>
+            <div class="cmdk-item">
+              <div class="ci-icon">⊞</div>
+              <div class="ci-body">
+                <div class="ci-title">oob-catcher</div>
+                <div class="ci-sub">Self-hosted OOB interaction server · Rust · infosec</div>
+              </div>
+              <div class="ci-topic-dot" style="background:var(--acc);"></div>
+              <span class="ci-type">project</span>
+            </div>
+            <div class="cmdk-group-label">tags</div>
+            <div class="cmdk-item">
+              <div class="ci-icon" style="font-size:10px;font-family:var(--mono);">#</div>
+              <div class="ci-body">
+                <div class="ci-title">bug-bounty</div>
+                <div class="ci-sub">2 posts</div>
+              </div>
+              <span class="ci-type">tag</span>
+            </div>
+            <div class="cmdk-group-label">actions</div>
+            <div class="cmdk-item">
+              <div class="ci-icon">◑</div>
+              <div class="ci-body"><div class="ci-title">Toggle theme</div></div>
+              <span class="ci-type">action</span>
+            </div>
+            <div class="cmdk-item">
+              <div class="ci-icon">↗</div>
+              <div class="ci-body"><div class="ci-title">Go to /now</div></div>
+              <span class="ci-type">action</span>
+            </div>
+          </div>
+          <div class="cmdk-footer">
+            <span class="cmdk-hint"><span class="cmdk-key">↑↓</span> navigate</span>
+            <span class="cmdk-hint"><span class="cmdk-key">↵</span> open</span>
+            <span class="cmdk-hint"><span class="cmdk-key">esc</span> close</span>
+            <span class="cmdk-footer-sp"></span>
+            <span class="cmdk-results-count">6 results</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showScreen(name, btn) {
 </body>
 </html>

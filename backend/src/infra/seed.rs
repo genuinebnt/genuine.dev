@@ -19,12 +19,40 @@ pub async fn seed_if_empty(pool: &PgPool) -> Result<(), AppError> {
     if repo.count().await? > 0 {
         return Ok(());
     }
+    run_seed(pool, SeedMode::Create).await
+}
+
+/// Inserts any seed document whose slug is not already in the database.
+pub async fn seed_missing(pool: &PgPool) -> Result<(), AppError> {
+    run_seed(pool, SeedMode::SkipExisting).await
+}
+
+/// Re-renders and upserts every seed document (dev refresh after seed content changes).
+pub async fn seed_refresh(pool: &PgPool) -> Result<(), AppError> {
+    run_seed(pool, SeedMode::Upsert).await
+}
+
+#[derive(Clone, Copy)]
+enum SeedMode {
+    /// Used when the database is empty — always insert.
+    Create,
+    /// Skip slugs that already exist.
+    SkipExisting,
+    /// Upsert all seed slugs; preserves id + published_at on existing rows.
+    Upsert,
+}
+
+async fn run_seed(pool: &PgPool, mode: SeedMode) -> Result<(), AppError> {
+    let repo = PgContentRepository::new(pool.clone());
     let renderer = MarkdownRenderer::new();
+    let skip_existing = matches!(mode, SeedMode::SkipExisting);
 
     // ── Blog posts (newest first via `days_ago`) ──────────────────────────────
     insert(
         &repo,
         &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
         Kind::Post,
         "writing-a-lock-free-queue-from-scratch",
         "Writing a lock-free queue from scratch",
@@ -42,6 +70,8 @@ pub async fn seed_if_empty(pool: &PgPool) -> Result<(), AppError> {
     insert(
         &repo,
         &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
         Kind::Post,
         "reclaiming-memory-hazard-pointers-vs-epochs",
         "Reclaiming memory: hazard pointers vs epochs",
@@ -59,6 +89,8 @@ pub async fn seed_if_empty(pool: &PgPool) -> Result<(), AppError> {
     insert(
         &repo,
         &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
         Kind::Post,
         "ssrf-to-internal-dashboards",
         "SSRF to internal dashboards: a bug-bounty walkthrough",
@@ -72,6 +104,8 @@ pub async fn seed_if_empty(pool: &PgPool) -> Result<(), AppError> {
     insert(
         &repo,
         &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
         Kind::Post,
         "what-skip-locked-actually-does",
         "What SKIP LOCKED actually does",
@@ -86,6 +120,8 @@ pub async fn seed_if_empty(pool: &PgPool) -> Result<(), AppError> {
     insert(
         &repo,
         &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
         Kind::Project,
         "notiq",
         "NotiQ — distributed notification platform",
@@ -94,7 +130,8 @@ pub async fn seed_if_empty(pool: &PgPool) -> Result<(), AppError> {
         json!({
             "featured": true,
             "tech": ["Rust", "gRPC", "Postgres", "Redis", "AWS", "Terraform"],
-            "tags": ["distributed-systems", "rust"]
+            "tags": ["distributed-systems", "rust"],
+            "status": "complete"
         }),
         6,
     )
@@ -103,17 +140,40 @@ pub async fn seed_if_empty(pool: &PgPool) -> Result<(), AppError> {
     insert(
         &repo,
         &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
         Kind::Project,
-        "genuine-folio",
-        "genuine-folio — this site",
+        "genuine-dev",
+        "genuine.dev — this site",
         Some("A hexagonal Rust API + Next.js CMS with a custom directive renderer."),
         FOLIO_MD,
         json!({
             "featured": true,
             "tech": ["Rust", "axum", "Next.js", "Postgres", "syntect"],
-            "tags": ["fullstack", "rust"]
+            "tags": ["fullstack", "rust"],
+            "status": "wip"
         }),
         40,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Project,
+        "db-labs",
+        "db-labs — relational DBMS from scratch",
+        Some("From-scratch relational DBMS in Rust — buffer pool, B+ tree, executors, transactions."),
+        DB_LABS_MD,
+        json!({
+            "featured": true,
+            "tech": ["Rust", "systems", "database"],
+            "tags": ["database", "rust", "systems"],
+            "github": "https://github.com/genuinebnt/db-labs"
+        }),
+        12,
     )
     .await?;
 
@@ -121,6 +181,8 @@ pub async fn seed_if_empty(pool: &PgPool) -> Result<(), AppError> {
     insert(
         &repo,
         &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
         Kind::Page,
         "about",
         "About",
@@ -138,6 +200,8 @@ pub async fn seed_if_empty(pool: &PgPool) -> Result<(), AppError> {
 async fn insert(
     repo: &PgContentRepository,
     renderer: &MarkdownRenderer,
+    skip_existing: bool,
+    upsert: bool,
     kind: Kind,
     slug: &str,
     title: &str,
@@ -146,15 +210,21 @@ async fn insert(
     metadata: serde_json::Value,
     days_ago: i64,
 ) -> Result<(), AppError> {
-    // Slugs are passed explicitly so series/topic posts read naturally; validate
-    // them anyway to keep the invariant that stored slugs are well-formed.
     let slug = Slug::parse(slug)
         .expect("seed slug is valid")
         .as_str()
         .to_owned();
+    let existing = repo.get_by_slug(&slug).await?;
+    if skip_existing && existing.is_some() {
+        tracing::debug!("seed skip existing '{slug}'");
+        return Ok(());
+    }
     let rendered = renderer.render(markdown);
     let doc = Document {
-        id: Uuid::now_v7(),
+        id: existing
+            .as_ref()
+            .map(|d| d.id)
+            .unwrap_or_else(Uuid::now_v7),
         slug,
         kind,
         title: title.to_owned(),
@@ -163,12 +233,24 @@ async fn insert(
         body_html: rendered.html,
         reading_min: rendered.reading_min,
         status: Status::Published,
-        cover_image: None,
+        cover_image: existing.as_ref().and_then(|d| d.cover_image.clone()),
         metadata,
-        published_at: Some(OffsetDateTime::now_utc() - Duration::days(days_ago)),
+        published_at: existing
+            .as_ref()
+            .and_then(|d| d.published_at)
+            .or_else(|| Some(OffsetDateTime::now_utc() - Duration::days(days_ago))),
     };
-    repo.create(&doc).await?;
-    tracing::info!("seeded {} '{}'", kind.as_str(), doc.slug);
+    if upsert {
+        let kind_str = kind.as_str();
+        let slug_log = doc.slug.clone();
+        repo.upsert(&doc).await?;
+        tracing::info!("seed upserted {kind_str} '{slug_log}'");
+    } else {
+        let kind_str = kind.as_str();
+        let slug_log = doc.slug.clone();
+        repo.create(&doc).await?;
+        tracing::info!("seeded {kind_str} '{slug_log}'");
+    }
     Ok(())
 }
 
@@ -668,6 +750,22 @@ bytes::Bytes for zero-copy fan-out: cloning an Arc is two atomic increments; clo
 :::
 "#;
 
+const DB_LABS_MD: &str = r#"A from-scratch relational DBMS in Rust — the third portfolio project alongside
+NotiQ and genuine.dev. BusTub-shaped architecture: buffer pool, B+ tree index, query
+executors, concurrency control, and WAL/recovery, all ported independently.
+
+**Build focus:** P0 Count-Min Sketch primer is done. P1 Buffer Pool Manager is
+the current work — ARC replacer, disk scheduler, page guards, 8 KB frames.
+
+See the full case study at [/projects/db-labs](/projects/db-labs) for architecture
+diagrams, build phases, and implementation status.
+
+:::callout ℹ "Learning project"
+Reference repos (bustub-private, SQLite) are read-only study material — every line
+of db-labs engine code is typed by hand. [GitHub →](https://github.com/genuinebnt/db-labs)
+:::
+"#;
+
 const FOLIO_MD: &str = r#"The site you're reading. A DB-backed CMS with a hexagonal Rust API, a Next.js
 front end, and a custom markdown renderer that powers the `:::` directive blocks
 used across these case studies.
@@ -736,7 +834,7 @@ I write about systems programming, distributed systems, and security — and hun
 bugs in my spare time.
 
 :::timeline
-2026 genuine-folio — built this site, started writing weekly.
+2026 genuine.dev — built this site, started writing weekly.
 2025 NotiQ — distributed notification platform in Rust.
 2024 Bug bounty — first valid SSRF report, hooked since.
 2023 Systems deep-dive — started learning OS internals and concurrency.
