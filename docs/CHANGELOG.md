@@ -6,6 +6,12 @@ code changes both go here so the history is complete.
 
 ---
 
+## 2026-06-28 — Roadmap redesign + dev seed on startup
+
+- **`docs/ROADMAP.md`**: Rewritten for ADR-013 stack (Next.js + Rust API); §2 shipped inventory; §9 post-MVP phases with ✅/⬜ per feature; trimmed stale Leptos/maud references in §1–§9.
+- **`docs/BUILD-STATE.md`**, **`docs/INDEX.md`**: Updated run instructions (`just dev`) and current position.
+- **`just dev`**: Now runs `seed` after migrate so new page docs (`home`, `uses`, `now`) appear without a manual step.
+
 ## 2026-06-28 — Landing page CMS (`pages/home`)
 
 - **Home (`/`)**: Hero copy, meta pills, and section labels editable in admin; featured article/project grids still pull `featured: true` items from the API via `:::featured-articles` / `:::featured-projects` slots.

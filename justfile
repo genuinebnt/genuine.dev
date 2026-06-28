@@ -9,7 +9,7 @@ DB_URL := env_var_or_default("DATABASE_URL", "postgres://folio:folio@localhost:5
 # ── quick start ───────────────────────────────────────────────────────────────
 
 # Start everything: Postgres + backend + frontend
-dev: db-up migrate
+dev: db-up migrate seed
     #!/usr/bin/env bash
     set -e
     trap 'kill 0' EXIT
