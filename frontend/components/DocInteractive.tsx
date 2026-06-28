@@ -71,7 +71,9 @@ export function DocInteractive() {
 
     // 4. Scroll-spy TOC — panel pages scroll inside `[data-scroll-root]`, not the window.
     const readingTarget = document.getElementById("reading-target");
-    const proseRoot = readingTarget ?? document.querySelector<HTMLElement>(".article-col, .about-body");
+    const proseRoot = readingTarget ?? document.querySelector<HTMLElement>(
+      ".article-col, .about-body, .uses-body, .now-body",
+    );
     if (!proseRoot) {
       return () => {
         copyBtns.forEach((btn) => btn.removeEventListener("click", handleCopy));
@@ -81,6 +83,8 @@ export function DocInteractive() {
     }
 
     const scrollRoot = findScrollRoot(proseRoot);
+    const observerRoot: Element | null =
+      scrollRoot === window ? null : (scrollRoot as HTMLElement);
     const headings = proseRoot.querySelectorAll<HTMLElement>(".prose h2, .prose h3, h2, h3");
     const tocLinks = document.querySelectorAll<HTMLAnchorElement>(".toc a, .toc-link");
 
@@ -123,7 +127,7 @@ export function DocInteractive() {
         if (id) setCurrentLink(id);
       },
       {
-        root: scrollRoot === window ? null : scrollRoot,
+        root: observerRoot,
         rootMargin: "-12% 0px -75% 0px",
         threshold: 0,
       },

@@ -50,7 +50,7 @@ export function scrollToHashTarget(
     return;
   }
 
-  const container = scrollRoot;
+  const container = scrollRoot as HTMLElement;
   const top = target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
   container.scrollTo({ top: Math.max(0, top - offset), behavior: "smooth" });
 }

@@ -163,6 +163,8 @@ h1 span { color: var(--acc); }
 // Hero block: cap the intro copy at a comfortable reading width. The grids
 // and list rows below are allowed to use the full shell width.
 .hero { max-width: 680px; }
+.hero-prose > p { color: var(--muted); font-size: 15px; max-width: 620px; line-height: 1.75; margin-bottom: 26px; }
+.hero-prose > h1 strong { color: var(--acc); }
 .section-label { font-family: var(--mono); font-size: 10px; color: var(--faint); letter-spacing: 0.15em; text-transform: uppercase; margin: 34px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 
 .post-list { list-style: none; }
@@ -1195,6 +1197,9 @@ article h1 { margin-bottom: 12px; }
 // ── /uses page ────────────────────────────────────────────────────────────────
 .uses-shell { display: grid; grid-template-columns: var(--panel-rail) 1fr; grid-template-rows: minmax(0, 1fr); height: 100%; overflow: hidden; width: 100%; }
 .uses-body { padding: 24px 28px 40px; overflow-y: auto; min-height: 0; }
+.now-body .panel-prose > h2,
+.uses-body .panel-prose > h2 { font-size: 16px; font-weight: 500; margin: 20px 0 10px; }
+.now-body .panel-prose > p { font-size: 13px; color: var(--text); opacity: .9; line-height: 1.75; margin-bottom: 12px; }
 .uses-h2 { font-size: 15px; font-weight: 500; margin: 22px 0 12px; display: flex; align-items: center; gap: 8px; }
 .uses-h2-bar { width: 3px; height: 16px; border-radius: 2px; flex-shrink: 0; }
 .uses-item { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 10px 0; }

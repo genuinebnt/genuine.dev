@@ -19,6 +19,8 @@ export function useScrollSpy(
     if (!(scope instanceof HTMLElement)) return;
 
     const scrollRoot = findScrollRoot(scope);
+    const observerRoot: Element | null =
+      scrollRoot === window ? null : (scrollRoot as HTMLElement);
     const headings = sections
       .map((section) => document.getElementById(section.id))
       .filter((el): el is HTMLElement => el != null);
@@ -38,7 +40,7 @@ export function useScrollSpy(
         if (match) setActive(match.label);
       },
       {
-        root: scrollRoot === window ? null : scrollRoot,
+        root: observerRoot,
         rootMargin: "-12% 0px -75% 0px",
         threshold: 0,
       },

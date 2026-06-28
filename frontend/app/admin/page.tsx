@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { adminDelete, adminList, adminSetStatus, getToken, type AdminItem } from "../../lib/auth";
+import { isAdminEditable, publicDocPath } from "../../lib/cmsPages";
 import { PageHeader } from "../../components/ui/PageHeader";
 
-const FILTERS = ["all", "posts", "projects", "drafts", "published"] as const;
+const FILTERS = ["all", "posts", "projects", "pages", "drafts", "published"] as const;
 type Filter = (typeof FILTERS)[number];
 
 function statusBadgeClass(status: string): string {
@@ -52,6 +53,7 @@ export default function Admin() {
     switch (activeFilter) {
       case "posts": return rows.filter((r) => r.kind === "post");
       case "projects": return rows.filter((r) => r.kind === "project");
+      case "pages": return rows.filter((r) => r.kind === "page");
       case "drafts": return rows.filter((r) => r.status === "draft");
       case "published": return rows.filter((r) => r.status === "published");
       default: return rows;
@@ -59,12 +61,13 @@ export default function Admin() {
   }, [rows, activeFilter]);
 
   const stats = useMemo(() => {
-    if (!rows) return { total: 0, published: 0, drafts: 0, projects: 0 };
+    if (!rows) return { total: 0, published: 0, drafts: 0, projects: 0, pages: 0 };
     return {
       total: rows.length,
       published: rows.filter((r) => r.status === "published").length,
       drafts: rows.filter((r) => r.status === "draft").length,
       projects: rows.filter((r) => r.kind === "project").length,
+      pages: rows.filter((r) => r.kind === "page").length,
     };
   }, [rows]);
 
@@ -106,6 +109,10 @@ export default function Admin() {
             <div className="scard">
               <div className="sc-val blue">{stats.projects}</div>
               <div className="sc-lab">projects</div>
+            </div>
+            <div className="scard">
+              <div className="sc-val blue">{stats.pages}</div>
+              <div className="sc-lab">pages</div>
             </div>
           </div>
 
@@ -154,10 +161,25 @@ export default function Admin() {
                   </td>
                   <td>
                     <div className="row-actions">
-                      <Link className="ra" href={`/admin/edit/${r.slug}`}>edit</Link>
-                      {r.status === "draft" && (
-                        <Link className="ra" href={`/blog/${r.slug}`} target="_blank">preview</Link>
+                      {isAdminEditable(r) ? (
+                        <Link className="ra" href={`/admin/edit/${r.slug}`}>edit</Link>
+                      ) : (
+                        <span className="muted" style={{ fontFamily: "var(--mono)", fontSize: "11px" }}>
+                          static case study
+                        </span>
                       )}
+                      {(() => {
+                        const live = publicDocPath(r);
+                        if (!live) return null;
+                        if (r.status === "draft") {
+                          return (
+                            <Link className="ra" href={live} target="_blank">preview</Link>
+                          );
+                        }
+                        return (
+                          <Link className="ra" href={live} target="_blank">view</Link>
+                        );
+                      })()}
                       {r.status === "published" && (
                         <button className="ra" onClick={() => setStatus(r.slug, "draft")}>unpublish</button>
                       )}

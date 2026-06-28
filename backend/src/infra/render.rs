@@ -7,7 +7,9 @@
 //!
 //! Directives supported (mirrors `ui_mockups.html` + `notiq_portfolio.html`):
 //!   aside, callout, cards (+ card), matrix (+ mrow), accordion (+ phase),
-//!   grid (+ gitem), signals (+ signal), tabs (+ tab, tab-panel), timeline (+ tl).
+//!   grid (+ gitem), signals (+ signal), tabs (+ tab, tab-panel), timeline (+ tl),
+//!   uses-section, now-status, now-chips, now-reading, portfolio-projects,
+//!   eyebrow, meta-pills, home-divider, featured-articles, featured-projects.
 //!
 //! Fenced code blocks are highlighted with syntect *before* the comrak pass and
 //! emitted as raw `.code` HTML (filename header, copy button, per-line numbers,
@@ -129,6 +131,19 @@ fn render_directive(name: &str, arg: &str, body: &str) -> String {
         "signals" => render_signals(body),
         "tabs" => render_tabs(arg, body),
         "timeline" => render_timeline(body),
+        "uses-section" => render_uses_section(arg, body),
+        "now-status" => render_now_status(body),
+        "now-chips" => render_now_chips(body),
+        "now-reading" => render_now_reading(body),
+        "portfolio-projects" => {
+            r#"<div class="now-portfolio-slot"><div class="now-portfolio-label">portfolio projects</div></div>"#
+                .to_string()
+        }
+        "eyebrow" => format!(r#"<div class="eyebrow">{}</div>"#, escape_html(arg)),
+        "meta-pills" => render_meta_pills(body),
+        "home-divider" => render_home_divider(),
+        "featured-articles" => render_featured_slot("articles", arg, "featured articles"),
+        "featured-projects" => render_featured_slot("projects", arg, "selected projects"),
         _ => {
             // Unknown directive — pass through as a blockquote so nothing is lost.
             format!("<blockquote><p><strong>{name}</strong>: {body}</p></blockquote>")
@@ -309,6 +324,139 @@ fn render_timeline(body: &str) -> String {
     }
     format!(
         r#"<div class="section-label">timeline</div><div class="timeline">{items}</div>"#
+    )
+}
+
+/// `:::uses-section #f0703c Languages` — gear list for `/uses`.
+/// Body lines: `Name | Description | frequency-tag`
+fn render_uses_section(arg: &str, body: &str) -> String {
+    let (color, title) = arg.rsplit_once(' ').unwrap_or(("var(--acc)", arg));
+    let color = color.trim();
+    let title = title.trim();
+    let id = slug_id(title);
+    let mut items = String::new();
+    for line in body.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        let parts: Vec<&str> = line.splitn(3, '|').map(str::trim).collect();
+        let (name, desc, tag) = match parts.as_slice() {
+            [n, d, t] => (*n, *d, *t),
+            [n, d] => (*n, *d, ""),
+            _ => continue,
+        };
+        items.push_str(&format!(
+            r#"<div class="uses-item"><div class="ui-name">{name}</div><div class="ui-desc">{desc}</div><span class="ui-tag">{tag}</span></div>"#
+        ));
+    }
+    format!(
+        r#"<div id="{id}"><h2 class="uses-h2"><div class="uses-h2-bar" style="background:{color}"></div>{title}</h2>{items}</div>"#
+    )
+}
+
+/// `:::now-status` — two-up status cards on `/now`.
+/// Lines: `label | value | sub | purple|warn|acc`
+fn render_now_status(body: &str) -> String {
+    let mut cards = String::new();
+    for line in body.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        let parts: Vec<&str> = line.splitn(4, '|').map(str::trim).collect();
+        let (label, value, sub, variant) = match parts.as_slice() {
+            [l, v, s, var] => (*l, *v, *s, *var),
+            [l, v, s] => (*l, *v, *s, "acc"),
+            _ => continue,
+        };
+        let val_class = match variant {
+            "purple" => " nsc-val-purple",
+            "warn" => " nsc-val-warn",
+            _ => "",
+        };
+        cards.push_str(&format!(
+            r#"<div class="now-status-card"><div class="nsc-label">{label}</div><div class="nsc-val{val_class}">{value}</div><div class="nsc-sub">{sub}</div></div>"#
+        ));
+    }
+    format!(r#"<div class="now-status-grid">{cards}</div>"#)
+}
+
+/// `:::now-chips` — pill row; prefix line with `*` for accent styling.
+fn render_now_chips(body: &str) -> String {
+    let mut chips = String::new();
+    for line in body.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        let (accent, text) = if let Some(rest) = line.strip_prefix('*') {
+            (true, rest.trim())
+        } else {
+            (false, line)
+        };
+        let class = if accent {
+            "now-chip now-acc"
+        } else {
+            "now-chip"
+        };
+        chips.push_str(&format!(r#"<span class="{class}">{text}</span>"#));
+    }
+    format!(r#"<div class="now-chip-row">{chips}</div>"#)
+}
+
+/// `:::now-reading` — book rows. Lines: `color | title | author | progress`
+fn render_now_reading(body: &str) -> String {
+    let mut items = String::new();
+    for line in body.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        let parts: Vec<&str> = line.splitn(4, '|').map(str::trim).collect();
+        if parts.len() < 4 {
+            continue;
+        }
+        items.push_str(&format!(
+            r#"<div class="now-reading"><div class="nr-spine" style="background:{}"></div><div><div class="nr-title">{}</div><div class="nr-author">{}</div><div class="nr-progress">{}</div></div></div>"#,
+            escape_html(parts[0]),
+            escape_html(parts[1]),
+            escape_html(parts[2]),
+            escape_html(parts[3]),
+        ));
+    }
+    items
+}
+
+/// `:::meta-pills` — label | value rows rendered as `.meta-pill` spans.
+fn render_meta_pills(body: &str) -> String {
+    let mut pills = String::new();
+    for line in body.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        let parts: Vec<&str> = line.splitn(2, '|').map(str::trim).collect();
+        let (label, value) = match parts.as_slice() {
+            [l, v] => (*l, *v),
+            [l] => (*l, ""),
+            _ => continue,
+        };
+        pills.push_str(&format!(
+            r#"<span class="meta-pill"><strong>{label}</strong> {value}</span>"#
+        ));
+    }
+    format!(r#"<div class="meta-row">{pills}</div>"#)
+}
+
+fn render_home_divider() -> String {
+    r#"<div class="divider5"><div style="background:var(--warn)"></div><div style="background:var(--purple)"></div><div style="background:var(--blue)"></div><div style="background:var(--acc)"></div><div style="background:var(--faint)"></div></div>"#.to_string()
+}
+
+fn render_featured_slot(slot: &str, arg: &str, default_label: &str) -> String {
+    let label = if arg.is_empty() { default_label } else { arg };
+    format!(
+        r#"<div class="home-featured-slot" data-slot="{slot}" data-label="{label}"></div>"#
     )
 }
 
@@ -615,5 +763,24 @@ let b = 2;""#
         assert!(out.html.contains("class=\"timeline\""));
         assert!(out.html.contains("genuine.dev"));
         assert!(out.html.contains("NotiQ"));
+    }
+
+    #[test]
+    fn uses_section_renders_gear_rows() {
+        let md = ":::uses-section #f0703c Languages\nRust | systems lang | daily\n:::";
+        let out = MarkdownRenderer::new().render(md);
+        assert!(out.html.contains("id=\"languages\""));
+        assert!(out.html.contains("class=\"uses-item\""));
+        assert!(out.html.contains("Rust"));
+    }
+
+    #[test]
+    fn home_directives_render_featured_slots() {
+        let md = ":::eyebrow Rust · Systems\n:::\n\n:::featured-articles\n:::\n\n:::featured-projects selected projects\n:::";
+        let out = MarkdownRenderer::new().render(md);
+        assert!(out.html.contains("class=\"eyebrow\""));
+        assert!(out.html.contains("data-slot=\"articles\""));
+        assert!(out.html.contains("data-slot=\"projects\""));
+        assert!(out.html.contains("data-label=\"selected projects\""));
     }
 }

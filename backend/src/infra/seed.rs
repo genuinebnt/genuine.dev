@@ -193,6 +193,51 @@ async fn run_seed(pool: &PgPool, mode: SeedMode) -> Result<(), AppError> {
     )
     .await?;
 
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Page,
+        "home",
+        "I build systems and write about how they break.",
+        None,
+        HOME_MD,
+        json!({}),
+        0,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Page,
+        "uses",
+        "What I use",
+        Some("The actual stack, not the aspirational one."),
+        USES_MD,
+        json!({ "eyebrow": "Uses" }),
+        0,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Page,
+        "now",
+        "What I'm doing right now",
+        Some("Updated June 2026 · inspired by nownownow.com"),
+        NOW_MD,
+        json!({ "eyebrow": "Now", "last_updated": "June 2026" }),
+        0,
+    )
+    .await?;
+
     Ok(())
 }
 
@@ -825,6 +870,122 @@ Directives are custom editor nodes that store raw markdown source losslessly. St
 :::
 
 Built as a learning project, shipped as a real one.
+"#;
+
+const HOME_MD: &str = r#":::eyebrow Rust · Systems · Infosec
+:::
+
+# I build **systems** and write about how they break.
+
+Backend & distributed-systems engineer working mostly in **Rust**. I write deep
+technical posts on systems programming, distributed systems, and offensive/defensive
+security.
+
+:::meta-pills
+Focus | Rust
+Writing | coding · infosec
+Bug bounty | active
+Stack | axum · postgres
+:::
+
+:::home-divider
+:::
+
+:::featured-articles
+:::
+
+:::featured-projects selected projects
+:::
+"#;
+
+const USES_MD: &str = r#":::uses-section #f0703c Languages
+Rust | Primary language for everything systems. axum, tokio, sqlx, tonic, crossbeam. | daily
+Python | LeetCode and scripting only. Not production. | weekly
+SQL | Postgres almost exclusively. Raw queries over ORMs. | daily
+TypeScript | Frontend — Next.js, React. Keeps JS sane enough. | active
+:::
+
+:::uses-section var(--blue) Editor
+Neovim | rust-analyzer, nvim-cmp, telescope. Lua config in dotfiles. | daily
+Cursor | AI-native editor for frontend work and rapid prototyping. | active
+Helix | Backup editor. Kakoune-style selection model. | occasional
+:::
+
+:::uses-section var(--blue) Terminal
+WezTerm | GPU-accelerated, Lua config, multiplexer built in. | daily
+fish | Abbreviations over aliases. starship prompt. | daily
+tmux | Session management on remote servers. | occasional
+:::
+
+:::uses-section var(--acc) Stack
+axum | HTTP API layer. Tower middleware, clean ergonomics. | primary
+tokio | Async runtime. The entire ecosystem depends on it. | primary
+sqlx | Postgres client. Runtime-checked queries. | primary
+Next.js | App Router, SSR. Portfolio and blog frontend. | active
+:::
+
+:::uses-section var(--purple) Hardware
+MacBook Pro M2 | Apple Silicon. Static analysis only — can't run Linux ELFs natively. | primary
+Yamaha F310 | Acoustic guitar. Learning fingerstyle alongside Hindi songs. | hobby
+AirPods Pro | Transparency mode while coding. Noise cancellation for deep work. | daily
+:::
+
+:::uses-section var(--acc) Security
+Burp Suite | Pro. Intercept, scanner, repeater. Primary bounty tool. | active
+Ghidra | Static RE on Apple Silicon. C and x86-64 targets. | weekly
+oob-catcher | My own OOB interaction server. Wildcard DNS + HTTP logging. | self-built
+nmap | Network scanning and service fingerprinting. | active
+:::
+"#;
+
+const NOW_MD: &str = r#"## Building
+
+Shipping the third portfolio project — **db-labs**, a from-scratch DBMS in Rust —
+while finishing **genuine.dev**. NotiQ is done. Buffer pool manager is the
+current build focus.
+
+:::now-status
+current project | db-labs | from-scratch DBMS · P1 buffer pool | purple
+job hunt | Jan 2027 | targeting DB-infra companies | warn
+:::
+
+:::portfolio-projects
+:::
+
+## Learning
+
+Bug bounty on Bugcrowd — rotating through auth and business logic bugs right now. Reading
+CMU 15-445 lecture notes alongside building. Hindi through songs as dual language + singing
+practice.
+
+:::now-chips
+* bug bounty
+* DB internals
+Hindi
+guitar
+:::
+
+## Reading
+
+:::now-reading
+var(--acc) | Database Internals | Alex Petrov | ch. 4 of 14 — B-tree internals
+var(--purple) | Rust Atomics and Locks | Mara Bos | finished — reference
+:::
+
+## Fitness
+
+Calisthenics three times a week — working towards a clean muscle-up. Running 5K twice a
+week for baseline cardio. No gym, bodyweight only.
+
+:::now-chips
+calisthenics
+running
+:::
+
+## Not doing
+
+Not doing freelance work. Not doing hackathons or side projects outside the portfolio.
+Not on social media other than GitHub. Focused mode until the three case studies ship.
 "#;
 
 const ABOUT_MD: &str = r#"Backend & distributed-systems engineer working mostly in **Rust**. I like things

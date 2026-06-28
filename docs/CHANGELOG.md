@@ -6,6 +6,22 @@ code changes both go here so the history is complete.
 
 ---
 
+## 2026-06-28 — Landing page CMS (`pages/home`)
+
+- **Home (`/`)**: Hero copy, meta pills, and section labels editable in admin; featured article/project grids still pull `featured: true` items from the API via `:::featured-articles` / `:::featured-projects` slots.
+- **Seed**: `pages/home` document — run `just seed-refresh` to populate.
+
+## 2026-06-28 — `/uses` and `/now` CMS-backed pages
+
+- **Backend directives**: `uses-section`, `now-status`, `now-chips`, `now-reading`, `portfolio-projects` for panel page markdown.
+- **Seed**: `pages/uses` and `pages/now` documents; run `just seed-refresh` to populate.
+- **`PanelDocPage` / `NowDocPage`**: TOC scroll-spy, Edit FAB, CMS body; `/now` still injects live portfolio cards at `:::portfolio-projects`.
+
+## 2026-06-28 — Admin: pages in editor + case study guard
+
+- **Editor file tree**: `pages/` folder (e.g. about) alongside posts and projects; portfolio case-study slugs hidden from project tree (static React pages).
+- **Admin dashboard**: `pages` filter + stat card; case-study rows show “static case study” instead of edit; preview/view links respect doc kind.
+
 ## 2026-06-28 — Nav label: Writing → Articles
 
 - **Nav, blog index sidebar, about link, theme admin preview, home featured section, post prev link**: User-facing blog section renamed to **Articles** (route stays `/blog`; internal theme key `writing` unchanged).

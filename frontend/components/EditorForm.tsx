@@ -12,6 +12,7 @@ import {
   type DocMetadata,
   type EditDoc,
 } from "../lib/auth";
+import { isStaticCaseStudy } from "../lib/cmsPages";
 import { RichEditor } from "./editor/RichEditor";
 import { deriveTopic, topicColor } from "../lib/topic";
 
@@ -169,8 +170,9 @@ export default function EditorForm({ initial = blank }: { initial?: EditDoc }) {
       (d) => !q || d.title.toLowerCase().includes(q) || d.slug.includes(q),
     );
     const posts = filtered.filter((d) => d.kind === "post");
-    const projects = filtered.filter((d) => d.kind === "project");
-    return { posts, projects };
+    const projects = filtered.filter((d) => d.kind === "project" && !isStaticCaseStudy(d.slug));
+    const pages = filtered.filter((d) => d.kind === "page");
+    return { posts, projects, pages };
   }, [docs, ftFilter]);
 
   // diagnostics
@@ -248,7 +250,7 @@ export default function EditorForm({ initial = blank }: { initial?: EditDoc }) {
       {/* ── Left: file tree ── */}
       <div className="file-tree">
         <div className="ft-header">
-          <span className="ft-title">Posts</span>
+          <span className="ft-title">Content</span>
           <div className="ft-actions">
             <Link href="/admin/new" className="ft-btn" title="New post">+</Link>
           </div>
@@ -280,6 +282,30 @@ export default function EditorForm({ initial = blank }: { initial?: EditDoc }) {
                   <span className="fname">{d.slug}.md</span>
                   {d.slug === initial.slug && isDirty && <span className="fbadge">M</span>}
                   {d.slug === initial.slug && !initial.slug && <span className="fbadge new">N</span>}
+                  {d.status === "draft" && d.slug !== initial.slug && (
+                    <span className="fbadge">D</span>
+                  )}
+                </Link>
+              ))}
+            </>
+          )}
+          {grouped.pages.length > 0 && (
+            <>
+              <div className="dir-row">
+                <span className="dicon">▾</span>
+                <span className="dname">pages</span>
+                <span className="dcount">{grouped.pages.length}</span>
+              </div>
+              {grouped.pages.map((d) => (
+                <Link
+                  key={d.slug}
+                  href={`/admin/edit/${d.slug}`}
+                  className={`file-row${d.slug === initial.slug ? " active" : ""}`}
+                  onClick={() => openTab(d.slug)}
+                >
+                  <span className="ficon">{d.slug === initial.slug ? "◆" : "◇"}</span>
+                  <span className="fname">{d.slug}.md</span>
+                  {d.slug === initial.slug && isDirty && <span className="fbadge">M</span>}
                   {d.status === "draft" && d.slug !== initial.slug && (
                     <span className="fbadge">D</span>
                   )}
