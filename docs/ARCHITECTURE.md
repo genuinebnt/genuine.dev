@@ -128,6 +128,7 @@ erDiagram
     documents ||--o{ document_tags : "tagged"
     tags ||--o{ document_tags : "labels"
     documents ||--o{ comments : "receives"
+    documents ||--o{ document_revisions : "versioned"
 
     documents {
         uuid id PK
@@ -177,14 +178,27 @@ erDiagram
         text body
         timestamptz created_at
     }
+    document_revisions {
+        uuid id PK
+        uuid document_id FK
+        text title
+        text summary
+        text body_markdown
+        text cover_image
+        text status
+        jsonb metadata "snapshot"
+        timestamptz created_at
+    }
 ```
 
 `users` is the single-owner admin (Phase 2.5). `subscribers` powers the MVP
 newsletter (double opt-in + email-on-publish, Phase 2.7). `comments` are
 unauthenticated, flat (no threading), and cascade-deleted with their document
-(Phase 4, migration `0004`). Sessions are handled by `tower-sessions` (its own
-store). Further post-MVP tables (`media`, `link_previews`, `themes`, …) attach
-without reshaping the above — see ROADMAP §4/§11.
+(Phase 4, migration `0004`). `document_revisions` snapshot the document on every
+admin save (deduped, newest-50 retained) for the editor's version history
+(Phase 5, migration `0006`); they cascade with the document. Sessions are handled
+by `tower-sessions` (its own store). Further post-MVP tables (`media`,
+`link_previews`, `themes`, …) attach without reshaping the above — see ROADMAP §4/§11.
 
 ---
 
@@ -194,6 +208,7 @@ Newest first. Status: ✅ accepted · ⏳ proposed · ⛔ superseded.
 
 | # | Date | Decision | Status | Rationale |
 |---|---|---|---|---|
+| 017 | 2026-06-29 | **Document revision history** — snapshot on every save (`document_revisions`), deduped + newest-50 retained; **restore is client-side** (load snapshot into editor → user saves) | ✅ | Durable, diffable version history beyond local autosave. Snapshot-on-save keeps the write path simple; non-destructive restore means a restore is just another edit (auto-snapshotted). Linked by stable `documents.id`. |
 | 016 | 2026-06-28 | **TipTap WYSIWYG editor serializing to Markdown** + **`StorageBackend` port** (local-disk image uploads via `POST /api/admin/upload`, served at `/uploads/*`) | ✅ | Keeps `body_markdown` + the `:::`/syntect render pipeline as source of truth; `:::` directives are custom editor nodes storing raw source losslessly (structured forms layered on top). Storage is a port so object storage can swap in later (rule of three deferred — one impl now). |
 | 015 | 2026-06-28 | **Self-hosted, DB-backed comments** (`comments` table + `/api/posts/{slug}/comments`), not Giscus | ✅ | Keeps the CMS fully self-contained — no GitHub dependency. Flat + unauthenticated for now; moderation/threading are additive. |
 | 014 | 2026-06-28 | **`:::` block directives + attributed code fences rendered server-side** (syntect line numbers/highlight); `featured`/`series` live in `documents.metadata` | ✅ | Reuses NotiQ's component library across posts/projects (ADR-007) with zero schema churn; directive HTML is themed via CSS variables. Interactivity is attached client-side by `DocInteractive`. |

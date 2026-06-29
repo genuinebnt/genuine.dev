@@ -6,6 +6,51 @@ code changes both go here so the history is complete.
 
 ---
 
+## 2026-06-29 — Editor tools: collapsible rails, bubble menu, inspectors, slash menu
+
+- **Collapsible editor sidebars (real space reclaim).** Both the left file tree and
+  the right panel now collapse to a thin strip with a reopen chevron (persisted in
+  localStorage). Fixed the left tree's old no-op collapse. Added a **Focus** toggle
+  that drops both rails for distraction-free writing.
+- **Bubble menu** (`@tiptap/react/menus`) — floating inline-format toolbar on text
+  selection: bold/italic/strike/code, link, H2/H3/quote/bullet. Hidden for code
+  blocks, images, and directive nodes (those use the inspector).
+- **Contextual element inspector** — selecting an **image** (alt/title/replace),
+  **code block** (language/filename/highlight lines), or **link** (url/remove) makes
+  the right panel *take over* with that element's settings (a `‹ panel` returns to
+  the tabs). No new permanent tab — the inspector reuses the panel only when
+  something configurable is selected.
+- **Slash (/) menu** (`@tiptap/suggestion` + a React popover) — type `/` at the
+  start of a line to insert headings, lists, quote, code block, divider, table, and
+  every `:::` directive (callout, aside, cards, tabs, …) with arrow/enter nav.
+- Also defined the `.btn` `primary`/`ghost`/`danger` variants used across modals.
+
+## 2026-06-29 — Themed discard dialog
+
+- Replaced the editor's native `window.confirm("Discard unsaved changes?")` with a
+  reusable themed `ConfirmDialog` (`components/ui/`) matching the modal UI — backdrop
+  / Escape to cancel, focused confirm, danger styling. Also defined the missing
+  `.btn` variants (`primary`/`ghost`/`danger`) so all modals (publish + confirm)
+  have proper visual hierarchy instead of all-accent buttons.
+
+## 2026-06-29 — Editor revision history (Phase 5)
+
+- **Git-like version history** for documents. Every admin save snapshots the doc
+  into a new `document_revisions` table (migration `0006`), **deduped** (skips no-op
+  saves) and pruned to the newest **50** per document. Linked by the stable
+  `documents.id`; cascades on delete.
+- **Backend:** `repo::insert_revision/list_revisions/get_revision`; `save` snapshots
+  after upsert (a revision-write failure never fails the save); read endpoints
+  `GET /api/admin/docs/{slug}/revisions` and `…/revisions/{id}` (JWT-guarded).
+- **Editor:** a new **History** tab (alongside Meta/Outline/Diagnostics) lists
+  versions newest-first; opening one shows a line **diff** (via `diff`) against the
+  current draft in a wide modal, with **Restore this version** — which loads the
+  snapshot back into the editor as unsaved changes (non-destructive; saving creates
+  a new revision). History refetches after each save.
+- Verified end-to-end: 4 saves (incl. a no-op + a publish) → 3 deduped revisions,
+  correct ordering, snapshot fetch, and cascade delete. 22 backend tests pass.
+- Docs: ER diagram + ADR-017; ROADMAP Phase 5 "Revision history" → ✅.
+
 ## 2026-06-29 — Collapsible sidebars
 
 - **Admin settings rail collapses to icons-only** (`AdminSettingsShell` +

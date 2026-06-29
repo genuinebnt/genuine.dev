@@ -10,7 +10,9 @@ import { Markdown } from "tiptap-markdown";
 
 import { Directive } from "./Directive";
 import { CodeBlockMeta } from "./CodeBlockMeta";
+import { SlashCommand } from "./slashCommands";
 import { Toolbar } from "./Toolbar";
+import { EditorBubbleMenu } from "./EditorBubbleMenu";
 
 const lowlight = createLowlight(common);
 
@@ -53,6 +55,7 @@ export function RichEditor({
       Image,
       TableKit,
       Directive,
+      SlashCommand,
       Markdown.configure({ html: false, transformPastedText: true }),
     ],
     content: value,
@@ -74,6 +77,7 @@ export function RichEditor({
         onSaveDraft={onSaveDraft}
         saving={saving}
       />
+      <EditorBubbleMenu editor={editor} />
       <EditorContent editor={editor} className="tt-content" />
     </div>
   );

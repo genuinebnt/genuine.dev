@@ -359,3 +359,151 @@ pub async fn insert_comment(
         created_at: now,
     })
 }
+
+// ── Document revisions ──────────────────────────────────────────────────────────
+
+/// One stored snapshot of a document at save time.
+pub struct Revision {
+    pub id: Uuid,
+    pub title: String,
+    pub summary: Option<String>,
+    pub body_markdown: String,
+    pub cover_image: Option<String>,
+    pub status: String,
+    pub metadata: JsonValue,
+    pub created_at: OffsetDateTime,
+}
+
+/// Snapshot fields captured on each save (the document's current state).
+pub struct RevisionSnapshot<'a> {
+    pub title: &'a str,
+    pub summary: Option<&'a str>,
+    pub body_markdown: &'a str,
+    pub cover_image: Option<&'a str>,
+    pub status: &'a str,
+    pub metadata: &'a JsonValue,
+}
+
+#[derive(sqlx::FromRow)]
+struct RevisionRow {
+    id: Uuid,
+    title: String,
+    summary: Option<String>,
+    body_markdown: String,
+    cover_image: Option<String>,
+    status: String,
+    metadata: JsonValue,
+    created_at: OffsetDateTime,
+}
+
+impl From<RevisionRow> for Revision {
+    fn from(r: RevisionRow) -> Self {
+        Revision {
+            id: r.id,
+            title: r.title,
+            summary: r.summary,
+            body_markdown: r.body_markdown,
+            cover_image: r.cover_image,
+            status: r.status,
+            metadata: r.metadata,
+            created_at: r.created_at,
+        }
+    }
+}
+
+/// Keep at most this many revisions per document; older ones are pruned.
+const REVISION_RETENTION: i64 = 50;
+
+const REVISION_COLS: &str =
+    "id, title, summary, body_markdown, cover_image, status, metadata, created_at";
+
+/// Snapshot the current state of `slug` into the revision history.
+///
+/// No-op when the document doesn't exist or when the latest revision already has
+/// identical body/title/metadata (so repeated saves with no edits don't pile up).
+/// Prunes to the newest [`REVISION_RETENTION`] revisions afterwards.
+pub async fn insert_revision(
+    pool: &PgPool,
+    slug: &str,
+    snap: &RevisionSnapshot<'_>,
+) -> Result<(), AppError> {
+    let document_id: Option<(Uuid,)> = sqlx::query_as("select id from documents where slug = $1")
+        .bind(slug)
+        .fetch_optional(pool)
+        .await?;
+    let Some((document_id,)) = document_id else {
+        return Ok(());
+    };
+
+    let latest: Option<(String, String, JsonValue)> = sqlx::query_as(
+        "select body_markdown, title, metadata from document_revisions \
+         where document_id = $1 order by created_at desc limit 1",
+    )
+    .bind(document_id)
+    .fetch_optional(pool)
+    .await?;
+    if let Some((body, title, metadata)) = &latest
+        && body == snap.body_markdown
+        && title == snap.title
+        && metadata == snap.metadata
+    {
+        return Ok(());
+    }
+
+    sqlx::query(
+        "insert into document_revisions \
+         (id, document_id, title, summary, body_markdown, cover_image, status, metadata) \
+         values ($1, $2, $3, $4, $5, $6, $7, $8)",
+    )
+    .bind(Uuid::now_v7())
+    .bind(document_id)
+    .bind(snap.title)
+    .bind(snap.summary)
+    .bind(snap.body_markdown)
+    .bind(snap.cover_image)
+    .bind(snap.status)
+    .bind(snap.metadata)
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        "delete from document_revisions where document_id = $1 and id not in \
+         (select id from document_revisions where document_id = $1 \
+          order by created_at desc limit $2)",
+    )
+    .bind(document_id)
+    .bind(REVISION_RETENTION)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// All revisions for `slug`, newest first.
+pub async fn list_revisions(pool: &PgPool, slug: &str) -> Result<Vec<Revision>, AppError> {
+    let rows = sqlx::query_as::<_, RevisionRow>(&format!(
+        "select {REVISION_COLS} from document_revisions \
+         where document_id = (select id from documents where slug = $1) \
+         order by created_at desc"
+    ))
+    .bind(slug)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows.into_iter().map(Revision::from).collect())
+}
+
+/// One revision by id, scoped to `slug` so revisions can't be read across documents.
+pub async fn get_revision(
+    pool: &PgPool,
+    slug: &str,
+    revision_id: Uuid,
+) -> Result<Option<Revision>, AppError> {
+    let row = sqlx::query_as::<_, RevisionRow>(&format!(
+        "select {REVISION_COLS} from document_revisions \
+         where id = $1 and document_id = (select id from documents where slug = $2)"
+    ))
+    .bind(revision_id)
+    .bind(slug)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.map(Revision::from))
+}

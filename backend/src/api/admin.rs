@@ -5,13 +5,14 @@ use axum::extract::{Multipart, Path, State};
 use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::api::ApiError;
 use crate::api::auth::AuthUser;
 use crate::app::ports::{ContentRepository, Renderer, StorageBackend};
 use crate::domain::{Document, Kind, Slug, Status};
 use crate::infra::render::MarkdownRenderer;
-use crate::infra::repo::PgContentRepository;
+use crate::infra::repo::{self, PgContentRepository};
 use crate::infra::storage::LocalDiskStorage;
 
 #[derive(Serialize)]
@@ -161,10 +162,87 @@ pub async fn save(
     };
 
     PgContentRepository::new(pool.clone()).upsert(&doc).await?;
+
+    // Snapshot the saved state into the revision history. A revision failing to
+    // write must not fail the save itself.
+    let snapshot = repo::RevisionSnapshot {
+        title: &doc.title,
+        summary: doc.summary.as_deref(),
+        body_markdown: &doc.body_markdown,
+        cover_image: doc.cover_image.as_deref(),
+        status: doc.status.as_str(),
+        metadata: &doc.metadata,
+    };
+    if let Err(err) = repo::insert_revision(&pool, &doc.slug, &snapshot).await {
+        tracing::warn!(error = %err, slug = %doc.slug, "failed to snapshot revision");
+    }
+
     if matches!(doc.status, Status::Published) {
         crate::infra::subscribers::notify_new_post(&pool, &doc.title, &doc.slug).await;
     }
     Ok(Json(SaveOut { slug: doc.slug }))
+}
+
+// ── Revision history ────────────────────────────────────────────────────────────
+
+#[derive(Serialize)]
+pub struct RevisionItem {
+    id: Uuid,
+    title: String,
+    status: String,
+    /// Unix seconds — the frontend renders relative + absolute time.
+    created_at: i64,
+}
+
+#[derive(Serialize)]
+pub struct RevisionDetail {
+    id: Uuid,
+    title: String,
+    summary: Option<String>,
+    body_markdown: String,
+    cover_image: Option<String>,
+    status: String,
+    metadata: serde_json::Value,
+    created_at: i64,
+}
+
+pub async fn list_revisions(
+    _user: AuthUser,
+    State(pool): State<PgPool>,
+    Path(slug): Path<String>,
+) -> Result<Json<Vec<RevisionItem>>, ApiError> {
+    let revisions = repo::list_revisions(&pool, &slug).await?;
+    Ok(Json(
+        revisions
+            .into_iter()
+            .map(|r| RevisionItem {
+                id: r.id,
+                title: r.title,
+                status: r.status,
+                created_at: r.created_at.unix_timestamp(),
+            })
+            .collect(),
+    ))
+}
+
+pub async fn get_revision(
+    _user: AuthUser,
+    State(pool): State<PgPool>,
+    Path((slug, revision_id)): Path<(String, Uuid)>,
+) -> Result<Json<RevisionDetail>, ApiError> {
+    let revision = repo::get_revision(&pool, &slug, revision_id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    Ok(Json(RevisionDetail {
+        id: revision.id,
+        title: revision.title,
+        summary: revision.summary,
+        body_markdown: revision.body_markdown,
+        cover_image: revision.cover_image,
+        status: revision.status,
+        metadata: revision.metadata,
+        created_at: revision.created_at.unix_timestamp(),
+    }))
 }
 
 pub async fn delete(

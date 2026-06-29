@@ -235,7 +235,7 @@ Difficulty: ★ easy · ★★ moderate · ★★★ deep. Items marked **✅** 
 | JWT admin + TipTap editor | ✅ | Multi-tab, file tree, pages folder |
 | Draft / publish workflow | ✅ | |
 | Theme presets (visitor) | ✅ | localStorage — move to DB in this phase |
-| **Revision history** | ⬜ | `document_revisions` table; diff view in admin |
+| **Revision history** | ✅ | `document_revisions` (snapshot-on-save, deduped, newest-50); History tab with line diff + non-destructive restore |
 | **Scheduled publishing** | ⬜ | Cron/worker + `published_at` in future |
 | Autosave + conflict detection | ⬜ | Editor UX |
 | **Media library** | ⬜ | S3/MinIO, AVIF/WebP, blur placeholders, picker in editor |

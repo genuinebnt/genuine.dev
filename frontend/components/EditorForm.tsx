@@ -12,6 +12,7 @@ import {
   uploadImage,
   type AdminItem,
   type EditDoc,
+  type RevisionDetail,
 } from "../lib/auth";
 import { effectiveStatus, clearScheduledMetadata } from "../lib/adminDocs";
 import {
@@ -39,6 +40,9 @@ import {
   readReadingPrefs,
 } from "../lib/siteExtras";
 import EditorDiagTab from "./editor/EditorDiagTab";
+import EditorHistoryTab from "./editor/EditorHistoryTab";
+import { EditorInspector, describeSelection, type InspectorType } from "./editor/EditorInspector";
+import { ConfirmDialog } from "./ui/ConfirmDialog";
 import EditorFileTree, { groupEditorDocs } from "./editor/EditorFileTree";
 import EditorMetaTab from "./editor/EditorMetaTab";
 import EditorOutlineTab from "./editor/EditorOutlineTab";
@@ -94,7 +98,12 @@ export default function EditorForm({ initial = BLANK_DOC }: { initial?: EditDoc 
 
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [sideTab, setSideTab] = useState<"meta" | "outline" | "diag">("meta");
+  const [sideTab, setSideTab] = useState<"meta" | "outline" | "diag" | "history">("meta");
+  const [historyRefresh, setHistoryRefresh] = useState(0);
+  const [showDiscard, setShowDiscard] = useState(false);
+  const [selectedEl, setSelectedEl] = useState<InspectorType | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(true);
+  const prevSelRef = useRef<InspectorType | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -106,6 +115,7 @@ export default function EditorForm({ initial = BLANK_DOC }: { initial?: EditDoc 
   const [publishMode, setPublishMode] = useState<"now" | "schedule">("now");
   const [publishScheduleDate, setPublishScheduleDate] = useState("");
   const [treeCollapsed, setTreeCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const editorRef = useRef<Editor | null>(null);
   const autosaveKey = initial.slug || TAB_NEW;
 
@@ -259,6 +269,7 @@ export default function EditorForm({ initial = BLANK_DOC }: { initial?: EditDoc 
       if (saveStatus === "published") setScheduleAt("");
       clearEditorAutosave(autosaveKey);
       setRecovery(null);
+      setHistoryRefresh((k) => k + 1);
       if (savedSlug && savedSlug !== slug) setSlug(savedSlug);
       if (redirectAdmin) router.push("/admin");
       else if (savedSlug && savedSlug !== initial.slug) router.replace(`/admin/edit/${savedSlug}`);
@@ -301,10 +312,46 @@ export default function EditorForm({ initial = BLANK_DOC }: { initial?: EditDoc 
     }
   }
 
-  function handleCancel() {
-    if (isDirty && !window.confirm("Discard unsaved changes?")) return;
+  // ── Sidebar collapse (persisted) ──
+  useEffect(() => {
+    setTreeCollapsed(localStorage.getItem("editorTreeCollapsed") === "1");
+    setSidebarCollapsed(localStorage.getItem("editorSidebarCollapsed") === "1");
+  }, []);
+
+  function toggleTree() {
+    setTreeCollapsed((c) => {
+      const next = !c;
+      localStorage.setItem("editorTreeCollapsed", next ? "1" : "0");
+      return next;
+    });
+  }
+  function toggleSidebar() {
+    setSidebarCollapsed((c) => {
+      const next = !c;
+      localStorage.setItem("editorSidebarCollapsed", next ? "1" : "0");
+      return next;
+    });
+  }
+  /** Focus mode — collapse both rails (or restore both if already collapsed). */
+  function toggleFocus() {
+    const collapse = !(treeCollapsed && sidebarCollapsed);
+    setTreeCollapsed(collapse);
+    setSidebarCollapsed(collapse);
+    localStorage.setItem("editorTreeCollapsed", collapse ? "1" : "0");
+    localStorage.setItem("editorSidebarCollapsed", collapse ? "1" : "0");
+  }
+
+  function performCancel() {
     clearEditorAutosave(autosaveKey);
     router.push("/admin");
+  }
+
+  function handleCancel() {
+    if (isDirty) {
+      setShowDiscard(true);
+      return;
+    }
+    performCancel();
   }
 
   async function onCover(e: React.ChangeEvent<HTMLInputElement>) {
@@ -325,6 +372,32 @@ export default function EditorForm({ initial = BLANK_DOC }: { initial?: EditDoc 
     setSummary(recovery.summary);
     setBody(recovery.body);
     setRecovery(null);
+  }
+
+  /** Load a stored revision back into the editor as unsaved changes (status kept). */
+  function restoreRevision(rev: RevisionDetail) {
+    const f = fieldsFromDoc({
+      slug,
+      kind,
+      title: rev.title,
+      summary: rev.summary,
+      status: rev.status,
+      body_markdown: rev.body_markdown,
+      cover_image: rev.cover_image,
+      metadata: rev.metadata,
+    });
+    setTitle(f.title);
+    setSummary(f.summary);
+    setCoverImage(f.coverImage);
+    setFeatured(f.featured);
+    setSeriesName(f.seriesName);
+    setSeriesPart(f.seriesPart);
+    setTags(f.tags);
+    setTech(f.tech);
+    setTopic(f.topic);
+    setBody(f.body);
+    editorRef.current?.commands.setContent(rev.body_markdown);
+    setSideTab("meta");
   }
 
   useEffect(() => {
@@ -410,13 +483,17 @@ export default function EditorForm({ initial = BLANK_DOC }: { initial?: EditDoc 
   }, [showPreview]);
 
   return (
-    <div className="editor-shell">
+    <div
+      className={`editor-shell${treeCollapsed ? " left-collapsed" : ""}${
+        sidebarCollapsed ? " right-collapsed" : ""
+      }`}
+    >
       <EditorFileTree
         docs={docs}
         filter={ftFilter}
         onFilterChange={setFtFilter}
         collapsed={treeCollapsed}
-        onToggleCollapse={() => setTreeCollapsed((c) => !c)}
+        onToggleCollapse={toggleTree}
         grouped={grouped}
         activeSlug={initial.slug}
         isDirty={isDirty}
@@ -475,6 +552,18 @@ export default function EditorForm({ initial = BLANK_DOC }: { initial?: EditDoc 
               onChange={setBody}
               onEditorReady={(ed) => {
                 editorRef.current = ed;
+                // Surface the selected element to the side panel (contextual inspector).
+                const syncSelection = () => {
+                  const next = describeSelection(ed);
+                  if (next !== prevSelRef.current) {
+                    prevSelRef.current = next;
+                    setSelectedEl(next);
+                    setInspectorOpen(next != null);
+                  }
+                };
+                ed.on("selectionUpdate", syncSelection);
+                ed.on("transaction", syncSelection);
+                syncSelection();
               }}
               showPreview={showPreview}
               onTogglePreview={() => {
@@ -523,6 +612,14 @@ export default function EditorForm({ initial = BLANK_DOC }: { initial?: EditDoc 
             {words} words · {readMin} min read
           </span>
           {isDirty && <span style={{ color: "var(--warn)" }}>● unsaved</span>}
+          <button
+            type="button"
+            className="preview-btn"
+            onClick={toggleFocus}
+            title="Toggle focus mode — hide both side panels"
+          >
+            {treeCollapsed && sidebarCollapsed ? "exit focus" : "focus"}
+          </button>
           <button type="button" className="cancel-btn" onClick={handleCancel}>
             Cancel
           </button>
@@ -551,9 +648,40 @@ export default function EditorForm({ initial = BLANK_DOC }: { initial?: EditDoc 
         {err && <p className="form-error" style={{ padding: "6px 14px", margin: 0 }}>{err}</p>}
       </div>
 
-      <div className="ed-sidebar">
-        <div className="sb-tabs">
-          {(["meta", "outline", "diag"] as const).map((t) => (
+      {sidebarCollapsed ? (
+        <aside className="ed-sidebar rail-collapsed">
+          <button
+            type="button"
+            className="rail-reopen"
+            title="Expand panel"
+            aria-label="Expand panel"
+            onClick={toggleSidebar}
+          >
+            «
+          </button>
+        </aside>
+      ) : (
+        <div className="ed-sidebar">
+          {selectedEl && inspectorOpen && editorRef.current ? (
+            <EditorInspector
+              key={`${selectedEl}-${editorRef.current.state.selection.from}`}
+              editor={editorRef.current}
+              type={selectedEl}
+              onBack={() => setInspectorOpen(false)}
+            />
+          ) : (
+          <>
+          <div className="sb-tabs">
+            <button
+              type="button"
+              className="sb-collapse"
+              title="Collapse panel"
+              aria-label="Collapse panel"
+              onClick={toggleSidebar}
+            >
+              »
+            </button>
+            {(["meta", "outline", "diag", "history"] as const).map((t) => (
             <div
               key={t}
               className={`sbt${sideTab === t ? " active" : ""}`}
@@ -599,8 +727,20 @@ export default function EditorForm({ initial = BLANK_DOC }: { initial?: EditDoc 
             <EditorOutlineTab headings={headings} blocks={outlineBlocks} onJump={jumpToLine} />
           )}
           {sideTab === "diag" && <EditorDiagTab diags={diags} onJump={jumpToDiag} />}
+          {sideTab === "history" && (
+            <EditorHistoryTab
+              slug={initial.slug}
+              isNewDoc={!initial.slug}
+              refreshKey={historyRefresh}
+              getCurrentBody={currentBody}
+              onRestore={restoreRevision}
+            />
+          )}
+          </div>
+          </>
+          )}
         </div>
-      </div>
+      )}
 
       <PublishModal
         open={showPublishModal}
@@ -618,6 +758,19 @@ export default function EditorForm({ initial = BLANK_DOC }: { initial?: EditDoc 
         onModeChange={setPublishMode}
         onScheduleDateChange={setPublishScheduleDate}
         onJumpTo={jumpToDiag}
+      />
+      <ConfirmDialog
+        open={showDiscard}
+        title="Discard changes?"
+        message="You have unsaved changes. Leaving now will discard them."
+        confirmLabel="Discard"
+        cancelLabel="Keep editing"
+        danger
+        onConfirm={() => {
+          setShowDiscard(false);
+          performCancel();
+        }}
+        onCancel={() => setShowDiscard(false)}
       />
     </div>
   );

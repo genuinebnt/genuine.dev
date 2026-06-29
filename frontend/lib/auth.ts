@@ -2,6 +2,8 @@ export type {
   AdminItem,
   DocMetadata,
   EditDoc,
+  RevisionDetail,
+  RevisionItem,
   SaveReq,
 } from "./admin/types";
 
@@ -11,6 +13,8 @@ export {
   adminGet,
   adminList,
   adminPreview,
+  adminRevision,
+  adminRevisions,
   adminSave,
   adminSetStatus,
   uploadImage,

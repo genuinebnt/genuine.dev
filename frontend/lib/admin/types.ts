@@ -1,5 +1,25 @@
 export type DocMetadata = Record<string, unknown>;
 
+/** Lightweight revision row for the History list. `created_at` is Unix seconds. */
+export type RevisionItem = {
+  id: string;
+  title: string;
+  status: string;
+  created_at: number;
+};
+
+/** Full revision snapshot — enough to diff and restore. */
+export type RevisionDetail = {
+  id: string;
+  title: string;
+  summary: string | null;
+  body_markdown: string;
+  cover_image: string | null;
+  status: string;
+  metadata: DocMetadata;
+  created_at: number;
+};
+
 export type AdminItem = {
   slug: string;
   title: string;

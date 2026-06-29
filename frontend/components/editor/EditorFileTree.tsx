@@ -54,6 +54,22 @@ export default function EditorFileTree({
     ));
   }
 
+  if (collapsed) {
+    return (
+      <div className="file-tree rail-collapsed">
+        <button
+          type="button"
+          className="rail-reopen"
+          title="Expand content tree"
+          aria-label="Expand content tree"
+          onClick={onToggleCollapse}
+        >
+          »
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="file-tree">
       <div className="ft-header">
@@ -65,10 +81,11 @@ export default function EditorFileTree({
           <button
             type="button"
             className="ft-btn"
-            title={collapsed ? "Expand" : "Collapse"}
+            title="Collapse"
+            aria-label="Collapse content tree"
             onClick={onToggleCollapse}
           >
-            {collapsed ? "+" : "−"}
+            «
           </button>
         </div>
       </div>

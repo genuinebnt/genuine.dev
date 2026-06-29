@@ -48,6 +48,11 @@ fn api_routes() -> Router<AppState> {
         .route("/admin/preview", post(admin::preview))
         .route("/admin/docs/{slug}", get(admin::get).delete(admin::delete))
         .route("/admin/docs/{slug}/duplicate", post(admin::duplicate))
+        .route("/admin/docs/{slug}/revisions", get(admin::list_revisions))
+        .route(
+            "/admin/docs/{slug}/revisions/{id}",
+            get(admin::get_revision),
+        )
         .route(
             "/admin/upload",
             // Body limit slightly above the handler's 5MB cap to leave room for

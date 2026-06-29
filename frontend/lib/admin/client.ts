@@ -1,6 +1,13 @@
 import { API } from "../api";
 import { getToken } from "../auth/session";
-import type { AdminItem, AdminNotificationList, EditDoc, SaveReq } from "./types";
+import type {
+  AdminItem,
+  AdminNotificationList,
+  EditDoc,
+  RevisionDetail,
+  RevisionItem,
+  SaveReq,
+} from "./types";
 
 async function authed(path: string, opts: RequestInit = {}): Promise<Response> {
   const headers: Record<string, string> = {
@@ -42,6 +49,12 @@ export const adminDelete = (slug: string) =>
 
 export const adminDuplicate = async (slug: string): Promise<{ slug: string }> =>
   (await authed(`/api/admin/docs/${slug}/duplicate`, { method: "POST" })).json();
+
+export const adminRevisions = async (slug: string): Promise<RevisionItem[]> =>
+  (await authed(`/api/admin/docs/${slug}/revisions`)).json();
+
+export const adminRevision = async (slug: string, id: string): Promise<RevisionDetail> =>
+  (await authed(`/api/admin/docs/${slug}/revisions/${id}`)).json();
 
 export async function adminSetStatus(slug: string, status: string): Promise<void> {
   const doc = await adminGet(slug);
