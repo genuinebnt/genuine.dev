@@ -5,6 +5,7 @@ export const TOPIC_COLORS: Record<string, string> = {
   systems: "var(--purple)",
   performance: "#d957d4",
   ctf: "#ef5350",
+  compilers: "#e0a92e",
 };
 
 /** Canonical topic keys — use everywhere instead of duplicating arrays. */
@@ -17,6 +18,7 @@ export const TOPIC_CSS_CLASSES: Record<string, string> = {
   systems: "t-systems",
   performance: "t-performance",
   ctf: "t-ctf",
+  compilers: "t-compilers",
 };
 
 /** Derive a topic from metadata, falling back to the first tag. */

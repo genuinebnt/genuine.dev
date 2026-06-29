@@ -6,6 +6,49 @@ code changes both go here so the history is complete.
 
 ---
 
+## 2026-06-29 — Articles rows match projects rows
+
+- **Summary line** — `/blog` rows now render `pt-summary` (the post summary), matching the
+  `/projects` row anatomy + the mockup writing index, so both pages share row dimensions.
+- **Status strip** — articles strip switched from `published` (green) to `muted` so the
+  left strip reads the same as projects (subtle tick + full-height topic bar); public lists
+  only ever show published posts, so the green tick carried no extra signal.
+- **`new` badge** — `.pt-title-row .pt-title` no longer flex-grows (and the row is
+  center-aligned), so the badge sits right after the title text instead of being pushed to
+  the far edge of the fixed-width title column.
+
+## 2026-06-29 — Public list tables: flat (admin-blend) styling pass
+
+- **Blend with background** — dropped the `--surface`/`--surface2` band fills on
+  `.list-page-top`, `.pc-header`, the pagination band, and the year-row so the lists sit
+  flat on the panel `--bg` like the `/admin` content table; borders remain as the only
+  separators.
+- **Balanced columns** — `.post-table--public` now uses `table-layout: fixed` with
+  per-variant widths (articles: title 52% / meta 16%; projects: title 46% / meta 18%) so
+  the title no longer swallows the row and the meta columns spread evenly across the right
+  instead of bunching at the edge.
+- **Status tick** — thinner + taller (`--bar-status-w` 2→1px, height 13→16px) to match the
+  mockup's strip; consolidated the `--bar-*` geometry vars to a single source on
+  `.pt-cell--bars`.
+- **Removed dead rule** — the legacy `.year-row` flex/`surface2` rule (old card layout) was
+  matching the new table `tr.year-row`, forcing `display: flex` and a half-width gray band;
+  layout now lives entirely on `.year-row-inner`.
+
+## 2026-06-29 — Fix public list-table gutter + bar/text overlap
+
+- **Gutter alignment** — `/blog` + `/projects` table content bled to the raw panel edges
+  (accent bars + titles flush at `x:0`) while the header band, count bar, and pagination
+  were inset. Introduced a single `--list-gutter` (20px desktop, `--gutter` on mobile) on
+  `.wri-shell` / `.projects-shell` and applied it to `.list-page-top`, `.pc-header`,
+  `.post-list`, and the pagination band so every left edge lines up — like the admin table
+  sitting within the page `--gutter`.
+- **Title/bar overlap** — `.pt-cell--bars .pt-cell-inner` left padding used
+  `calc(var(--bar-status-w) + var(--bar-gap) + var(--bar-topic-w) + 11px)`, but those vars
+  were only set on `.content-bars` (a *sibling* of the inner), so the calc was invalid and
+  padding silently fell back to 14px, letting titles render under the accent bars. Defined
+  the `--bar-*` vars on the shared ancestor `.pt-cell--bars` so the calc resolves (34px) and
+  text clears the strips.
+
 ## 2026-06-29 — Public lists match admin post-table
 
 - **`/blog` + `/projects`** — replaced flex/grid list rows with `<table class="post-table post-table--public">`

@@ -296,6 +296,160 @@ async fn run_seed(pool: &PgPool, mode: SeedMode) -> Result<(), AppError> {
     )
     .await?;
 
+    // ── Series: "Crafting a parser in Rust" (parsing deep-dive, part 1 newest) ──
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "crafting-a-parser-lexer",
+        "Crafting a parser, part 1: from source to tokens",
+        Some("Before any grammar rule runs, a lexer turns characters into spanned tokens — and that token shape decides everything downstream."),
+        PARSER_LEXER_MD,
+        json!({
+            "featured": true,
+            "topic": "compilers",
+            "series": { "name": "Crafting a parser in Rust", "part": 1 },
+            "tags": ["compilers", "parsing", "rust"]
+        }),
+        3,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "crafting-a-parser-recursive-descent",
+        "Crafting a parser, part 2: grammars and recursive descent",
+        Some("One function per grammar rule, the call stack as the parse tree, and why left recursion is a trap."),
+        PARSER_RD_MD,
+        json!({
+            "topic": "compilers",
+            "series": { "name": "Crafting a parser in Rust", "part": 2 },
+            "tags": ["compilers", "parsing", "rust"]
+        }),
+        11,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "crafting-a-parser-ast",
+        "Crafting a parser, part 3: designing the AST",
+        Some("Enums all the way down, spans on every node, and keeping semantics out of the syntax tree."),
+        PARSER_AST_MD,
+        json!({
+            "topic": "compilers",
+            "series": { "name": "Crafting a parser in Rust", "part": 3 },
+            "tags": ["compilers", "parsing", "rust"]
+        }),
+        19,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "crafting-a-parser-pratt",
+        "Crafting a parser, part 4: Pratt parsing and precedence",
+        Some("One loop and a binding-power table replace a forest of precedence functions."),
+        PARSER_PRATT_MD,
+        json!({
+            "topic": "compilers",
+            "series": { "name": "Crafting a parser in Rust", "part": 4 },
+            "tags": ["compilers", "parsing", "rust"]
+        }),
+        27,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "crafting-a-parser-error-recovery",
+        "Crafting a parser, part 5: error recovery and diagnostics",
+        Some("Report many errors per run and keep a usable tree — panic-mode recovery, sync points, and messages that don't lie."),
+        PARSER_RECOVERY_MD,
+        json!({
+            "topic": "compilers",
+            "series": { "name": "Crafting a parser in Rust", "part": 5 },
+            "tags": ["compilers", "parsing", "rust"]
+        }),
+        35,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "crafting-a-parser-ambiguity",
+        "Crafting a parser, part 6: ambiguity, lookahead, and the lexer hack",
+        Some("The dangling else, the less-than-versus-generics problem, and how much backtracking is honest."),
+        PARSER_AMBIGUITY_MD,
+        json!({
+            "topic": "compilers",
+            "series": { "name": "Crafting a parser in Rust", "part": 6 },
+            "tags": ["compilers", "parsing", "rust"]
+        }),
+        43,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "crafting-a-parser-resilient-incremental",
+        "Crafting a parser, part 7: resilient, incremental parsing",
+        Some("IDE-grade parsing: lossless trees, errors as the normal path, and reparsing only the edited subtree."),
+        PARSER_RESILIENT_MD,
+        json!({
+            "topic": "compilers",
+            "series": { "name": "Crafting a parser in Rust", "part": 7 },
+            "tags": ["compilers", "parsing", "rust"]
+        }),
+        51,
+    )
+    .await?;
+
+    insert(
+        &repo,
+        &renderer,
+        skip_existing,
+        matches!(mode, SeedMode::Upsert),
+        Kind::Post,
+        "crafting-a-parser-testing-fuzzing",
+        "Crafting a parser, part 8: testing, snapshots, and fuzzing",
+        Some("Snapshot the tree, round-trip for fidelity, and fuzz to enforce the never-panic contract."),
+        PARSER_TESTING_MD,
+        json!({
+            "topic": "compilers",
+            "series": { "name": "Crafting a parser in Rust", "part": 8 },
+            "tags": ["compilers", "parsing", "rust"]
+        }),
+        59,
+    )
+    .await?;
+
     // ── Projects ──────────────────────────────────────────────────────────────
     insert(
         &repo,
@@ -1124,6 +1278,593 @@ ORMs that prepare statements implicitly + PgBouncer transaction pooling = `prepa
 
 [SKIP LOCKED workers](/blog/what-skip-locked-actually-does) still need sane pool sizing —
 a fast dequeue loop with 500 idle connections helps nobody.
+"#;
+
+// ───────────── Series: Crafting a parser in Rust (parsing deep-dive) ────────────
+
+const PARSER_LEXER_MD: &str = r#"A parser is only as good as the tokens it is fed. Before any grammar rule runs, a
+**lexer** (or scanner) turns a flat stream of characters into a stream of *tokens* —
+the atoms the parser actually reasons about. Get the token shape right and the rest
+of the front-end falls into place; get it wrong and every later stage pays interest.
+
+This is part one of [Crafting a parser in Rust](/blog/crafting-a-parser-recursive-descent).
+
+## What a token is
+
+A token is a small, classified slice of source: a kind plus the *span* it came from.
+Keeping the span — not a copied string — is the single most important decision in the
+whole series, because every diagnostic you ever print needs to point back at real source.
+
+```rust filename="token.rs" highlight="4"
+pub struct Token {
+    pub kind: TokenKind,
+    pub span: Span, // a byte range into the source, never an owned String
+}
+
+pub struct Span { pub start: u32, pub end: u32 }
+```
+
+## The scanning loop
+
+The lexer holds the source and a cursor. Each call to `next_token` skips trivia
+(whitespace, comments), looks at one character, and dispatches.
+
+```rust filename="lexer.rs" highlight="4"
+fn next_token(&mut self) -> Token {
+    self.skip_trivia();
+    let start = self.pos;
+    let kind = match self.bump() {
+        Some(c) if c.is_ascii_digit() => self.number(),
+        Some(c) if is_ident_start(c) => self.ident_or_keyword(start),
+        Some('+') => TokenKind::Plus,
+        Some('(') => TokenKind::LParen,
+        Some(other) => TokenKind::Unknown(other),
+        None => TokenKind::Eof,
+    };
+    Token { kind, span: Span { start, end: self.pos } }
+}
+```
+
+:::callout ℹ "Keywords are identifiers, until they aren't"
+Scan an identifier first, then look it up in a keyword table. Special-casing
+`if` / `while` / `fn` inside the character match is how lexers grow into
+unmaintainable spaghetti. One `match ident { ... }` keeps it honest.
+:::
+
+## Lookahead and peeking
+
+Parsers need to *look* without *consuming*. The cheapest design is a lexer that can
+peek one token ahead, caching it. Most languages parse with a single token of
+lookahead — keep that as the default and only reach for more when a real ambiguity
+forces it (we hit one in [part six](/blog/crafting-a-parser-ambiguity)).
+
+:::aside 🦀 "Ferris' hot tip"
+Emit an explicit `Eof` token instead of returning `Option<Token>`. The parser becomes
+a clean state machine that always has a current token, and you delete a pile of `None`
+handling.
+:::
+
+## Don't throw on bad input
+
+A lexer that panics on a stray `@` is useless in an editor. Emit an `Unknown` token
+with its span and keep going — the parser turns it into a diagnostic later. This
+never-stop-scanning rule is what makes [error recovery](/blog/crafting-a-parser-error-recovery)
+possible at all.
+
+## Takeaways
+
+- Tokens carry a **kind + span**, never owned strings.
+- Scan identifiers generically, then classify against a keyword table.
+- One token of lookahead is the default; an explicit `Eof` simplifies everything.
+- The lexer never panics — bad characters become tokens, not crashes.
+
+Next: [grammars and recursive descent](/blog/crafting-a-parser-recursive-descent).
+"#;
+
+const PARSER_RD_MD: &str = r#"With a [token stream](/blog/crafting-a-parser-lexer) in hand, we can talk about
+*grammar*. A parser's job is to decide whether a sequence of tokens fits the
+language's rules — and to build a tree while it does.
+
+## Grammars in one screen
+
+A context-free grammar maps a nonterminal to sequences of terminals (tokens) and
+other nonterminals. Written in EBNF, a slice of our toy language looks like this:
+
+```text filename="grammar.ebnf"
+program    = statement* EOF ;
+statement  = letDecl | exprStmt ;
+letDecl    = "let" IDENT "=" expression ";" ;
+exprStmt   = expression ";" ;
+```
+
+## Why recursive descent
+
+Each grammar rule becomes one function. `statement()` calls `let_decl()` or
+`expr_stmt()`; those call `expression()`; the call stack *is* the parse tree. It is
+the most readable parsing technique ever invented, and it is what GCC, Clang, and
+rustc all use by hand.
+
+```rust filename="parser.rs" highlight="2,3"
+fn statement(&mut self) -> Stmt {
+    match self.peek().kind {
+        TokenKind::Let => self.let_decl(),
+        _ => self.expr_stmt(),
+    }
+}
+```
+
+:::callout ⚠ "Left recursion is a trap"
+A rule like `expr = expr "+" term` translates directly into a function that calls
+itself with no progress — instant stack overflow. Recursive descent cannot handle
+left recursion. Rewrite it as iteration, `term ("+" term)*`, which is exactly what
+[Pratt parsing](/blog/crafting-a-parser-pratt) formalizes.
+:::
+
+## Predictive parsing
+
+The match above is *predictive*: one token of lookahead picks the rule, no
+backtracking. A grammar where lookahead-1 always suffices is called LL(1), and it is
+the sweet spot — fast, linear, and easy to reason about.
+
+:::cards
+:::card worker "consume / expect" "owns: terminals"
+- `bump()` advances
+- `expect(kind)` advances or records an error
+The two primitives every rule is built from.
+:::
+:::card queue "peek" "owns: the decision"
+- one token of lookahead
+- never consumes
+Drives every `match` that selects a production.
+:::
+:::
+
+## The parser struct
+
+```rust filename="parser.rs"
+pub struct Parser<'src> {
+    tokens: Lexer<'src>,
+    current: Token,
+}
+```
+
+Holding the lexer (not a pre-collected `Vec<Token>`) keeps parsing streaming and lets
+us build the IDE-friendly variant in [part seven](/blog/crafting-a-parser-resilient-incremental).
+
+## Takeaways
+
+- One function per nonterminal; the call stack mirrors the tree.
+- Kill left recursion by rewriting to loops.
+- LL(1) + predictive dispatch gives linear-time, readable parsing.
+
+Next: [designing the AST](/blog/crafting-a-parser-ast).
+"#;
+
+const PARSER_AST_MD: &str = r#"Recursive descent tells us *when* to build a node. This post is about *what* the node
+is. A well-shaped abstract syntax tree (AST) makes every later pass —
+[precedence](/blog/crafting-a-parser-pratt), resolution, type-checking — pleasant or
+painful.
+
+## Enums all the way down
+
+Rust's enums are a perfect fit: one variant per syntactic form, recursion behind `Box`
+(a tree node cannot contain itself by value).
+
+```rust filename="ast.rs" highlight="3,8"
+pub enum Expr {
+    Literal(Literal),
+    Unary { op: UnOp, rhs: Box<Expr> },
+    Binary { lhs: Box<Expr>, op: BinOp, rhs: Box<Expr> },
+    Group(Box<Expr>),
+}
+
+pub enum Stmt {
+    Let { name: Ident, value: Expr },
+    Expr(Expr),
+}
+```
+
+## Spans belong on nodes too
+
+The lexer attached spans to tokens; carry them onto AST nodes. A node without a span is
+a diagnostic you can't print and a go-to-definition you can't serve.
+
+:::callout ℹ "Concrete vs abstract"
+A *parse tree* records every token, paren, and semicolon. An *AST* keeps only what later
+passes need. Most compilers build the AST directly; IDE-grade tools keep a lossless tree
+and derive the AST — more on that in [part seven](/blog/crafting-a-parser-resilient-incremental).
+:::
+
+## Don't bake semantics into syntax
+
+Tempting mistakes: storing a resolved variable *slot* on a name node, or a *type* on an
+expression. The parser knows neither yet. Keep the AST purely syntactic; attach analysis
+results in side tables keyed by node id.
+
+:::aside 🦀 "Ferris' hot tip"
+Give every node a `NodeId` (a `u32` you bump as you build). Side tables
+(`HashMap<NodeId, Type>`) then layer semantics on without mutating the tree or fighting
+the borrow checker.
+:::
+
+## Visiting the tree
+
+You'll walk this tree constantly. A hand-written `Visitor` trait beats macros early on —
+it is explicit and debuggable.
+
+:::cards
+:::card stack "Owned tree" "owns: simplicity"
+- `Box<Expr>` children
+- moved and consumed by passes
+Best for a batch compiler that runs once.
+:::
+:::card heap "Arena + ids" "owns: cross-references"
+- nodes in a `Vec`, referenced by index
+- cheap to share, no borrow fights
+Best when many passes revisit the same nodes.
+:::
+:::
+
+## Takeaways
+
+- One enum variant per form; recurse through `Box`.
+- Spans and a `NodeId` on every node; semantics live in side tables.
+- Choose owned tree vs arena by how many passes touch it.
+
+Next: [Pratt parsing and precedence](/blog/crafting-a-parser-pratt).
+"#;
+
+const PARSER_PRATT_MD: &str = r#"Expressions are where naive recursive descent gets ugly. `1 + 2 * 3` must parse as
+`1 + (2 * 3)`, and a forest of `add_expr` / `mul_expr` / `unary_expr` functions encodes
+precedence by *accident of nesting*. **Pratt parsing** (a.k.a. precedence climbing)
+replaces that whole forest with one loop and a table.
+
+This is part four of [Crafting a parser in Rust](/blog/crafting-a-parser-lexer).
+
+## Binding power
+
+Give every operator a numeric **binding power**. Higher binds tighter. `*` binds tighter
+than `+`; left-associativity falls out of making the right-hand power one notch higher
+than the left.
+
+```rust filename="pratt.rs" highlight="1,8"
+fn expr_bp(&mut self, min_bp: u8) -> Expr {
+    let mut lhs = self.prefix();             // literal, unary, or ( group )
+    loop {
+        let op = self.peek_infix_op();
+        let (l_bp, r_bp) = infix_binding_power(op);
+        if l_bp < min_bp { break; }          // operator binds too loosely: stop
+        self.bump();
+        let rhs = self.expr_bp(r_bp);        // recurse with the right power
+        lhs = Expr::binary(lhs, op, rhs);
+    }
+    lhs
+}
+```
+
+## Reading the loop
+
+`expr_bp(0)` parses a full expression. Each iteration grabs an infix operator only if it
+binds at least as tightly as `min_bp`; otherwise it returns and lets an outer call take
+it. That single comparison is the entire precedence mechanism.
+
+:::callout ℹ "Associativity in one line"
+Left-assoc `+`: binding power `(1, 2)` — the right side demands a *higher* power, so a
+second `+` at the same level stops and nests left. Right-assoc `=`: `(2, 1)`, and
+assignment chains to the right. No grammar rewrite, just two numbers.
+:::
+
+## Prefix and postfix fit the same frame
+
+Unary minus is a prefix op with its own binding power. Postfix `!`, call `()`, and index
+`[]` slot into the same loop. Pratt handles prefix, infix, and postfix uniformly — the
+reason it scales to real languages.
+
+:::cards
+:::card worker "prefix()" "owns: atoms + unary"
+- literals, identifiers
+- `-x`, `!x`, `( expr )`
+Returns the left operand the loop starts from.
+:::
+:::card ring "infix loop" "owns: precedence"
+- table lookup per operator
+- the `min_bp` gate
+Where associativity and precedence actually live.
+:::
+:::
+
+:::aside 🦀 "Ferris' hot tip"
+Keep the binding-power table next to the operator enum, not scattered through the parser.
+When you add a new operator later, you touch exactly one function.
+:::
+
+## Takeaways
+
+- One loop + a binding-power table replaces N precedence levels.
+- Associativity is the asymmetry between left and right binding power.
+- Prefix, infix, and postfix all ride the same loop.
+
+Next: [error recovery and diagnostics](/blog/crafting-a-parser-error-recovery).
+"#;
+
+const PARSER_RECOVERY_MD: &str = r#"A parser that gives up on the first syntax error is fine for a homework interpreter and
+useless for everything else. Compilers and editors must report *many* errors per run and
+keep producing a usable tree. This post is about parsing that bends instead of breaking.
+
+## Errors are data, not exceptions
+
+Don't `panic!` or bail with the first surprise. Push a diagnostic into a list, insert an
+**error node**, and keep parsing.
+
+```rust filename="diag.rs" highlight="5"
+fn expect(&mut self, kind: TokenKind) -> Token {
+    if self.peek().kind == kind {
+        self.bump()
+    } else {
+        self.error(Diagnostic::expected(kind, self.peek())); // record + continue
+        Token::missing(self.peek().span)                     // synthetic node
+    }
+}
+```
+
+## Panic-mode recovery
+
+When a rule is hopelessly lost, **synchronize**: skip tokens until you reach a known
+boundary — a `;`, a `}`, or the start of the next statement — then resume. You lose one
+construct, not the rest of the file.
+
+:::callout ⚠ "Choose sync points deliberately"
+Good synchronization tokens are statement and block boundaries. Synchronizing on, say,
+every `+` makes a single typo cascade into dozens of nonsense errors. Sync rarely, at
+structural seams.
+:::
+
+## Diagnostics that don't lie
+
+The message is half the product. "expected `;`" with the span of the *previous* token
+beats "syntax error" with no location. Carry the expected set and the found token; render
+a caret under the source.
+
+:::cards
+:::card delivery "Good diagnostic" "owns: trust"
+- expected vs found
+- precise span + caret
+- one error per root cause
+Points at the fix.
+:::
+:::card gateway "Bad diagnostic" "owns: confusion"
+- "parse error near line 12"
+- a cascade of follow-ons
+- blames recovery, not the typo
+Teaches users to distrust the tool.
+:::
+:::
+
+:::aside 🦀 "Ferris' hot tip"
+Deduplicate cascading errors: once you emit a diagnostic, suppress further ones until you
+have successfully consumed a token. One typo should yield one message, not ten.
+:::
+
+## Takeaways
+
+- Record diagnostics and synthesize nodes; never stop at the first error.
+- Panic-mode + structural sync points keep the rest of the file parseable.
+- Spend effort on the message — expected/found with a real span.
+
+Next: [ambiguity, lookahead, and the lexer hack](/blog/crafting-a-parser-ambiguity).
+"#;
+
+const PARSER_AMBIGUITY_MD: &str = r#"Real grammars have corners where one token of lookahead isn't enough — or where the
+*same* token sequence has two legal readings. This post collects the classic ambiguities
+and the honest tricks parsers use to resolve them.
+
+## The dangling else
+
+`if a if b x else y` — whose `else` is it? The grammar is genuinely ambiguous; the fix is
+a *rule*, not more parsing: bind `else` to the nearest `if`. In recursive descent you get
+this for free by greedily consuming `else` in the inner call.
+
+:::callout ℹ "Disambiguate by convention"
+Most ambiguities are resolved by a documented preference, not a cleverer grammar:
+nearest-`else`, longest-match, max-munch. Write the rule down — it is part of the language
+definition.
+:::
+
+## The less-than problem
+
+In `a < b`, is `<` less-than, or the start of generics like `Vec<T>`? C++ famously needs
+type information *during* parsing to decide — the original lexer hack. Modern languages
+dodge it with syntax (Rust's turbofish) or with bounded lookahead that tries to scan a
+type and backtracks.
+
+```rust filename="ambiguity.rs" highlight="2,5"
+fn parse_lt_or_generics(&mut self) -> Expr {
+    let checkpoint = self.checkpoint();      // remember the position
+    if let Some(args) = self.try_generic_args() {
+        return self.path_with_generics(args);
+    }
+    self.rewind(checkpoint);                 // it was just less-than
+    self.comparison()
+}
+```
+
+## Bounded backtracking
+
+Pure LL(1) forbids backtracking; real parsers allow a *little*, behind a checkpoint and
+rewind. The discipline: backtrack only across a bounded, local region, never the whole
+input, or you reinvent exponential-time parsing.
+
+:::cards
+:::card stack "Lookahead-k" "owns: local decisions"
+- peek 2-3 tokens
+- no state rollback
+Cheap; handles most "which statement is this".
+:::
+:::card heap "Checkpoint + rewind" "owns: speculative parses"
+- save/restore the cursor
+- try, fail, retry
+For genuine local ambiguity like type-vs-expression.
+:::
+:::
+
+:::aside 🦀 "Ferris' hot tip"
+Before reaching for backtracking, ask whether the language *designer* can remove the
+ambiguity. The turbofish exists precisely so the parser never has to guess.
+:::
+
+## Takeaways
+
+- Most ambiguity is resolved by a written rule (nearest-else, max-munch).
+- The less-than problem is real; syntax or bounded lookahead beats type-directed parsing.
+- Allow backtracking only locally, behind explicit checkpoints.
+
+Next: [resilient, incremental parsing](/blog/crafting-a-parser-resilient-incremental).
+"#;
+
+const PARSER_RESILIENT_MD: &str = r#"A batch compiler parses a file once and moves on. An editor parses *the same file* on
+every keystroke, while it is syntactically broken, and expects a tree back in under a
+millisecond. That changes the design — this is the IDE-grade end of parsing.
+
+## Lossless syntax trees
+
+IDE parsers keep **everything**: whitespace, comments, even erroneous tokens, in a tree
+where every node knows its full text range. rust-analyzer's `rowan` and Roslyn's red/green
+trees are the canonical examples.
+
+:::callout ℹ "Green and red"
+A *green* tree is immutable, deduplicated, and position-free — cheap to share across
+edits. A *red* tree overlays absolute offsets and parent pointers on demand. Edits rebuild
+only the green nodes that changed.
+:::
+
+## Error-resilient by construction
+
+Resilient parsers don't have an error *path* — error handling *is* the path. Every node
+may contain missing or extra tokens, so a half-typed `let x =` still yields a `Let` node
+with a missing value, which autocomplete can use immediately.
+
+:::cards
+:::card worker "Batch parser" "owns: correctness"
+- one shot, valid input
+- AST, errors abort passes
+The compiler front-end.
+:::
+:::card delivery "Resilient parser" "owns: liveness"
+- every keystroke, broken input
+- lossless tree, always a result
+The editor / language server.
+:::
+:::
+
+## Incremental reparsing
+
+When a user types inside one function, you shouldn't reparse the file. Keep the old tree,
+find the smallest node spanning the edit, and reparse just that subtree — reusing
+untouched green nodes.
+
+:::timeline
+1 Map the edit (a byte range plus its replacement) onto the old tree.
+2 Find the smallest node fully covering the changed range.
+3 Re-lex and re-parse only that node's text.
+4 Splice the new subtree in; reuse every node outside the edit.
+:::
+
+:::aside 🦀 "Ferris' hot tip"
+You don't need this on day one. Ship the batch parser from parts 1-6 first; reach for
+lossless and incremental only when you are building tooling, not a compiler.
+:::
+
+## Takeaways
+
+- Editors need lossless trees that survive broken input on every keystroke.
+- Make errors the normal path: missing and extra tokens live inside nodes.
+- Incremental reparse touches only the edited subtree.
+
+Next: [testing, snapshots, and fuzzing](/blog/crafting-a-parser-testing-fuzzing).
+"#;
+
+const PARSER_TESTING_MD: &str = r#"A parser is a function from bytes to trees, which makes it one of the most *testable*
+things you'll ever write — and one of the easiest to crash with input you didn't imagine.
+This finale is about proving the parser works and that it never panics.
+
+This wraps [Crafting a parser in Rust](/blog/crafting-a-parser-lexer).
+
+## Snapshot tests
+
+Don't hand-write expected ASTs; that is how tests rot. Pretty-print the tree and
+**snapshot** it. The first run records the output; later runs diff against it, and you
+review changes deliberately.
+
+```rust filename="tests.rs" highlight="3"
+#[test]
+fn parses_precedence() {
+    insta::assert_debug_snapshot!(parse("1 + 2 * 3"));
+    // recorded once; regressions show up as a diff
+}
+```
+
+## Round-trip and property tests
+
+Two invariants catch a huge class of bugs:
+
+:::cards
+:::card ring "Lossless round-trip" "owns: fidelity"
+- print(parse(src)) equals src
+- only for lossless trees
+Proves no token was dropped.
+:::
+:::card stack "Idempotent reformat" "owns: stability"
+- formatting twice equals formatting once
+- works for ASTs too
+Proves the printer and parser agree.
+:::
+:::
+
+## Fuzzing for panics
+
+The contract from [part one](/blog/crafting-a-parser-lexer) was "never panic on bad
+input." Prove it: throw random bytes at the parser and assert it always returns,
+diagnostics and all.
+
+```rust filename="fuzz_target.rs" highlight="2"
+fuzz_target!(|data: &[u8]| {
+    if let Ok(src) = std::str::from_utf8(data) {
+        let _ = parse(src); // must return — any panic is a bug
+    }
+});
+```
+
+:::callout ⚠ "Fuzzing finds what you didn't imagine"
+Deeply nested parens that overflow the stack, multi-byte UTF-8 split across a span, a
+lone bracket — fuzzers find these in seconds. Cap recursion depth and treat every panic
+the fuzzer surfaces as a real bug.
+:::
+
+:::aside 🦀 "Ferris' hot tip"
+Seed the fuzzer's corpus with your snapshot-test inputs. It explores far faster when it
+starts from real, structurally-valid programs.
+:::
+
+## The series, one line each
+
+:::timeline
+1 The [lexer](/blog/crafting-a-parser-lexer) turns characters into spanned tokens.
+2 [Recursive descent](/blog/crafting-a-parser-recursive-descent) maps grammar rules to functions.
+3 The [AST](/blog/crafting-a-parser-ast) stays purely syntactic, with spans and ids.
+4 [Pratt parsing](/blog/crafting-a-parser-pratt) handles precedence with one loop.
+5 [Error recovery](/blog/crafting-a-parser-error-recovery) keeps parsing past mistakes.
+6 [Ambiguity](/blog/crafting-a-parser-ambiguity) is resolved by rules and bounded lookahead.
+7 [Resilient parsing](/blog/crafting-a-parser-resilient-incremental) survives every keystroke.
+:::
+
+## Takeaways
+
+- Snapshot the tree; never hand-maintain expected ASTs.
+- Round-trip and idempotence properties catch dropped tokens and printer drift.
+- Fuzz to enforce never-panic — and cap recursion depth.
+
+That's a parser, end to end. Build the batch version first; everything else is an upgrade
+you add when the use case demands it.
 "#;
 
 // ─────────────────────────── NotiQ project (recreates notiq_portfolio.html) ─────

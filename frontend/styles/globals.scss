@@ -13,7 +13,7 @@ $themes: (
   sepia: (bg:#f4ecd8, surface:#fbf5e6, surface2:#efe5cc, border:#e0d4b4, border2:#cdbf99, text:#3a2f1d, muted:#7a6a4f, faint:#a89a78, acc:#9c6b1f, blue:#3f6ea5, purple:#7a5aa0, pink:#a8497e, green:#5f7d3a, warn:#b06a14),
   matrix: (bg:#040806, surface:#0a120c, surface2:#0f1a12, border:#16271a, border2:#1f3a26, text:#c8f5d4, muted:#4f8a63, faint:#2a4a33, acc:#22e06a, blue:#22c8e0, purple:#7ce022, pink:#22e0a0, green:#22e06a, warn:#c8e022),
 );
-$topics: (infosec:#00c896, rust:#f0703c, distributed:#4a90e8, performance:#d957d4, ctf:#ef5350, systems:#9270e0);
+$topics: (infosec:#00c896, rust:#f0703c, distributed:#4a90e8, performance:#d957d4, ctf:#ef5350, systems:#9270e0, compilers:#e0a92e);
 
 @mixin theme-vars($t) {
   --bg: #{map.get($t, bg)};
@@ -1356,6 +1356,7 @@ article h1 { margin-bottom: 12px; }
 .t-systems     { background: var(--purple); }
 .t-performance { background: #d957d4; }
 .t-ctf         { background: #ef5350; }
+.t-compilers   { background: #e0a92e; }
 
 // ── home page — feat-card grid ───────────────────────────────────────────────
 .feat-grid {
@@ -1399,11 +1400,18 @@ article h1 { margin-bottom: 12px; }
   overflow: hidden;
   width: 100%;
 }
+// Shared horizontal inset so the header band, count bar, table rows (incl. accent
+// bars), and pagination all align on one gutter — matches the admin content table,
+// which sits within the page `--gutter`.
+.wri-shell,
+.projects-shell { --list-gutter: 20px; }
 .list-page-top {
   flex-shrink: 0;
-  padding: 16px 20px 14px;
+  padding: 16px var(--list-gutter) 14px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  // Blends with the panel background like the flat `/admin` content header — the
+  // border is the only separator; stat cards/chips keep their own surface fills.
+  background: transparent;
   .stat-cards { margin-bottom: 12px; }
   .admin-filter-row { margin-bottom: 0; }
   .sort-row { margin-top: 12px; }
@@ -1434,19 +1442,21 @@ article h1 { margin-bottom: 12px; }
 .sort-opt { font-family: var(--mono); font-size: var(--panel-rail-meta); padding: 4px 9px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface2); color: var(--faint); cursor: pointer; }
 .sort-opt.sel { background: var(--acc-bg); border-color: var(--acc-border); color: var(--acc); }
 .post-col { display: flex; flex-direction: column; min-height: 0; height: 100%; overflow: hidden; }
-.pc-header { display: flex; align-items: center; gap: 8px; padding: 9px 16px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.pc-header { display: flex; align-items: center; gap: 8px; padding: 9px var(--list-gutter, 16px); border-bottom: 1px solid var(--border); background: transparent; }
 // Public list tables — same `post-table` as admin (no checkbox column).
 .table-scroll--flush { margin-top: 0; }
 .post-table--public {
-  .col-meta { width: 1%; white-space: nowrap; }
-  .col-title { width: 100%; max-width: 0; }
+  // Fixed layout with balanced column widths so the title can't swallow the row and
+  // the meta columns spread evenly across the right instead of bunching at the edge.
+  table-layout: fixed;
+  .col-meta { white-space: nowrap; }
   td.col-meta--end,
   th:last-child { text-align: right; }
   tr.public-table-row { cursor: pointer; }
   tr.public-table-row:hover .pt-title { color: var(--acc); }
   tr.year-row td {
     padding: 0;
-    background: var(--surface2);
+    background: transparent;
     border-bottom: 1px solid var(--border);
   }
   tr.year-row .year-row-inner {
@@ -1455,12 +1465,29 @@ article h1 { margin-bottom: 12px; }
     gap: 10px;
     padding: 8px 16px;
   }
-  tr.year-row:hover td { background: var(--surface2); }
+  tr.year-row:hover td { background: transparent; }
+
+  // Per-variant column proportions (3 meta columns + title). Title stays the widest
+  // readable column; the rest divide the remaining width evenly.
+  &.post-table--articles {
+    .col-title { width: 52%; }
+    .col-meta { width: 16%; }
+  }
+  &.post-table--projects {
+    .col-title { width: 46%; }
+    .col-meta { width: 18%; }
+  }
 }
 .pt-cell--bars {
   position: relative;
   padding: 0;
   vertical-align: middle;
+  // Single source of truth for the bar geometry — defined here (the shared ancestor)
+  // so both `.content-bars` (width) and the `.pt-cell-inner` padding calc below can
+  // resolve them; `.content-bars` is a sibling, not an ancestor, of the inner.
+  --bar-status-w: 1px;
+  --bar-gap: 18px;
+  --bar-topic-w: 3px;
   .content-bars {
     position: absolute;
     left: 0;
@@ -1473,8 +1500,10 @@ article h1 { margin-bottom: 12px; }
     padding: 10px 10px 10px calc(var(--bar-status-w) + var(--bar-gap) + var(--bar-topic-w) + 11px);
   }
 }
-.pt-title-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 3px; }
-.pt-title-row .pt-title { margin-bottom: 0; flex: 1; min-width: 0; }
+.pt-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+// Title shrinks but doesn't grow, so the `new` badge sits right after the title text
+// instead of being pushed to the far edge of the (now fixed-width) title column.
+.pt-title-row .pt-title { margin-bottom: 0; flex: 0 1 auto; min-width: 0; }
 .pt-summary { font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 4px; }
 .pc-count { font-family: var(--mono); font-size: 11px; color: var(--muted); }
 .pc-count span { color: var(--text); font-weight: 500; }
@@ -1482,8 +1511,9 @@ article h1 { margin-bottom: 12px; }
 .view-toggle { display: flex; gap: 2px; }
 .vt-btn { font-family: var(--mono); font-size: 11px; padding: 4px 9px; border-radius: 4px; border: 1px solid transparent; color: var(--faint); cursor: pointer; }
 .vt-btn.vt-active { background: var(--surface); border-color: var(--border2); color: var(--text); }
-.post-list { flex: 1; overflow-y: auto; }
-.year-row { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+.post-list { flex: 1; overflow-y: auto; padding-inline: var(--list-gutter, 0); }
+// Year divider layout lives on `.year-row-inner` (inside the table `tr.year-row`);
+// `.yr-*` spans below are shared by that inner row.
 .yr-label { font-family: var(--mono); font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.1em; }
 .yr-line { flex: 1; height: 1px; background: var(--border); }
 .yr-count { font-family: var(--mono); font-size: 10px; color: var(--faint); }
@@ -1505,9 +1535,7 @@ a.wri-post-row { display: flex; }
 .wri-post-row:hover .pc-name { color: var(--acc); }
 .topic-bar { width: var(--bar-topic-w, 3px); flex-shrink: 0; align-self: stretch; min-height: 100%; }
 .content-bars {
-  --bar-status-w: 2px;
-  --bar-gap: 18px;
-  --bar-topic-w: 3px;
+  // Geometry vars inherited from `.pt-cell--bars` (single source of truth).
   display: flex;
   align-items: center;
   align-self: stretch;
@@ -1516,8 +1544,8 @@ a.wri-post-row { display: flex; }
   gap: var(--bar-gap);
 }
 .status-strip {
-  width: var(--bar-status-w, 2px);
-  height: 13px;
+  width: var(--bar-status-w, 1px);
+  height: 16px;
   align-self: center;
   flex-shrink: 0;
   border-radius: 1px;
@@ -1736,8 +1764,8 @@ a.wri-post-row { display: flex; }
 }
 .pg-btn:hover:not(:disabled) { border-color: var(--border2); background: var(--surface); }
 .pg-btn:disabled { opacity: 0.4; cursor: default; }
-.pagination.wri-pagination { flex-shrink: 0; margin: 0; padding: 12px 16px 14px; border-top: 1px solid var(--border); background: var(--surface2); }
-.pagination.proj-pagination { flex-shrink: 0; margin: 0; padding: 12px 24px 16px; border-top: 1px solid var(--border); background: var(--surface2); }
+.pagination.wri-pagination,
+.pagination.proj-pagination { flex-shrink: 0; margin: 0; padding: 12px var(--list-gutter, 16px) 14px; border-top: 1px solid var(--border); background: transparent; }
 .post-table { width: 100%; min-width: 640px; border-collapse: collapse; }
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 16px; }
 .post-table th { font-family: var(--mono); font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: left; font-weight: 400; }
@@ -3081,7 +3109,8 @@ html.focus-mode .footer:hover { opacity: 1; pointer-events: auto; }
   .editor-layout { grid-template-columns: 1fr; }
   .editor-side { position: static; }
   .wri-shell { height: auto; min-height: calc(100dvh - var(--nav-h)); overflow: visible; }
-  .list-page-top { padding-inline: var(--gutter); }
+  .wri-shell,
+  .projects-shell { --list-gutter: var(--gutter); }
   .post-col { overflow: visible; min-height: calc(100dvh - var(--nav-h)); }
   .post-shell { grid-template-columns: 1fr; height: auto; overflow: visible; }
   .toc-col { display: none; }

@@ -280,7 +280,7 @@ export default function WritingIndex({ initialPosts }: Props) {
                         >
                           <td className="pt-cell pt-cell--bars">
                             <ContentRowBars
-                              status="published"
+                              status="muted"
                               topicClass={cssClass}
                               topicColor={cssClass ? undefined : color}
                             />
@@ -290,6 +290,7 @@ export default function WritingIndex({ initialPosts }: Props) {
                                 {isNew(p.date) && <span className="new-badge">new</span>}
                               </div>
                               <div className="pt-slug">{p.slug}</div>
+                              {p.summary && <div className="pt-summary">{p.summary}</div>}
                               {tags.length > 0 && (
                                 <div className="pt-tags">
                                   {tags.map((t) => (
