@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { PostItem } from "../lib/api";
 import { searchPosts } from "../lib/api";
@@ -154,13 +155,18 @@ export default function WritingIndex({ initialPosts }: Props) {
           eyebrow="Articles"
           title="All posts"
           action={
-            <div className="searchbar">
-              <span style={{ color: "var(--faint)", fontFamily: "var(--mono)", fontSize: "12px" }}>⌕</span>
-              <input
-                placeholder="search posts…"
-                value={q}
-                onChange={(e) => onSearch(e.target.value)}
-              />
+            <div className="admin-toolbar">
+              <div className="searchbar">
+                <span style={{ color: "var(--faint)", fontFamily: "var(--mono)", fontSize: "12px" }}>⌕</span>
+                <input
+                  placeholder="search posts…"
+                  value={q}
+                  onChange={(e) => onSearch(e.target.value)}
+                />
+              </div>
+              <Link className="btn ghost" href="/series">
+                Series →
+              </Link>
             </div>
           }
         />

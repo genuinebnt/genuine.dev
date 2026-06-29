@@ -565,15 +565,6 @@ export default function EditorForm({ initial = BLANK_DOC }: { initial?: EditDoc 
                 ed.on("transaction", syncSelection);
                 syncSelection();
               }}
-              showPreview={showPreview}
-              onTogglePreview={() => {
-                setShowPreview((open) => {
-                  if (!open && editorRef.current) setBody(editorMarkdown(editorRef.current));
-                  return !open;
-                });
-              }}
-              onSaveDraft={handleSaveDraft}
-              saving={saving}
             />
           </div>
           {showPreview && (

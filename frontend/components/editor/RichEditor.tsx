@@ -31,18 +31,10 @@ export function RichEditor({
   value,
   onChange,
   onEditorReady,
-  showPreview,
-  onTogglePreview,
-  onSaveDraft,
-  saving,
 }: {
   value: string;
   onChange: (markdown: string) => void;
   onEditorReady?: (editor: Editor) => void;
-  showPreview?: boolean;
-  onTogglePreview?: () => void;
-  onSaveDraft?: () => void;
-  saving?: boolean;
 }) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -70,13 +62,7 @@ export function RichEditor({
 
   return (
     <div className="tt-editor">
-      <Toolbar
-        editor={editor}
-        showPreview={showPreview}
-        onTogglePreview={onTogglePreview}
-        onSaveDraft={onSaveDraft}
-        saving={saving}
-      />
+      <Toolbar editor={editor} />
       <EditorBubbleMenu editor={editor} />
       <EditorContent editor={editor} className="tt-content" />
     </div>

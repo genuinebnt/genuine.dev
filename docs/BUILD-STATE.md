@@ -35,8 +35,9 @@ auto-run `seed_missing` on startup).
 |---|---|
 | Real email provider (newsletter) | LogMailer stub |
 | Comments UI | API only |
-| Tag landing pages | Not routed |
-| Mermaid / KaTeX | Not in renderer |
+| Tag landing pages | ✅ `/tags` + `/tags/:slug` (client-derived); article rail tags linked |
+| Series landing pages | ✅ `/series` + `/series/:slug` (client-derived from posts) |
+| Mermaid / KaTeX | ✅ `:::mermaid` + `:::math` render & hydrate (DocInteractive) |
 | Production deploy | Artifacts exist; no verified VPS run |
 | ARCHITECTURE.md diagrams | Still describe Leptos layer — refresh pending |
 

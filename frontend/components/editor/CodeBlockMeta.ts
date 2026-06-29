@@ -1,4 +1,12 @@
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+
+/** Visible line count, ignoring a trailing newline (which would add an empty last line). */
+function lineCount(node: ProseMirrorNode): number {
+  const lines = node.textContent.split("\n");
+  if (lines.length > 1 && lines[lines.length - 1] === "") lines.pop();
+  return Math.max(lines.length, 1);
+}
 
 /** Languages exposed in the editor toolbar when a fence is focused. */
 export const CODE_LANGUAGES = [
@@ -21,6 +29,49 @@ export const CODE_LANGUAGES = [
  * (`filename`, `highlight`) preserved through the markdown round-trip.
  */
 export const CodeBlockMeta = CodeBlockLowlight.extend({
+  /**
+   * Node view: a non-scrolling line-number gutter beside a horizontally-scrolling
+   * code area. Keeping the gutter outside the scroll container pins the numbers
+   * while long lines scroll. Lowlight still decorates the `<code>` contentDOM.
+   */
+  addNodeView() {
+    return ({ node }) => {
+      const dom = document.createElement("div");
+      dom.className = "cb-wrap";
+
+      const gutter = document.createElement("div");
+      gutter.className = "cb-gutter";
+      gutter.setAttribute("contenteditable", "false");
+
+      const scroll = document.createElement("div");
+      scroll.className = "cb-scroll";
+      const pre = document.createElement("pre");
+      const code = document.createElement("code");
+      pre.appendChild(code);
+      scroll.appendChild(pre);
+
+      dom.append(gutter, scroll);
+
+      const renderGutter = (n: ProseMirrorNode) => {
+        const count = lineCount(n);
+        gutter.textContent = Array.from({ length: count }, (_, i) => String(i + 1)).join("\n");
+      };
+      renderGutter(node);
+
+      return {
+        dom,
+        contentDOM: code,
+        update: (updated: ProseMirrorNode) => {
+          if (updated.type.name !== node.type.name) return false;
+          renderGutter(updated);
+          return true;
+        },
+        ignoreMutation: (mutation: MutationRecord | { type: "selection"; target: Node }) =>
+          gutter === mutation.target || gutter.contains(mutation.target),
+      };
+    };
+  },
+
   addAttributes() {
     return {
       ...this.parent?.(),

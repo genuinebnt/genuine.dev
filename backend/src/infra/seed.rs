@@ -1393,6 +1393,19 @@ fn statement(&mut self) -> Stmt {
 }
 ```
 
+The call graph mirrors the grammar — each rule is a node, each call an edge:
+
+:::mermaid
+graph TD
+  program --> statement
+  statement --> letDecl
+  statement --> exprStmt
+  letDecl --> expression
+  exprStmt --> expression
+  expression --> term
+  term --> factor
+:::
+
 :::callout ⚠ "Left recursion is a trap"
 A rule like `expr = expr "+" term` translates directly into a function that calls
 itself with no progress — instant stack overflow. Recursive descent cannot handle
@@ -1527,6 +1540,16 @@ Give every operator a numeric **binding power**. Higher binds tighter. `*` binds
 than `+`; left-associativity falls out of making the right-hand power one notch higher
 than the left.
 
+### Picking the numbers
+
+Don't agonize over exact values — only their *order* matters. Space them out (10, 20, 30)
+so you can slot a new operator between two existing ones later without renumbering.
+
+### Left versus right associativity
+
+Associativity is encoded as the gap between an operator's left and right power. Equal-ish
+with the right one higher means left-associative; the reverse means right-associative.
+
 ```rust filename="pratt.rs" highlight="1,8"
 fn expr_bp(&mut self, min_bp: u8) -> Expr {
     let mut lhs = self.prefix();             // literal, unary, or ( group )
@@ -1546,7 +1569,11 @@ fn expr_bp(&mut self, min_bp: u8) -> Expr {
 
 `expr_bp(0)` parses a full expression. Each iteration grabs an infix operator only if it
 binds at least as tightly as `min_bp`; otherwise it returns and lets an outer call take
-it. That single comparison is the entire precedence mechanism.
+it. That single comparison is the entire precedence mechanism:
+
+:::math
+\text{keep consuming} \iff l_{bp} \ge \text{min\_bp}
+:::
 
 :::callout ℹ "Associativity in one line"
 Left-assoc `+`: binding power `(1, 2)` — the right side demands a *higher* power, so a

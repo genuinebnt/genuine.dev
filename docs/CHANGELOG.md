@@ -6,6 +6,69 @@ code changes both go here so the history is complete.
 
 ---
 
+## 2026-06-29 — Editor: code-block line numbers (pinned gutter)
+
+- **`CodeBlockMeta` node view** — renders code blocks as a non-scrolling line-number
+  **gutter** beside a horizontally-scrolling code area (`.cb-wrap > .cb-gutter + .cb-scroll >
+  pre > code`, contentDOM = `code`). Keeping the gutter outside the scroll container pins the
+  numbers while long lines scroll (verified by scrolling the code area — gutter stayed put).
+  A shared px line-height (`--cb-line`) aligns the smaller-font numbers to code rows; the
+  trailing-newline empty line isn't counted. Lowlight highlighting still decorates `code`.
+- Replaced the earlier widget-decoration prototype (`CodeBlockLineNumbers`, removed), which
+  numbered lines but scrolled with the code. Verified on a throwaway unauthenticated editor
+  page (since `/admin/*` is gated), then removed.
+
+## 2026-06-29 — Editor: de-duplicate toolbar controls
+
+- **Toolbar is now formatting-only.** Removed the duplicated controls: the code-block
+  **language + filename** inputs (the contextual side **inspector** already owns these when a
+  fence is selected) and the **Save draft / split** buttons (the bottom **status bar** owns
+  document actions). Dropped the now-unused `onSaveDraft` / `saving` / `showPreview` /
+  `onTogglePreview` props from `Toolbar` and `RichEditor` and the `EditorForm` call site.
+- **Follow-up (done):** WYSIWYG code blocks now get line numbers — see the entry above.
+
+## 2026-06-29 — Mermaid/KaTeX verified + tag landing pages
+
+- **Mermaid + KaTeX** — confirmed the `:::mermaid` (`pre.mermaid`) and `:::math`
+  (`.math-block[data-math]`) renderer output hydrates via `DocInteractive`. Added a Mermaid
+  call-graph to parser part 2 and a KaTeX binding-power formula to part 4 as live examples
+  (screenshots verified the SVG + typeset math render).
+- **Tag pages** — `/tags` index (counted chip cloud) + `/tags/:slug` (posts with that tag,
+  topic-accented rows reusing the series-part style). `lib/tags.ts` derives counts/posts from
+  `getPosts()`; tags matched verbatim (already URL-safe). The article rail tags now link to
+  `/tags/:slug`.
+
+## 2026-06-29 — Series landing pages (`/series`, `/series/:slug`)
+
+- **`/series` index** — cards (one per series) with topic accent bar, part count, total
+  reading time, and the part-1 summary. **`/series/:slug`** — ordered Part 1…N list with
+  per-part summaries + read time and a back link.
+- **Derivation** — `lib/series.ts` groups published posts by `metadata.series.name`
+  client-side from `getPosts()` (no backend change), `seriesSlug()` for URLs; parts sorted
+  by `part`, series by size. Generalizes — picked up the existing lock-free series too.
+- **Discoverability** — the post `SeriesBanner` name now links to `/series/:slug`, and the
+  Articles panel header has a `Series →` button (`.admin-toolbar` + `.btn ghost`). Pages use
+  the default padded shell + footer (no `AppChrome` change needed).
+- **Index title** — `/series` header is "Series" eyebrow + "Multi-part deep dives" title
+  (was a redundant "Series / Series").
+- **Footer fix (global)** — `.page` (the main content element) now `flex: 1 0 auto` so short
+  pages push the footer to the viewport bottom instead of floating it mid-page; applies to
+  every default-shell route.
+
+## 2026-06-29 — Compiler/parsing series seed + `compilers` topic + nested TOC
+
+- **Seed** — added an 8-part series "Crafting a parser in Rust" (`crafting-a-parser-*`),
+  a parsing deep-dive (lexer → recursive descent → AST → Pratt → error recovery →
+  ambiguity → resilient/incremental → testing/fuzzing) using the directive library
+  (`:::aside`/`:::callout`/`:::cards`/`:::timeline`) and `filename`/`highlight` code blocks.
+  Inserted via `seed_missing`; existing content untouched.
+- **`compilers` topic** — new first-class topic (amber `#e0a92e`): added to `lib/topic.ts`
+  (`TOPIC_COLORS` / `TOPIC_CSS_CLASSES`), the `$topics` SCSS accent map, and `.t-compilers`.
+  Drives the topic bar, eyebrow, pill, and `[data-topic]` article accent.
+- **Nested TOC** — the article left rail ("On this page") now nests h3s under their parent
+  h2 (`nestTOC` in `DocArticle`) with an indented child rail (`.toc-children`) instead of a
+  flat indent. Scroll-spy unchanged (children keep `.toc-link`).
+
 ## 2026-06-29 — Articles rows match projects rows
 
 - **Summary line** — `/blog` rows now render `pt-summary` (the post summary), matching the

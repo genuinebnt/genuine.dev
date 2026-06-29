@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { PostNavItem } from "../lib/api";
+import { seriesSlug } from "../lib/series";
 
 type SeriesMeta = { name: string; part: number };
 
@@ -19,7 +20,10 @@ export function SeriesBanner({
       <div className="series-banner-main">
         <span className="series-banner-label">Series</span>
         <span>
-          Part {series.part} of <strong>{series.name}</strong>
+          Part {series.part} of{" "}
+          <Link href={`/series/${seriesSlug(series.name)}`} className="series-banner-name">
+            {series.name}
+          </Link>
         </span>
       </div>
       {(prev || next) && (

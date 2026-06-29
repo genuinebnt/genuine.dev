@@ -11,6 +11,9 @@ import { postSeries, postTags } from "../lib/metadata";
 
 // comrak renders headings as `<h2><a ... id="slug"></a>Heading text</h2>`,
 // so the id lives on the inner anchor, not the heading element.
+type TocLeaf = { id: string; text: string };
+type TocNode = TocLeaf & { children: TocLeaf[] };
+
 function extractTOC(html: string) {
   const matches = [...html.matchAll(/<h([23])[^>]*>(.*?)<\/h\1>/g)];
   return matches
@@ -24,6 +27,19 @@ function extractTOC(html: string) {
       };
     })
     .filter((t) => t.id);
+}
+
+/** Nest h3s under their preceding h2 so the rail reads as a hierarchy, not a flat list. */
+function nestTOC(flat: ReturnType<typeof extractTOC>): TocNode[] {
+  const groups: TocNode[] = [];
+  for (const item of flat) {
+    if (item.level === 2 || groups.length === 0) {
+      groups.push({ id: item.id, text: item.text, children: [] });
+    } else {
+      groups[groups.length - 1].children.push({ id: item.id, text: item.text });
+    }
+  }
+  return groups;
 }
 
 export default function DocArticle({
@@ -73,15 +89,24 @@ export default function DocArticle({
       {hasToc && (
         <div className="toc-col">
           <div className="toc-head">On this page</div>
-          {toc.map((t) => (
-            <a
-              key={t.id}
-              href={`#${t.id}`}
-              className={`toc-link${t.level === 3 ? " toc-sub" : ""}`}
-            >
-              {t.text}
-            </a>
-          ))}
+          <nav className="toc-nav">
+            {nestTOC(toc).map((node) => (
+              <div className="toc-group" key={node.id}>
+                <a href={`#${node.id}`} className="toc-link">
+                  {node.text}
+                </a>
+                {node.children.length > 0 && (
+                  <div className="toc-children">
+                    {node.children.map((child) => (
+                      <a key={child.id} href={`#${child.id}`} className="toc-link toc-sub">
+                        {child.text}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </nav>
 
           <hr className="toc-divider" />
 
@@ -106,7 +131,9 @@ export default function DocArticle({
               <div className="toc-kv-label">Tags</div>
               <div className="toc-tags">
                 {tags.map((tag) => (
-                  <span key={tag} className="toc-tag">{tag}</span>
+                  <Link key={tag} href={`/tags/${encodeURIComponent(tag)}`} className="toc-tag">
+                    {tag}
+                  </Link>
                 ))}
               </div>
             </div>
