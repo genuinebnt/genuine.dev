@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import type { PostItem } from "../lib/api";
 import { searchPosts } from "../lib/api";
-import { RailToggle } from "./ui/RailToggle";
 import { deriveTopic, topicCssClass, topicColor, TOPIC_KEYS } from "../lib/topic";
 import {
   WRITING_PAGE_SIZE,
@@ -14,6 +12,18 @@ import {
   parsePageParam,
 } from "../lib/pagination";
 import Pagination from "./ui/Pagination";
+import ContentRowBars from "./ui/ContentRowBars";
+import ListTableHead from "./ui/ListTableHead";
+import { PageHeader } from "./ui/PageHeader";
+
+function formatListDate(dateStr: string | null): string {
+  if (!dateStr) return "";
+  try {
+    return new Date(dateStr).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  } catch {
+    return dateStr;
+  }
+}
 
 function isNew(dateStr: string | null): boolean {
   if (!dateStr) return false;
@@ -51,16 +61,6 @@ export default function WritingIndex({ initialPosts }: Props) {
     initialPosts.forEach((p) => {
       const t = deriveTopic(p.metadata as Record<string, unknown> | undefined);
       if (t) counts[t] = (counts[t] ?? 0) + 1;
-    });
-    return counts;
-  }, [initialPosts]);
-
-  const tagCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    initialPosts.forEach((p) => {
-      (p.metadata?.tags as string[] | undefined)?.forEach((t) => {
-        counts[t] = (counts[t] ?? 0) + 1;
-      });
     });
     return counts;
   }, [initialPosts]);
@@ -127,7 +127,6 @@ export default function WritingIndex({ initialPosts }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTopic, activeTag, sort, q]);
 
-  // Group by year (current page only)
   const byYear = useMemo(() => {
     const map = new Map<number, PostItem[]>();
     pagedPosts.forEach((p) => {
@@ -138,145 +137,193 @@ export default function WritingIndex({ initialPosts }: Props) {
     return [...map.entries()].sort(([a], [b]) => (sort === "newest" ? b - a : a - b));
   }, [pagedPosts, sort]);
 
+  const topicCards = [
+    { key: null as string | null, label: "all posts", count: initialPosts.length, valueClass: "" },
+    ...TOPIC_KEYS.filter((t) => topicCounts[t] !== undefined).map((t) => ({
+      key: t,
+      label: t,
+      count: topicCounts[t] ?? 0,
+      valueClass: topicCssClass(t) ? "" : "",
+    })),
+  ];
+
   return (
-    <div className="wri-shell" data-rail-shell>
-      {/* Filter sidebar */}
-      <div className="filter-col">
-        <RailToggle storageKey="rail-writing" label="filters" />
-        <div className="fc-header">
-          <div className="fc-eyebrow">Articles</div>
-          <div className="fc-title">All posts</div>
-        </div>
-        <div className="fc-body">
-          <div className="fc-search">
-            <span style={{ color: "var(--faint)", fontFamily: "var(--mono)", fontSize: "11px" }}>⌕</span>
-            <input
-              placeholder="search…"
-              value={q}
-              onChange={(e) => onSearch(e.target.value)}
-            />
-          </div>
+    <div className="wri-shell">
+      <div className="list-page-top">
+        <PageHeader
+          eyebrow="Articles"
+          title="All posts"
+          action={
+            <div className="searchbar">
+              <span style={{ color: "var(--faint)", fontFamily: "var(--mono)", fontSize: "12px" }}>⌕</span>
+              <input
+                placeholder="search posts…"
+                value={q}
+                onChange={(e) => onSearch(e.target.value)}
+              />
+            </div>
+          }
+        />
 
-          <div className="filter-section">
-            <div className="fs-h">topic</div>
-            <div
-              className={`filter-item${!activeTopic && !activeTag ? " wri-active" : ""}`}
-              onClick={() => { setActiveTopic(null); setActiveTag(null); }}
+        <div className="stat-cards">
+          {topicCards.map((card) => (
+            <button
+              key={card.key ?? "all"}
+              type="button"
+              className={`scard clickable${activeTopic === card.key && !activeTag ? " active" : ""}`}
+              onClick={() => { setActiveTopic(card.key); setActiveTag(null); }}
             >
-              <span className="fi-dot" style={{ background: "var(--muted)" }} />
-              <span className="fi-label">all</span>
-              <span className="fi-count">{initialPosts.length}</span>
-            </div>
-            {TOPIC_KEYS.filter((t) => topicCounts[t] !== undefined).map((t) => {
-              const topicClass = topicCssClass(t);
-              return (
-              <div
-                key={t}
-                className={`filter-item${activeTopic === t ? " wri-active" : ""}`}
-                onClick={() => { setActiveTopic(t); setActiveTag(null); }}
-              >
-                <span className={`fi-dot${topicClass ? ` ${topicClass}` : ""}`}
-                  style={!topicClass ? { background: topicColor(t) } : undefined}
-                />
-                <span className="fi-label">{t}</span>
-                <span className="fi-count">{topicCounts[t] ?? 0}</span>
-              </div>
-              );
-            })}
-          </div>
-
-          {allTags.length > 0 && (
-            <div className="filter-section">
-              <div className="fs-h">tags</div>
-              {allTags.map((tag) => (
-                <div
-                  key={tag}
-                  className={`filter-item${activeTag === tag ? " wri-active" : ""}`}
-                  onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-                >
-                  <span className="fi-dot" style={{ background: "var(--faint)" }} />
-                  <span className="fi-label">{tag}</span>
-                  <span className="fi-count">{tagCounts[tag] ?? 0}</span>
-                </div>
-              ))}
-            </div>
-          )}
+              <div className={`sc-val ${card.valueClass}`.trim()}>{card.count}</div>
+              <div className="sc-lab">{card.label}</div>
+            </button>
+          ))}
         </div>
 
-        <div className="fc-footer">
-          <div className="sort-row">
-            <span className="sort-label">sort</span>
-            <div className="sort-opts">
-              <span
-                className={`sort-opt${sort === "newest" ? " sel" : ""}`}
-                onClick={() => setSort("newest")}
+        {allTags.length > 0 && (
+          <div className="admin-filter-row">
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                className={`chip clickable${activeTag === tag ? " active" : ""}`}
+                onClick={() => setActiveTag(activeTag === tag ? null : tag)}
               >
-                newest
-              </span>
-              <span
-                className={`sort-opt${sort === "oldest" ? " sel" : ""}`}
-                onClick={() => setSort("oldest")}
-              >
-                oldest
-              </span>
-            </div>
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="sort-row">
+          <span className="sort-label">sort</span>
+          <div className="sort-opts">
+            <span
+              className={`sort-opt${sort === "newest" ? " sel" : ""}`}
+              onClick={() => setSort("newest")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSort("newest");
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              newest
+            </span>
+            <span
+              className={`sort-opt${sort === "oldest" ? " sel" : ""}`}
+              onClick={() => setSort("oldest")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSort("oldest");
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              oldest
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Post list column */}
       <div className="post-col">
         <div className="pc-header">
           <span className="pc-count">
             <span>{sorted.length}</span> posts
           </span>
-          <span className="pc-sp" />
-          <div className="view-toggle">
-            <span className="vt-btn vt-active">≡ list</span>
-          </div>
         </div>
 
         <div className="post-list">
-          {byYear.map(([year, posts]) => (
-            <div key={year}>
-              <div className="year-row">
-                <span className="yr-label">{year}</span>
-                <span className="yr-line" />
-                <span className="yr-count">{posts.length} posts</span>
-              </div>
-              {posts.map((p) => {
-                const topic = deriveTopic(p.metadata as Record<string, unknown> | undefined);
-                const cssClass = topicCssClass(topic);
-                const color = topicColor(topic);
-                const tags = (p.metadata?.tags as string[] | undefined) ?? [];
-                return (
-                  <Link key={p.slug} href={`/blog/${p.slug}`} className="wri-post-row">
-                    <div className={`topic-bar${cssClass ? ` ${cssClass}` : ""}`}
-                      style={!cssClass ? { background: color } : undefined}
-                    />
-                    <div className="wpr-body">
-                      <div className="wpr-top">
-                        <div className="wpr-title">{p.title}</div>
-                        {isNew(p.date) && <span className="new-badge">new</span>}
-                        <span className="wpr-date">{p.date}</span>
-                      </div>
-                      {p.summary && <div className="wpr-summary">{p.summary}</div>}
-                      <div className="wpr-footer">
-                        <div className="wpr-chips">
-                          {tags.map((t) => (
-                            <span key={t} className="wpr-chip">{t}</span>
-                          ))}
+          <div className="table-scroll table-scroll--flush">
+            <table className="post-table post-table--public post-table--articles">
+              <colgroup>
+                <col className="col-title" />
+                <col className="col-meta" />
+                <col className="col-meta" />
+                <col className="col-meta" />
+              </colgroup>
+              <ListTableHead variant="articles" />
+              <tbody>
+                {byYear.map(([year, posts]) => (
+                  <Fragment key={year}>
+                    <tr key={`year-${year}`} className="year-row">
+                      <td colSpan={4}>
+                        <div className="year-row-inner">
+                          <span className="yr-label">{year}</span>
+                          <span className="yr-line" />
+                          <span className="yr-count">{posts.length} posts</span>
                         </div>
-                        <div className="wpr-meta">
-                          <span className="wpr-read">{p.reading_min} min</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+                      </td>
+                    </tr>
+                    {posts.map((p) => {
+                      const topic = deriveTopic(p.metadata as Record<string, unknown> | undefined);
+                      const cssClass = topicCssClass(topic);
+                      const color = topicColor(topic);
+                      const tags = (p.metadata?.tags as string[] | undefined) ?? [];
+                      return (
+                        <tr
+                          key={p.slug}
+                          className="public-table-row"
+                          onClick={() => router.push(`/blog/${p.slug}`)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              router.push(`/blog/${p.slug}`);
+                            }
+                          }}
+                          tabIndex={0}
+                          role="link"
+                          aria-label={`Read ${p.title}`}
+                        >
+                          <td className="pt-cell pt-cell--bars">
+                            <ContentRowBars
+                              status="published"
+                              topicClass={cssClass}
+                              topicColor={cssClass ? undefined : color}
+                            />
+                            <div className="pt-cell-inner">
+                              <div className="pt-title-row">
+                                <div className="pt-title">{p.title}</div>
+                                {isNew(p.date) && <span className="new-badge">new</span>}
+                              </div>
+                              <div className="pt-slug">{p.slug}</div>
+                              {tags.length > 0 && (
+                                <div className="pt-tags">
+                                  {tags.map((t) => (
+                                    <span key={t} className="pt-tag">
+                                      {t}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="col-meta">
+                            {topic ? (
+                              <span className="admin-topic" style={{ color }}>
+                                {topic}
+                              </span>
+                            ) : (
+                              <span className="admin-topic empty">—</span>
+                            )}
+                          </td>
+                          <td className="col-meta">
+                            <span className="admin-date">{formatListDate(p.date)}</span>
+                          </td>
+                          <td className="col-meta col-meta--end">
+                            <span className="admin-date">{p.reading_min} min</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {sorted.length === 0 && (
             <div style={{ padding: "24px 16px", color: "var(--faint)", fontFamily: "var(--mono)", fontSize: "12px" }}>
               No posts found.

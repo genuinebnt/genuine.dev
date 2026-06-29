@@ -10,6 +10,9 @@ import {
   writeReadingPrefs,
   readReadingPrefs,
   writeStatusLine,
+  readAdminPrefs,
+  writeAdminPrefs,
+  type AdminFilterLayout,
 } from "../../../lib/siteExtras";
 
 const SECTIONS = [
@@ -43,17 +46,20 @@ export default function AdminSettingsPage() {
   const [statusLine, setStatusLine] = useState("");
   const [clockTz, setClockTz] = useState("UTC");
   const [proseWidth, setProseWidth] = useState<"default" | "narrow" | "wide">("default");
+  const [filterLayout, setFilterLayout] = useState<AdminFilterLayout>("toprow");
 
   useEffect(() => {
     setStatusLine(readStatusLine());
     setClockTz(readClockTz());
     setProseWidth(readReadingPrefs().proseWidth);
+    setFilterLayout(readAdminPrefs().filterLayout);
   }, []);
 
   function saveSiteExtras() {
     writeStatusLine(statusLine);
     writeClockTz(clockTz);
     writeReadingPrefs({ proseWidth });
+    writeAdminPrefs({ filterLayout });
   }
 
   return (
@@ -96,6 +102,21 @@ export default function AdminSettingsPage() {
                 onClick={() => setProseWidth(w)}
               >
                 {w}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="settings-field">
+          <label>Admin content filter layout</label>
+          <div className="reading-prefs-row">
+            {(["toprow", "sidebar"] as const).map((layout) => (
+              <button
+                key={layout}
+                type="button"
+                className={`ts-btn${filterLayout === layout ? " ts-edit" : ""}`}
+                onClick={() => setFilterLayout(layout)}
+              >
+                {layout}
               </button>
             ))}
           </div>

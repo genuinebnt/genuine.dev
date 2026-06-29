@@ -5,7 +5,6 @@ import { SeriesBanner } from "./SeriesBanner";
 import { EditButton } from "./EditButton";
 import { ReadingProgress } from "./ReadingProgress";
 import { PostTopicAccent } from "./PostTopicAccent";
-import { RailToggle } from "./ui/RailToggle";
 import Link from "next/link";
 import { deriveTopic, topicColor } from "../lib/topic";
 import { postSeries, postTags } from "../lib/metadata";
@@ -69,11 +68,10 @@ export default function DocArticle({
     <>
       <PostTopicAccent topic={topic} />
       <ReadingProgress targetId="reading-target" />
-      <div className={hasToc ? "post-shell" : "article-solo"} data-rail-shell={hasToc ? "" : undefined}>
+      <div className={hasToc ? "post-shell" : "article-solo"}>
       {/* Left: TOC + meta kv */}
       {hasToc && (
         <div className="toc-col">
-          <RailToggle storageKey="rail-post" label="contents" />
           <div className="toc-head">On this page</div>
           {toc.map((t) => (
             <a

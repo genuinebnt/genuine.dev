@@ -28,10 +28,12 @@ import {
   writePageQuery,
 } from "../../lib/pagination";
 import AdminLogout from "../../components/AdminLogout";
+import AdminFilterPanel from "../../components/admin/AdminFilterPanel";
 import UiCheckbox from "../../components/ui/UiCheckbox";
 import Pagination from "../../components/ui/Pagination";
 import { isAdminEditable, isStaticCaseStudyRow, publicDocPath } from "../../lib/cmsPages";
 import { PageHeader } from "../../components/ui/PageHeader";
+import { readAdminPrefs, type AdminFilterLayout } from "../../lib/siteExtras";
 
 export default function Admin() {
   const router = useRouter();
@@ -41,6 +43,7 @@ export default function Admin() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [filterLayout, setFilterLayout] = useState<AdminFilterLayout>("toprow");
   const skipFilterReset = useRef(true);
 
   function load() {
@@ -54,6 +57,13 @@ export default function Admin() {
     }
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    setFilterLayout(readAdminPrefs().filterLayout);
+    const onPrefs = () => setFilterLayout(readAdminPrefs().filterLayout);
+    window.addEventListener("admin-prefs-updated", onPrefs);
+    return () => window.removeEventListener("admin-prefs-updated", onPrefs);
   }, []);
 
   useEffect(() => {
@@ -131,15 +141,6 @@ export default function Admin() {
     [pageRows],
   );
 
-  const statCards: { filter: AdminFilter; value: number; valueClass: string; label: string }[] = [
-    { filter: "published", value: stats.published, valueClass: "acc", label: "published" },
-    { filter: "drafts", value: stats.drafts, valueClass: "warn", label: "drafts" },
-    { filter: "scheduled", value: stats.scheduled, valueClass: "blue", label: "scheduled" },
-    { filter: "all", value: stats.total, valueClass: "", label: "total docs" },
-    { filter: "projects", value: stats.projects, valueClass: "blue", label: "projects" },
-    { filter: "pages", value: stats.pages, valueClass: "blue", label: "pages" },
-  ];
-
   function toggleSelect(slug: string) {
     const row = rows?.find((r) => r.slug === slug);
     if (row && isStaticCaseStudyRow(row)) return;
@@ -184,6 +185,165 @@ export default function Admin() {
     load();
   }
 
+  const contentList = (
+    <>
+      {selected.size > 0 && (
+        <div className="admin-bulk-bar">
+          <span className="admin-bulk-count">{selected.size} selected</span>
+          <button type="button" className="ts-btn" onClick={() => void bulkSetStatus("published")}>
+            Publish
+          </button>
+          <button type="button" className="ts-btn" onClick={() => void bulkSetStatus("draft")}>
+            Unpublish
+          </button>
+          <button type="button" className="ts-btn" onClick={() => void bulkDelete()}>
+            Delete
+          </button>
+          <button type="button" className="ts-btn ts-ghost-inline" onClick={() => setSelected(new Set())}>
+            Clear
+          </button>
+        </div>
+      )}
+
+      <div className="table-scroll">
+        <table className="post-table">
+          <thead>
+            <tr>
+              <th className="post-table-check">
+                <UiCheckbox
+                  checked={selectableOnPage.length > 0 && selected.size === selectableOnPage.length}
+                  onChange={() => toggleSelectAll()}
+                  aria-label="Select all on page"
+                />
+              </th>
+              <th>title / tags</th>
+              <th>topic</th>
+              <th>kind</th>
+              <th>status</th>
+              <th>date</th>
+              <th style={{ textAlign: "right" }}>actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pageRows.map((r) => {
+              const topic = adminRowTopic(r);
+              const tags = adminRowTags(r);
+              const displayStatus = effectiveStatus(r);
+              const date = adminRowDateDisplay(r);
+              const accent = adminRowAccent(r);
+              const staticRow = isStaticCaseStudyRow(r);
+              const editable = isAdminEditable(r);
+              const live = publicDocPath(r);
+              return (
+                <tr key={r.slug} className={selected.has(r.slug) ? "row-selected" : undefined}>
+                  <td className="post-table-check">
+                    <UiCheckbox
+                      checked={selected.has(r.slug)}
+                      onChange={() => toggleSelect(r.slug)}
+                      disabled={staticRow}
+                      aria-label={`Select ${r.slug}`}
+                    />
+                  </td>
+                  <td className="pt-cell">
+                    <span
+                      className={`admin-row-bar topic-bar${accent.cssClass ? ` ${accent.cssClass}` : ""}`}
+                      style={!accent.cssClass && accent.color ? { background: accent.color } : undefined}
+                      aria-hidden
+                    />
+                    <div className="pt-cell-inner">
+                      <div className="pt-title">{r.title}</div>
+                      <div className="pt-slug">{r.slug}</div>
+                      {tags.length > 0 && (
+                        <div className="pt-tags">
+                          {tags.map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              className={`pt-tag clickable${activeTag === t ? " active" : ""}`}
+                              onClick={() => setActiveTag(activeTag === t ? null : t)}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    {topic ? (
+                      <span className="admin-topic" style={{ color: topicColor(topic) }}>
+                        {topic}
+                      </span>
+                    ) : (
+                      <span className="admin-topic empty">—</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className="admin-kind">{r.kind}</span>
+                    {staticRow && <span className="kind-badge static">static</span>}
+                  </td>
+                  <td>
+                    <span className={`status-badge ${statusBadgeClass(displayStatus)}`}>{displayStatus}</span>
+                  </td>
+                  <td>
+                    <span className={`admin-date ${date.tone}`}>{date.label}</span>
+                  </td>
+                  <td>
+                    <div className="row-actions">
+                      {editable && (
+                        <Link className="ra" href={`/admin/edit/${r.slug}`}>
+                          edit
+                        </Link>
+                      )}
+                      {live &&
+                        (displayStatus === "draft" || displayStatus === "scheduled" ? (
+                          <Link className="ra" href={live} target="_blank">
+                            preview
+                          </Link>
+                        ) : (
+                          <Link className="ra" href={live} target="_blank">
+                            view
+                          </Link>
+                        ))}
+                      {editable && displayStatus === "published" && (
+                        <button className="ra" type="button" onClick={() => setStatus(r.slug, "draft")}>
+                          unpublish
+                        </button>
+                      )}
+                      {editable && displayStatus === "scheduled" && (
+                        <button className="ra" type="button" onClick={() => setStatus(r.slug, "draft")}>
+                          unschedule
+                        </button>
+                      )}
+                      {editable && (
+                        <button className="ra del" type="button" onClick={() => del(r.slug)}>
+                          delete
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <Pagination
+        page={page}
+        totalItems={filtered.length}
+        pageSize={ADMIN_PAGE_SIZE}
+        onPageChange={goToPage}
+      />
+
+      {filtered.length === 0 && (
+        <p className="muted" style={{ padding: "16px 0", fontFamily: "var(--mono)", fontSize: "12px" }}>
+          No items match the filter.
+        </p>
+      )}
+    </>
+  );
+
   return (
     <div className="admin-page">
       <PageHeader
@@ -208,191 +368,31 @@ export default function Admin() {
 
       {rows === null ? (
         <p className="muted">Loading…</p>
+      ) : filterLayout === "sidebar" ? (
+        <div className="admin-shell" data-rail-shell>
+          <AdminFilterPanel
+            variant="sidebar"
+            stats={stats}
+            activeFilter={activeFilter}
+            activeTag={activeTag}
+            tagsInUse={tagsInUse}
+            onFilterChange={setActiveFilter}
+            onTagChange={setActiveTag}
+          />
+          <div className="admin-shell-main">{contentList}</div>
+        </div>
       ) : (
         <>
-          <div className="stat-cards">
-            {statCards.map((card) => (
-              <button
-                key={card.filter}
-                type="button"
-                className={`scard clickable${activeFilter === card.filter ? " active" : ""}`}
-                onClick={() => setActiveFilter(card.filter)}
-              >
-                <div className={`sc-val ${card.valueClass}`.trim()}>{card.value}</div>
-                <div className="sc-lab">{card.label}</div>
-              </button>
-            ))}
-          </div>
-
-          {tagsInUse.length > 0 && (
-            <div className="admin-filter-row">
-              {tagsInUse.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  className={`chip clickable${activeTag === t ? " active" : ""}`}
-                  onClick={() => setActiveTag(activeTag === t ? null : t)}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {selected.size > 0 && (
-            <div className="admin-bulk-bar">
-              <span className="admin-bulk-count">{selected.size} selected</span>
-              <button type="button" className="ts-btn" onClick={() => void bulkSetStatus("published")}>
-                Publish
-              </button>
-              <button type="button" className="ts-btn" onClick={() => void bulkSetStatus("draft")}>
-                Unpublish
-              </button>
-              <button type="button" className="ts-btn" onClick={() => void bulkDelete()}>
-                Delete
-              </button>
-              <button type="button" className="ts-btn ts-ghost-inline" onClick={() => setSelected(new Set())}>
-                Clear
-              </button>
-            </div>
-          )}
-
-          <div className="table-scroll">
-            <table className="post-table">
-              <thead>
-                <tr>
-                  <th className="post-table-check">
-                    <UiCheckbox
-                      checked={selectableOnPage.length > 0 && selected.size === selectableOnPage.length}
-                      onChange={() => toggleSelectAll()}
-                      aria-label="Select all on page"
-                    />
-                  </th>
-                  <th>title / tags</th>
-                  <th>topic</th>
-                  <th>kind</th>
-                  <th>status</th>
-                  <th>date</th>
-                  <th style={{ textAlign: "right" }}>actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pageRows.map((r) => {
-                  const topic = adminRowTopic(r);
-                  const tags = adminRowTags(r);
-                  const displayStatus = effectiveStatus(r);
-                  const date = adminRowDateDisplay(r);
-                  const accent = adminRowAccent(r);
-                  const staticRow = isStaticCaseStudyRow(r);
-                  const editable = isAdminEditable(r);
-                  const live = publicDocPath(r);
-                  return (
-                    <tr key={r.slug} className={selected.has(r.slug) ? "row-selected" : undefined}>
-                      <td className="post-table-check">
-                        <UiCheckbox
-                          checked={selected.has(r.slug)}
-                          onChange={() => toggleSelect(r.slug)}
-                          disabled={staticRow}
-                          aria-label={`Select ${r.slug}`}
-                        />
-                      </td>
-                      <td className="pt-cell">
-                        <span
-                          className={`admin-row-bar topic-bar${accent.cssClass ? ` ${accent.cssClass}` : ""}`}
-                          style={accent.cssClass ? undefined : { background: accent.color }}
-                          aria-hidden
-                        />
-                        <div className="pt-cell-inner">
-                          <div className="pt-title">{r.title}</div>
-                          <div className="pt-slug">{r.slug}</div>
-                          {tags.length > 0 && (
-                            <div className="pt-tags">
-                              {tags.map((t) => (
-                                <button
-                                  key={t}
-                                  type="button"
-                                  className={`pt-tag clickable${activeTag === t ? " active" : ""}`}
-                                  onClick={() => setActiveTag(activeTag === t ? null : t)}
-                                >
-                                  {t}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        {topic ? (
-                          <span className="admin-topic" style={{ color: topicColor(topic) }}>
-                            {topic}
-                          </span>
-                        ) : (
-                          <span className="admin-topic empty">—</span>
-                        )}
-                      </td>
-                      <td>
-                        <span className="admin-kind">{r.kind}</span>
-                        {staticRow && <span className="kind-badge static">static</span>}
-                      </td>
-                      <td>
-                        <span className={`status-badge ${statusBadgeClass(displayStatus)}`}>{displayStatus}</span>
-                      </td>
-                      <td>
-                        <span className={`admin-date ${date.tone}`}>{date.label}</span>
-                      </td>
-                      <td>
-                        <div className="row-actions">
-                          {editable && (
-                            <Link className="ra" href={`/admin/edit/${r.slug}`}>
-                              edit
-                            </Link>
-                          )}
-                          {live &&
-                            (displayStatus === "draft" || displayStatus === "scheduled" ? (
-                              <Link className="ra" href={live} target="_blank">
-                                preview
-                              </Link>
-                            ) : (
-                              <Link className="ra" href={live} target="_blank">
-                                view
-                              </Link>
-                            ))}
-                          {editable && displayStatus === "published" && (
-                            <button className="ra" type="button" onClick={() => setStatus(r.slug, "draft")}>
-                              unpublish
-                            </button>
-                          )}
-                          {editable && displayStatus === "scheduled" && (
-                            <button className="ra" type="button" onClick={() => setStatus(r.slug, "draft")}>
-                              unschedule
-                            </button>
-                          )}
-                          {editable && (
-                            <button className="ra del" type="button" onClick={() => del(r.slug)}>
-                              delete
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <Pagination
-            page={page}
-            totalItems={filtered.length}
-            pageSize={ADMIN_PAGE_SIZE}
-            onPageChange={goToPage}
+          <AdminFilterPanel
+            variant="toprow"
+            stats={stats}
+            activeFilter={activeFilter}
+            activeTag={activeTag}
+            tagsInUse={tagsInUse}
+            onFilterChange={setActiveFilter}
+            onTagChange={setActiveTag}
           />
-
-          {filtered.length === 0 && (
-            <p className="muted" style={{ padding: "16px 0", fontFamily: "var(--mono)", fontSize: "12px" }}>
-              No items match the filter.
-            </p>
-          )}
+          {contentList}
         </>
       )}
     </div>

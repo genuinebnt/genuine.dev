@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { PostItem } from "../lib/api";
 import { docMetadata, projectBrowseUrl, projectGithub, projectTech } from "../lib/metadata";
 import { deriveTopic, topicColor } from "../lib/topic";
-import { RailToggle } from "./ui/RailToggle";
 import {
   PROJECTS_PAGE_SIZE,
   clampPage,
@@ -20,6 +19,8 @@ import {
 } from "../lib/projects";
 import ProjectCard from "./ProjectCard";
 import Pagination from "./ui/Pagination";
+import ListTableHead from "./ui/ListTableHead";
+import { PageHeader } from "./ui/PageHeader";
 
 interface Props {
   projects: PostItem[];
@@ -52,6 +53,7 @@ function summarizeFilters(projects: PostItem[]) {
 }
 
 export default function ProjectsShell({ projects }: Props) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [activeStack, setActiveStack] = useState<string | null>(null);
   const [activeStatus, setActiveStatus] = useState<string | null>(null);
@@ -95,92 +97,109 @@ export default function ProjectsShell({ projects }: Props) {
     writePageQuery(clamped);
   }
 
-  return (
-    <div className="projects-shell" data-rail-shell>
-      <div className="proj-filter">
-        <RailToggle storageKey="rail-projects" label="filters" />
-        <div className="pf-header">
-          <div className="pf-eyebrow">Projects</div>
-          <div className="pf-title">Things I&apos;ve built</div>
-        </div>
+  const statusCards = [
+    { key: null as string | null, label: "all projects", count: projects.length, valueClass: "" },
+    { key: "complete", label: "complete", count: statusCounts.complete, valueClass: "acc" },
+    { key: "wip", label: "in progress", count: statusCounts.wip, valueClass: "warn" },
+  ];
 
-        <div className="pf-section">
-          <div className="pf-h">stack</div>
-          <div
-            className={`pf-item${!activeStack && !activeStatus ? " pf-sel" : ""}`}
-            onClick={() => {
-              setActiveStack(null);
-              setActiveStatus(null);
-            }}
-          >
-            <span className="pf-dot pf-dot-muted" />
-            <span className="pf-label">all</span>
-            <span className="pf-count">{projects.length}</span>
-          </div>
-          {allStacks.map((stack) => (
-            <div
-              key={stack}
-              className={`pf-item${activeStack === stack ? " pf-sel" : ""}`}
-              onClick={() => setActiveStack(activeStack === stack ? null : stack)}
+  return (
+    <div className="projects-shell">
+      <div className="list-page-top">
+        <PageHeader eyebrow="Projects" title="Things I've built" />
+
+        <div className="stat-cards">
+          {statusCards.map((card) => (
+            <button
+              key={card.key ?? "all"}
+              type="button"
+              className={`scard clickable${
+                (card.key === null && !activeStack && !activeStatus) ||
+                activeStatus === card.key
+                  ? " active"
+                  : ""
+              }`}
+              onClick={() => {
+                setActiveStatus(card.key);
+                if (card.key !== null) setActiveStack(null);
+                else {
+                  setActiveStack(null);
+                  setActiveStatus(null);
+                }
+              }}
             >
-              <span
-                className="pf-dot"
-                style={{ background: topicColor(stack) }}
-              />
-              <span className="pf-label">{stack}</span>
-              <span className="pf-count">{stackCounts[stack] ?? 0}</span>
-            </div>
+              <div className={`sc-val ${card.valueClass}`.trim()}>{card.count}</div>
+              <div className="sc-lab">{card.label}</div>
+            </button>
           ))}
         </div>
 
-        <div className="pf-section">
-          <div className="pf-h">status</div>
-          <div
-            className={`pf-item${activeStatus === "complete" ? " pf-sel" : ""}`}
-            onClick={() =>
-              setActiveStatus(activeStatus === "complete" ? null : "complete")
-            }
-          >
-            <span className="pf-dot pf-dot-complete" />
-            <span className="pf-label">complete</span>
-            <span className="pf-count">{statusCounts.complete}</span>
+        {allStacks.length > 0 && (
+          <div className="admin-filter-row">
+            {allStacks.map((stack) => (
+              <button
+                key={stack}
+                type="button"
+                className={`chip clickable${activeStack === stack ? " active" : ""}`}
+                onClick={() => {
+                  setActiveStack(activeStack === stack ? null : stack);
+                  if (activeStack !== stack) setActiveStatus(null);
+                }}
+              >
+                {stack}
+              </button>
+            ))}
           </div>
-          <div
-            className={`pf-item${activeStatus === "wip" ? " pf-sel" : ""}`}
-            onClick={() => setActiveStatus(activeStatus === "wip" ? null : "wip")}
-          >
-            <span className="pf-dot pf-dot-wip" />
-            <span className="pf-label">in progress</span>
-            <span className="pf-count">{statusCounts.wip}</span>
-          </div>
-        </div>
+        )}
       </div>
 
-      <div className="projects-body">
-        <div className="projects-scroll">
-          <div className="projects-list">
-            {pageProjects.map((project) => {
-              const metadata = docMetadata(project);
-              const topic = deriveTopic(metadata);
-              return (
-                <ProjectCard
-                  key={project.slug}
-                  href={projectCaseStudyHref(project.slug)}
-                  name={project.title}
-                  description={project.summary ?? ""}
-                  accentColor={projectAccentColor(project.slug) ?? topicColor(topic)}
-                  status={projectStatusFromMetadata(metadata)}
-                  tech={projectTech(metadata)}
-                  github={projectGithub(metadata)}
-                  browse={projectBrowseUrl(metadata)}
-                />
-              );
-            })}
-            {filtered.length === 0 && (
-              <p className="projects-empty">No projects match the filter.</p>
-            )}
-          </div>
+      <div className="post-col">
+        <div className="pc-header">
+          <span className="pc-count">
+            <span>{filtered.length}</span> projects
+          </span>
         </div>
+
+        <div className="post-list">
+          <div className="table-scroll table-scroll--flush">
+            <table className="post-table post-table--public post-table--projects">
+              <colgroup>
+                <col className="col-title" />
+                <col className="col-meta" />
+                <col className="col-meta" />
+                <col className="col-meta" />
+              </colgroup>
+              <ListTableHead variant="projects" />
+              <tbody>
+                {pageProjects.map((project) => {
+                  const metadata = docMetadata(project);
+                  const topic = deriveTopic(metadata);
+                  const href = projectCaseStudyHref(project.slug);
+                  return (
+                    <ProjectCard
+                      key={project.slug}
+                      href={href}
+                      slug={project.slug}
+                      name={project.title}
+                      description={project.summary ?? ""}
+                      accentColor={projectAccentColor(project.slug) ?? topicColor(topic)}
+                      topic={topic}
+                      status={projectStatusFromMetadata(metadata)}
+                      tech={projectTech(metadata)}
+                      github={projectGithub(metadata)}
+                      browse={projectBrowseUrl(metadata)}
+                      onNavigate={() => router.push(href)}
+                    />
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {filtered.length === 0 && (
+            <p className="projects-empty">No projects match the filter.</p>
+          )}
+        </div>
+
         <Pagination
           className="proj-pagination"
           page={page}

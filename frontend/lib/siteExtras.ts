@@ -2,6 +2,7 @@
 
 export const RECENT_DOCS_KEY = "recentDocs";
 export const READING_PREFS_KEY = "readingPrefs";
+export const ADMIN_PREFS_KEY = "adminPrefs";
 export const STATUS_LINE_KEY = "siteStatusLine";
 export const CLOCK_TZ_KEY = "polybarClockTz";
 export const EDITOR_AUTOSAVE_PREFIX = "editor-autosave:";
@@ -20,10 +21,20 @@ export type ReadingPrefs = {
   focusMode: boolean;
 };
 
+export type AdminFilterLayout = "toprow" | "sidebar";
+
+export type AdminPrefs = {
+  filterLayout: AdminFilterLayout;
+};
+
 const DEFAULT_READING_PREFS: ReadingPrefs = {
   proseWidth: "default",
   fontScale: "default",
   focusMode: false,
+};
+
+const DEFAULT_ADMIN_PREFS: AdminPrefs = {
+  filterLayout: "toprow",
 };
 
 export function readRecentDocs(): RecentDoc[] {
@@ -58,6 +69,22 @@ export function writeReadingPrefs(prefs: Partial<ReadingPrefs>) {
   localStorage.setItem(READING_PREFS_KEY, JSON.stringify(next));
   applyReadingPrefs(next);
   window.dispatchEvent(new Event("reading-prefs-updated"));
+}
+
+export function readAdminPrefs(): AdminPrefs {
+  if (typeof window === "undefined") return DEFAULT_ADMIN_PREFS;
+  try {
+    const raw = localStorage.getItem(ADMIN_PREFS_KEY);
+    return raw ? { ...DEFAULT_ADMIN_PREFS, ...(JSON.parse(raw) as Partial<AdminPrefs>) } : DEFAULT_ADMIN_PREFS;
+  } catch {
+    return DEFAULT_ADMIN_PREFS;
+  }
+}
+
+export function writeAdminPrefs(prefs: Partial<AdminPrefs>) {
+  const next = { ...readAdminPrefs(), ...prefs };
+  localStorage.setItem(ADMIN_PREFS_KEY, JSON.stringify(next));
+  window.dispatchEvent(new Event("admin-prefs-updated"));
 }
 
 export function applyReadingPrefs(prefs = readReadingPrefs()) {

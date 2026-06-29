@@ -6,6 +6,133 @@ code changes both go here so the history is complete.
 
 ---
 
+## 2026-06-29 — Public lists match admin post-table
+
+- **`/blog` + `/projects`** — replaced flex/grid list rows with `<table class="post-table post-table--public">`
+  (same markup as admin minus checkbox): `pt-cell--bars` dual strips, `pt-cell-inner` with
+  `pt-title` / `pt-slug` / `pt-tags`, `admin-topic` / `admin-date` / `row-actions` meta cells.
+- **Column balance** — `colgroup` with `col-title` (`width:100%; max-width:0`) and `col-meta`
+  (`width:1%`) so meta columns size to content and the title column no longer swallows the row.
+- **`ListTableHead`** — renders `<thead>` inside the shared table; **`ProjectCard`** — `<tr>` row
+  with admin link styling (`ra` buttons); removed unused `list-grid` / `list-table-head` CSS.
+
+## 2026-06-29 — List header bars + strip spacing
+
+- **`.status-strip` / `.content-bars`** — status tick thinned to 2×13px (centered);
+  gap between status and topic strips increased to 18px; fixed `content-bars` width
+  (23px) so header and row bar columns align.
+- **`.list-table-head`** — transparent background (blends with page `--bg` like admin
+  `post-table th`); header shows visible muted dual-bar placeholder instead of
+  `visibility: hidden` spacers.
+
+## 2026-06-29 — Projects list: stack chips in main column
+
+- **`ProjectCard` / `ListTableHead`** — tech stack chips moved under title/description
+  in `lrc-main` (same pattern as article tags on `/blog`); dropped dedicated stack
+  grid column so rows breathe — columns are now project · topic · status · links.
+- **`.list-grid--projects`** — `--list-grid-cols` reduced to four tracks
+  (`minmax(0, 1fr) 6.5rem 6.5rem 9rem`); project rows use slightly taller padding
+  (`12px` vertical).
+
+## 2026-06-29 — Content row bars + list column balance
+
+- **`.status-strip` / `.content-bars`** — status tick fixed at 16px (short centered
+  tick, not 50% row height); gap between status and topic strips increased to 13px
+  for clearer separation per mockup.
+- **List grid tracks** — wider meta columns: articles `6.5rem / 6rem / 4.5rem`
+  (topic / date / read); projects `6.5rem / 6rem / minmax(7rem, 1.25fr) / 9rem`
+  so title column yields room to topic, status, stack, and links.
+
+## 2026-06-29 — Articles/projects list column grid
+
+- **List rows + headers** — shared CSS grid (`list-grid--articles` / `list-grid--projects`)
+  on `ListTableHead` and `wri-post-row` so date/read (and project status/stack/links)
+  sit in fixed columns instead of being squeezed in the title/footer flex row.
+- **Articles** — grid: `minmax(0, 1fr) 5.5rem 4rem`; date and read right-aligned.
+- **Projects** — grid: `minmax(0, 1fr) 5.5rem minmax(6rem, 1.2fr) 8.5rem`.
+
+## 2026-06-29 — Articles/projects list topic column
+
+- **`ListTableHead` / `WritingIndex` / `ProjectCard`** — topic column added between
+  title and date/status on `/blog` and `/projects`, matching admin content table.
+  Colored mono `admin-topic` text via `topicColor`; projects fall back to first
+  stack item in project accent when metadata has no topic.
+- **SCSS** — `--list-grid-cols` extended with 5rem topic track on both list variants.
+
+## 2026-06-29 — Content row bar gap
+
+- **`.content-bars`** — gap between status tick and topic bar restored to 5px (was 3px;
+  original mockup spec) so the two strips read as distinct without crowding the topic color.
+
+## 2026-06-29 — Articles/projects list column headers
+
+- **`ListTableHead`** — shared div-based column label row (`list-table-head`) on `/blog`
+  and `/projects`, placed below `pc-header` and above scrollable `post-list`. Uses the
+  same mono 10px uppercase faint typography as admin `post-table th`; invisible
+  `content-bars` spacer aligns labels with row accent strips (no checkbox column).
+- **Articles** — columns: title / tags · date · read; dates formatted `Mon YYYY`
+  (mockup) instead of ISO.
+- **Projects** — columns: project · status · stack · links.
+
+## 2026-06-29 — Post detail TOC: integrated sidebar, no collapse
+
+- **Article TOC** — removed `RailToggle` / `data-rail-shell` from `DocArticle`; post
+  sidebar no longer collapses to a thin rail.
+- **`.toc-col`** — transparent background (matches page `--bg`) with a subtle divider
+  instead of `var(--surface)` gray panel; scroll-spy and TOC links unchanged.
+- **SCSS** — rail-collapse rules apply only to about profile and admin filter rails.
+
+## 2026-06-29 — Articles/projects rows + title bar match admin content
+
+- **Page header** — `list-page-top` and `admin-page` share compact `PageHeader` treatment
+  (10px eyebrow, 20px title, center-aligned toolbar row) per admin content mockup.
+- **Row strips** — `ContentRowBars` status tick widened to 3×18px with `color-mix` muted
+  status tones; topic bar stays 3px full-height; bars flush left, body padding aligned with
+  admin `pt-cell-inner`.
+- **Row titles** — `wpr-title` at 13px (admin `pt-title` size); project rows drop mono
+  `pc-name` override in the list context.
+
+## 2026-06-29 — Articles/projects: full-width top filters (no side rails)
+
+- **Writing index (`/blog`)** — removed left `filter-col` sidebar; topic stat cards,
+  tag chips, search, and sort live in `list-page-top` (same pattern as admin content
+  toprow layout). No `RailToggle` / `data-rail-shell`.
+- **Projects (`/projects`)** — removed left `proj-filter` sidebar; status stat cards
+  and stack chips in top filter row; `projects-shell` is single-column flex like
+  `wri-shell` / `admin-page`.
+- **SCSS** — `wri-shell` and `projects-shell` no longer use two-column grid; rail
+  collapse rules apply only to post/about/admin sidebars.
+
+## 2026-06-29 — Content row bars: admin mockup + flush project list
+
+- **Admin content table** — reverted to mockup: single 3px `admin-row-bar topic-bar` in
+  `pt-cell` (no `ContentRowBars` / status strip). Checkbox column unchanged.
+- **`ContentRowBars`** — writing index (`/blog`) and projects (`/projects`) only: short
+  status tick + gap + full-height topic bar.
+- **Projects list** — flush rows via `post-list` + `wri-post-row` (gap 0, border-bottom)
+  instead of spaced rounded `project-card` boxes; status/topic bars match articles.
+
+## 2026-06-29 — Articles/projects top filters + flush list rows
+
+- **Writing index & projects** — removed left filter sidebars; stat cards + tag/stack
+  chips in a top filter row (same pattern as admin content list). Shells are
+  single-column full-width with scrollable `post-col` list below.
+- **`ContentRowBars`** — status tick (2×12px) + gap + full-height topic bar on
+  article and project rows only; admin table rows keep a single `admin-row-bar`.
+- **Projects list** — flush `wri-post-row` rows (no card gap/border); `ProjectCard`
+  refactored to shared row markup.
+
+## 2026-06-29 — Editor select styling + admin filter layout preference
+
+- **`UiSelect` component** — thin wrapper applying `mf-input` select styling (custom
+  chevron) with optional `inline` prop for compact toolbar sizing. Toolbar code-block
+  language picker and inspector language field now use it; filename input uses
+  `mf-input` pattern.
+- **Admin content filter layout preference** — `adminPrefs.filterLayout` in
+  localStorage (`toprow` default | `sidebar`). Settings page toggle (same pattern as
+  reading width). Admin list reads pref and renders stat cards + chip row or a
+  collapsible filter sidebar (`AdminFilterPanel`) matching the writing index rail.
+
 ## 2026-06-29 — Editor tools: collapsible rails, bubble menu, inspectors, slash menu
 
 - **Collapsible editor sidebars (real space reclaim).** Both the left file tree and
@@ -94,6 +221,10 @@ code changes both go here so the history is complete.
 ## 2026-06-28 — Polybar notification click fix
 
 - Notification dropdown items use `router.push` + mark-read instead of `<Link onClick={close}>`; outside dismiss listens on `click` (not `mousedown`) and the rail pill allows overflow while open so the panel receives pointer events.
+
+## 2026-06-28 — Content row status + topic bars
+
+- Shared row bars: short 2×14px status tick, 5px gap, then full-height 3px topic bar (admin, writing, projects).
 
 ## 2026-06-28 — Schedule picker year chip click fix
 

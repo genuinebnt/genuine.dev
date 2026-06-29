@@ -6,8 +6,8 @@ import { useEffect, useRef, useState } from "react";
  * Self-contained collapse control for a content sidebar rail. Place it as the
  * first child of the rail; it toggles `rail-collapsed` on the closest
  * `[data-rail-shell]` and persists the choice in localStorage. Works inside
- * server-rendered shells (post / about) as well as client ones (writing /
- * projects) because it drives the DOM class directly.
+ * server-rendered shells (about) as well as client ones (admin filters)
+ * because it drives the DOM class directly.
  */
 export function RailToggle({
   storageKey,

@@ -1,83 +1,122 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import ProjectStatusBadge from "./ProjectStatusBadge";
+import ContentRowBars, { type RowStatusStrip } from "./ui/ContentRowBars";
 import type { ProjectStatus } from "../lib/projects";
+import { topicColor } from "../lib/topic";
 
 export interface ProjectCardProps {
   href: string;
+  slug: string;
   name: string;
   description: string;
   accentColor: string;
+  topic?: string;
   status?: ProjectStatus | null;
   tech?: string[];
   github?: string;
   browse?: string;
   footer?: ReactNode;
+  onNavigate?: () => void;
 }
 
-/** Shared project card — used on /projects, /now, and anywhere else listing portfolio work. */
+function projectStatusStrip(status: ProjectStatus | null): RowStatusStrip {
+  if (status === "complete") return "complete";
+  if (status === "wip") return "wip";
+  return "muted";
+}
+
+/** Shared project row — flush list style on /projects; card chrome elsewhere. */
 export default function ProjectCard({
   href,
+  slug,
   name,
   description,
   accentColor,
+  topic = "",
   status = null,
   tech = [],
   github,
   browse,
   footer,
+  onNavigate,
 }: ProjectCardProps) {
   return (
-    <div className="project-card">
-      <Link
-        href={href}
-        className="project-card-stretch"
-        aria-label={`Open ${name} case study`}
-      />
-      <div className="pc-bar" style={{ background: accentColor }} />
-      <div className="pc-inner">
-        <div className="pc-top">
-          <div className="pc-name">{name}</div>
-          <ProjectStatusBadge status={status} />
-        </div>
-        <div className="pc-desc">{description}</div>
-        <div className="pc-footer">
+    <tr
+      className="project-row public-table-row"
+      onClick={onNavigate}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onNavigate?.();
+        }
+      }}
+      tabIndex={0}
+      role="link"
+      aria-label={`Open ${name} case study`}
+    >
+      <td className="pt-cell pt-cell--bars">
+        <ContentRowBars status={projectStatusStrip(status)} topicColor={accentColor} />
+        <div className="pt-cell-inner">
+          <div className="pt-title">{name}</div>
+          <div className="pt-slug">{slug}</div>
+          {description && <div className="pt-summary">{description}</div>}
           {tech.length > 0 && (
-            <div className="pc-chips">
+            <div className="pt-tags">
               {tech.map((t) => (
-                <span key={t} className="pc-chip">
+                <span key={t} className="pt-tag">
                   {t}
                 </span>
               ))}
             </div>
           )}
-          <div className="pc-links">
-            <Link href={href} className="pc-link-primary">
-              {footer ?? "case study →"}
-            </Link>
-            {github && (
-              <a
-                href={github}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="pc-link-external"
-              >
-                github →
-              </a>
-            )}
-            {browse && (
-              <a
-                href={browse}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="pc-link-external"
-              >
-                browse →
-              </a>
-            )}
-          </div>
         </div>
-      </div>
-    </div>
+      </td>
+      <td className="col-meta">
+        {topic ? (
+          <span className="admin-topic" style={{ color: topicColor(topic) }}>
+            {topic}
+          </span>
+        ) : tech[0] ? (
+          <span className="admin-topic" style={{ color: accentColor }}>
+            {tech[0].toLowerCase()}
+          </span>
+        ) : (
+          <span className="admin-topic empty">—</span>
+        )}
+      </td>
+      <td className="col-meta">
+        <ProjectStatusBadge status={status} />
+      </td>
+      <td className="col-meta">
+        <div className="row-actions">
+          <Link href={href} className="ra" onClick={(e) => e.stopPropagation()}>
+            {footer ?? "case study →"}
+          </Link>
+          {github && (
+            <a
+              href={github}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ra"
+              onClick={(e) => e.stopPropagation()}
+            >
+              github →
+            </a>
+          )}
+          {browse && (
+            <a
+              href={browse}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ra"
+              onClick={(e) => e.stopPropagation()}
+            >
+              browse →
+            </a>
+          )}
+        </div>
+      </td>
+    </tr>
   );
 }

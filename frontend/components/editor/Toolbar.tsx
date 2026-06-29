@@ -6,6 +6,7 @@ import { CODE_LANGUAGES } from "./CodeBlockMeta";
 import { directiveAttrsFromSource } from "./Directive";
 import { DIRECTIVE_TEMPLATES } from "./insertTemplates";
 import { uploadImage } from "../../lib/auth";
+import UiSelect from "../ui/UiSelect";
 
 const ASIDE_SRC = ':::aside 🦀 "Ferris\' hot tip"\nA personal note from the mascot.\n:::';
 const CALLOUT_SRC = ':::callout ⚠ "Heads up"\nSomething worth flagging.\n:::';
@@ -121,7 +122,8 @@ export function Toolbar({
         <>
           <span className="tb-sep" />
           <div className="tb-group tb-code-meta">
-            <select
+            <UiSelect
+              inline
               className="tb-code-lang"
               title="Language"
               value={editor.getAttributes("codeBlock").language || "plaintext"}
@@ -134,9 +136,9 @@ export function Toolbar({
                   {lang}
                 </option>
               ))}
-            </select>
+            </UiSelect>
             <input
-              className="tb-code-file"
+              className="mf-input tb-code-file"
               type="text"
               placeholder="filename.rs"
               title="Optional filename"

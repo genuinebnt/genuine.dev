@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { CODE_LANGUAGES } from "./CodeBlockMeta";
 import { uploadImage } from "../../lib/auth";
+import UiSelect from "../ui/UiSelect";
 
 export type InspectorType = "image" | "codeBlock" | "link";
 
@@ -125,7 +126,7 @@ function CodeInspector({ editor }: { editor: Editor }) {
   return (
     <>
       <Field label="Language">
-        <select
+        <UiSelect
           value={language}
           onChange={(e) => {
             setLanguage(e.target.value);
@@ -137,7 +138,7 @@ function CodeInspector({ editor }: { editor: Editor }) {
               {l}
             </option>
           ))}
-        </select>
+        </UiSelect>
       </Field>
       <Field label="Filename (header label)">
         <input
